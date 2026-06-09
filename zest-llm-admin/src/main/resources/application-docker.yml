@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: jdbc:mysql://mysql:3306/zest_llm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: valkey
+      port: 6379
+
+zest:
+  llm:
+    litellm:
+      base-url: http://litellm:4000
+    adapters:
+      policy-cache: valkey
+      quota: redis-token-bucket
+      audit: jdbc
+      observability: noop
+    langfuse:
+      enabled: false
+
+zest-llm:
+  admin:
+    jwt:
+      secret: ${ZEST_LLM_JWT_SECRET:change-me-in-production-zest-llm-admin-jwt-secret-key}

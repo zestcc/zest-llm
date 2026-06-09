@@ -1,0 +1,38 @@
+FROM node:20-alpine AS ui-build
+WORKDIR /build
+COPY zest-llm-admin-ui/package*.json zest-llm-admin-ui/
+RUN cd zest-llm-admin-ui && npm ci
+COPY zest-llm-admin-ui/ zest-llm-admin-ui/
+RUN mkdir -p zest-llm-admin/src/main/resources/static
+WORKDIR /build/zest-llm-admin-ui
+RUN npm run build
+
+FROM maven:3.9-eclipse-temurin-17 AS backend-build
+WORKDIR /src
+COPY pom.xml .
+COPY zest-llm-spi/pom.xml zest-llm-spi/
+COPY zest-llm-common/pom.xml zest-llm-common/
+COPY zest-llm-infra/pom.xml zest-llm-infra/
+COPY zest-llm-agent/pom.xml zest-llm-agent/
+COPY zest-llm-starter/pom.xml zest-llm-starter/
+COPY zest-llm-flow-adapter/pom.xml zest-llm-flow-adapter/
+COPY zest-llm-admin/pom.xml zest-llm-admin/
+COPY zest-llm-demo/pom.xml zest-llm-demo/
+COPY zest-llm-spi/src zest-llm-spi/src
+COPY zest-llm-common/src zest-llm-common/src
+COPY zest-llm-infra/src zest-llm-infra/src
+COPY zest-llm-agent/src zest-llm-agent/src
+COPY zest-llm-starter/src zest-llm-starter/src
+COPY zest-llm-flow-adapter/src zest-llm-flow-adapter/src
+COPY zest-llm-admin/src zest-llm-admin/src
+COPY --from=ui-build /build/zest-llm-admin/src/main/resources/static /src/zest-llm-admin/src/main/resources/static
+RUN mvn -pl zest-llm-admin -am package -DskipTests -q
+
+FROM eclipse-temurin:17-jre-alpine
+WORKDIR /app
+RUN addgroup -S zest && adduser -S zest -G zest
+USER zest
+COPY --from=backend-build /src/zest-llm-admin/target/zest-llm-admin-*.jar app.jar
+EXPOSE 8088
+ENV JAVA_OPTS="-Xms256m -Xmx768m"
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

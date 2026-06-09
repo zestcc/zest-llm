@@ -1,0 +1,33 @@
+# Build
+target/
+*.class
+*.jar
+!**/src/main/**/lib/*.jar
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.swp
+
+# Node / Admin UI
+node_modules/
+dist/
+.zest-llm-admin-ui-dev/
+
+# Local config & secrets
+**/application-local.yml
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# JVM crash dumps
+hs_err_pid*.log
+replay_pid*.log
+
+# ZestFlow Dev Copilot（可选：学习事件为本地原始信号，通常不提交）
+.zestflow/learning/
+.zestflow/mcp-audit.jsonl

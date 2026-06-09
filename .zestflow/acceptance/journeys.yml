@@ -1,0 +1,76 @@
+version: 1
+journeys:
+  - id: admin_login
+    description: "Admin JWT 登录"
+    auth: none
+    steps:
+      - method: POST
+        path: "/api/admin/auth/login"
+        body: '{"username":"admin","password":"admin123"}'
+        expect:
+          status: 200
+          bodyContains: "token"
+
+  - id: runtime_auth_failed
+    description: "AC6 错误 token 返回 AUTH_FAILED"
+    auth: none
+    steps:
+      - method: POST
+        path: "/v1/llm/invoke"
+        headers:
+          Authorization: "Bearer wrong-token"
+          Content-Type: "application/json"
+        body: '{"appKey":"order-service","code":"aiChat","inputs":{"question":"hi"}}'
+        expect:
+          status: 200
+          bodyContains: "AUTH_FAILED"
+
+  - id: admin_execution_list
+    description: "Execution 列表需 JWT"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/executions?page=1&size=10"
+        expect:
+          status: 200
+
+  - id: admin_adapter_health_all
+    description: "全 SPI 健康探测"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/adapters/health/all"
+        expect:
+          status: 200
+
+  - id: admin_audit_logs
+    description: "审计日志分页"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/audit-logs?page=1&size=20"
+        expect:
+          status: 200
+
+  - id: admin_tenants
+    description: "租户列表"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/tenants"
+        expect:
+          status: 200
+
+  - id: registry_methods_optional
+    description: "方法注册表（可为空）"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/registry/methods?page=1&size=20"
+        expect:
+          status: 200

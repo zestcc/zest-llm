@@ -1,0 +1,58 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: zest-llm-admin
+  config:
+    import:
+      - classpath:application-zestflow.yml
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.h2.H2ConsoleAutoConfiguration
+  mvc:
+    throw-exception-if-no-handler-found: true
+  web:
+    resources:
+      add-mappings: true
+  # 数据源不在此文件配置，避免覆盖 application-local.yml：
+  # 本地开发请使用 -Dspring-boot.run.profiles=local（读取 application-local.yml）
+  # Docker 部署请使用 SPRING_PROFILES_ACTIVE=docker（读取 application-docker.yml）
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    db-config:
+      id-type: assign_id
+
+zest:
+  llm:
+    adapters:
+      model-gateway: litellm
+      prompt-renderer: handlebars
+      observability: noop
+      policy-cache: caffeine
+      quota: noop
+      output-schema-validator: json
+      audit: noop
+    litellm:
+      base-url: http://localhost:4000
+      connect-timeout-ms: 5000
+      read-timeout-ms: 60000
+
+zest-llm:
+  admin:
+    jwt:
+      secret: change-me-in-production-zest-llm-admin-jwt-secret-key
+      expiration-ms: 86400000
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    cn.zest.www.zestllm: INFO

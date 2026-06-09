@@ -1,0 +1,20 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: zest-llm-demo
+
+zest:
+  llm:
+    enabled: true
+    runtime-mode: invoke
+    control-plane-url: http://admin:8088
+    app-key: order-service
+    auth-token: demo-token-123
+    registry-on-startup: true
+    litellm:
+      base-url: http://litellm:4000
+  flow:
+    executor:
+      port: 20551
