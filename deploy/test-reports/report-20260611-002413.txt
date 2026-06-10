@@ -1,0 +1,58 @@
+=== ZestLLM Full Acceptance 2026-06-11T00:24:13.5238872+08:00 ===
+AdminUrl=http://localhost:8088 DemoUrl=http://localhost:8081 FlowUrl=http://localhost:20552
+--- ENV ---
+PASS ENV-01 Admin reachable
+PASS ENV-02 Admin UI dev (optional)
+WARN Demo not running 鈥?AC1/16/19/20 skipped
+INFO Flow reachable
+--- SEC ---
+PASS SEC-01 wrong token rejected
+PASS SEC-02 unauthenticated admin HTTP 403
+PASS SEC-03 operator probe-all 403
+PASS SEC-04 operator read OK
+--- FUNC-API ---
+PASS API-01 admin login
+FAIL API-02 /api/admin/meta/features 远程服务器返回错误: (404) 未找到。
+FAIL API-03 /api/admin/dashboard/stats 远程服务器返回错误: (500) 内部服务器错误。
+FAIL API-04 /api/admin/dashboard/agent-health 远程服务器返回错误: (500) 内部服务器错误。
+FAIL API-05 /api/admin/dashboard/cost?days=7
+PASS API-06 /api/admin/config/observability
+PASS API-07 /api/admin/executions?page=1&size=5
+PASS API-08 /api/admin/agent-profiles/aiChat/versions
+PASS API-09 /api/admin/agent-profile-probes/aiChat/latest
+PASS API-10 /api/admin/agent-profile-probes/aiChat/history?page=1&size=5
+FAIL API-11 /api/admin/agent-profile-probes/aiChat/history/trend?days=7 远程服务器返回错误: (404) 未找到。
+PASS API-12 /api/admin/cost-alerts?page=1&size=5
+FAIL API-13 /api/admin/cost-alerts/summary?days=7 远程服务器返回错误: (404) 未找到。
+PASS API-14 /api/admin/agent-probe-alerts?page=1&size=5
+PASS API-15 /api/admin/executions/archive/stats
+FAIL API-16 /api/admin/executions/archive/runs?page=1&size=5 远程服务器返回错误: (404) 未找到。
+PASS API-17 /api/admin/eval/datasets
+PASS API-18 /api/admin/flow-chains
+PASS API-19 /api/admin/mcp-servers
+PASS API-20 /api/admin/users
+PASS API-21 /api/admin/tenants
+PASS API-22 /api/admin/adapters/health/all
+PASS API-23 /api/admin/audit-logs?page=1&size=5
+PASS API-24 /api/admin/apps?page=1&size=5
+PASS API-25 /api/admin/tasks?page=1&size=5
+--- FUNC-RUNTIME ---
+PASS RT-01 prepare OK
+PASS RT-02 invoke traceId=tr_3719e223091f44e7a17ae2f6ca8b34db
+PASS RT-03 execution audit
+--- FUNC-PROBE ---
+PASS PROBE-01 probe run
+--- PERF ---
+PERF prepare samples=30 P50=12ms P95=16ms max=16ms
+PASS PERF-01 P95<=800ms
+PASS PERF-02 success rate>=90%
+--- COMPAT ---
+FAIL COMPAT-/dashboard SPA forward /dashboard
+FAIL COMPAT-/agent-config /agent-config
+FAIL COMPAT-/ops /ops
+FAIL COMPAT-/executions SPA forward /executions
+FAIL COMPAT-/playground /playground
+FAIL COMPAT-/eval /eval
+--- SUMMARY ---
+PASSED=30 FAILED=13 SKIPPED=0
+Report: D:\project\zest\zest-llm\deploy\test-reports\report-20260611-002413.txt

@@ -13,22 +13,22 @@ public interface LlmAgentProfileProbeMapper extends BaseMapper<LlmAgentProfilePr
             SELECT p.*
             FROM llm_agent_profile_probe p
             INNER JOIN (
-                SELECT task_id, MAX(created_at) AS max_at
+                SELECT task_id, MAX(id) AS max_id
                 FROM llm_agent_profile_probe
                 GROUP BY task_id
-            ) latest ON p.task_id = latest.task_id AND p.created_at = latest.max_at
+            ) latest ON p.id = latest.max_id
             ORDER BY p.created_at DESC
             """)
     List<LlmAgentProfileProbeDO> selectLatestPerTask();
 
     @Select("""
-            SELECT COUNT(DISTINCT task_id)
+            SELECT COUNT(*)
             FROM llm_agent_profile_probe p
             INNER JOIN (
-                SELECT task_id, MAX(created_at) AS max_at
+                SELECT task_id, MAX(id) AS max_id
                 FROM llm_agent_profile_probe
                 GROUP BY task_id
-            ) latest ON p.task_id = latest.task_id AND p.created_at = latest.max_at
+            ) latest ON p.id = latest.max_id
             WHERE p.overall_status = #{status}
             """)
     long countLatestByStatus(@Param("status") String status);

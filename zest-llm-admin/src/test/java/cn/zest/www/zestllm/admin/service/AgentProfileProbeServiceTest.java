@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.service;
 
+import cn.zest.www.zestllm.admin.config.AgentProfileProbeProperties;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAppDO;
@@ -64,11 +65,15 @@ class AgentProfileProbeServiceTest {
     private McpToolAdapter mcpToolAdapter;
     @Mock
     private AgentProfileProbeRecordService probeRecordService;
+    @Mock
+    private AgentProfileProbeProperties probeProperties;
 
     private AgentProfileProbeService probeService;
 
     @BeforeEach
     void setUp() {
+        when(probeProperties.getMaxParallel()).thenReturn(4);
+        when(probeProperties.getBatchTimeoutSeconds()).thenReturn(120);
         probeService = new AgentProfileProbeService(
                 taskDefRepo,
                 appRepo,
@@ -81,7 +86,8 @@ class AgentProfileProbeServiceTest {
                 secretResolver,
                 mcpToolAdapter,
                 new ObjectMapper(),
-                probeRecordService);
+                probeRecordService,
+                probeProperties);
     }
 
     @Test

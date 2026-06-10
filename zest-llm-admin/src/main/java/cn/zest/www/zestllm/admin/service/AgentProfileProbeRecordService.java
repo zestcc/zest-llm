@@ -201,7 +201,7 @@ public class AgentProfileProbeRecordService {
                     .append(csv(row.getTaskCode())).append(',')
                     .append(csv(row.getProfileVersion())).append(',')
                     .append(csv(row.getOverallStatus())).append(',')
-                    .append(row.getLatencyMs() != null ? row.getLatencyMs() : "").append(',')
+                    .append(row.getLatencyMs()).append(',')
                     .append(csv(row.getProbeSource())).append(',')
                     .append(row.getProbedAt() != null ? row.getProbedAt() : "")
                     .append('\n');
