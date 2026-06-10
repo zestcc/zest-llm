@@ -1,0 +1,12 @@
+{
+  "id": "chat-basic",
+  "name": "智能对话",
+  "description": "基础对话助手：LiteLLM + native runtime，适合客服/问答 POC",
+  "recommendedTier": "small",
+  "taskCodeSuggestion": "aiChat",
+  "taskName": "智能对话",
+  "runtimeMode": "agent",
+  "requiresMcp": false,
+  "requiresKnowledge": false,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\",\"fallback\":[\"gpt-3.5-turbo\"]},\"generation\":{\"maxTokens\":1024,\"temperature\":0.7,\"timeoutMs\":30000},\"guardrails\":{\"piiRedact\":false,\"blockOnSchemaMismatch\":true},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\"},\"knowledge\":{\"enabled\":false},\"learningLoop\":{\"enabled\":false}}}"
+}

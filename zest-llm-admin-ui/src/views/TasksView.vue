@@ -7,6 +7,29 @@
       </div>
     </div>
 
+    <div v-loading="overviewLoading" class="table-panel" style="margin-bottom: 16px">
+      <div class="table-panel-header">
+        <h3 class="table-panel-title">作业看板（近 7 天）</h3>
+      </div>
+      <el-table :data="overview" stripe empty-text="暂无作业">
+        <el-table-column prop="code" label="Code" width="120" />
+        <el-table-column prop="name" label="名称" width="140" />
+        <el-table-column prop="publishedVersion" label="已发布版本" width="120" />
+        <el-table-column prop="probeStatus" label="Probe" width="100">
+          <template #default="{ row }">
+            <el-tag
+              :type="row.probeStatus === 'READY' ? 'success' : row.probeStatus === 'DEGRADED' ? 'warning' : 'info'"
+              size="small"
+            >
+              {{ row.probeStatus || 'UNKNOWN' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="executionsLast7d" label="执行次数" width="100" />
+        <el-table-column prop="failedLast7d" label="失败" width="80" />
+      </el-table>
+    </div>
+
     <div v-loading="loading" class="table-panel">
       <div class="table-panel-header">
         <div>
@@ -89,11 +112,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { adminApi, normalizePage, type TaskVO } from '../api/admin'
+import { adminApi, normalizePage, type AiJobOverviewVO, type TaskVO } from '../api/admin'
 
 const loading = ref(false)
+const overviewLoading = ref(false)
 const submitting = ref(false)
 const tasks = ref<TaskVO[]>([])
+const overview = ref<AiJobOverviewVO[]>([])
 
 const createVisible = ref(false)
 const editVisible = ref(false)
@@ -124,6 +149,16 @@ const taskRules: FormRules = {
 const editRules: FormRules = {
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+}
+
+async function loadOverview() {
+  overviewLoading.value = true
+  try {
+    const data = await adminApi.getAiJobOverview()
+    overview.value = data.data ?? data ?? []
+  } finally {
+    overviewLoading.value = false
+  }
 }
 
 async function load() {
@@ -185,5 +220,8 @@ async function submitEdit() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  loadOverview()
+  load()
+})
 </script>

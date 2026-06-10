@@ -44,8 +44,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { adminApi, type EvalCaseSuggestion, type LearningCycleResult, type LearningCycleRunVO, type TaskVO } from '../api/admin'
-import { normalizePage } from '../utils/page'
+import { adminApi, normalizePage, type EvalCaseSuggestion, type LearningCycleResult, type LearningCycleRunVO, type TaskVO } from '../api/admin'
 
 const tasks = ref<TaskVO[]>([])
 const taskCode = ref('aiChat')

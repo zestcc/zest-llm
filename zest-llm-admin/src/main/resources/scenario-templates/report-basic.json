@@ -1,0 +1,12 @@
+{
+  "id": "report-basic",
+  "name": "报表解读",
+  "description": "结构化报表分析：hybrid 知识预取 + Eval 门禁，适合 BI 辅助解读",
+  "recommendedTier": "medium",
+  "taskCodeSuggestion": "aiReport",
+  "taskName": "报表解读",
+  "runtimeMode": "hybrid",
+  "requiresMcp": true,
+  "requiresKnowledge": true,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"hybrid\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":2048,\"temperature\":0.3,\"timeoutMs\":60000},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\"},\"knowledge\":{\"enabled\":true,\"provider\":\"noop\",\"datasetIds\":[\"report-docs\"],\"topK\":5,\"scoreThreshold\":0.5,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":true,\"evalDatasetRef\":\"demo-aichat@v1\",\"minPassRate\":0.8,\"probeBeforePublish\":true}}}"
+}

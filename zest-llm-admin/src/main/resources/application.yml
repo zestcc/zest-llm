@@ -27,6 +27,8 @@ mybatis-plus:
       id-type: assign_id
 
 zest:
+  stack:
+    tier: ${ZEST_STACK_TIER:small}
   llm:
     adapters:
       model-gateway: litellm

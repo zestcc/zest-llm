@@ -1,0 +1,12 @@
+{
+  "id": "ops-monitor",
+  "name": "运维诊断",
+  "description": "告警/日志诊断：MCP 工具 + 多步 Agent，适合 SRE 场景（需 large 栈 + MCP）",
+  "recommendedTier": "large",
+  "taskCodeSuggestion": "aiOps",
+  "taskName": "运维诊断",
+  "runtimeMode": "agent",
+  "requiresMcp": true,
+  "requiresKnowledge": true,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"toolCallMode\":\"loop\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":2048,\"temperature\":0.2,\"timeoutMs\":90000,\"maxToolSteps\":5},\"tools\":[{\"type\":\"mcp\",\"name\":\"search\",\"serverRef\":\"internal-docs\",\"config\":{\"toolName\":\"search\"}}],\"extensions\":{\"runtimeBackend\":{\"type\":\"dify\",\"baseUrl\":\"http://dify-api:5001\"},\"knowledge\":{\"enabled\":true,\"provider\":\"ragflow\",\"datasetIds\":[\"ops-runbook\"],\"topK\":3,\"scoreThreshold\":0.6,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":true,\"evalDatasetRef\":\"demo-aichat@v1\",\"minPassRate\":0.75,\"probeBeforePublish\":true}}}"
+}

@@ -29,6 +29,14 @@ public interface LlmExecutionMapper extends BaseMapper<LlmExecutionDO> {
     @Select("SELECT COUNT(*) FROM llm_execution WHERE created_at >= CURDATE()")
     long countToday();
 
+    @Select("SELECT COUNT(*) FROM llm_execution WHERE task_code = #{taskCode} AND created_at >= #{since}")
+    long countByTaskCodeSince(@Param("taskCode") String taskCode, @Param("since") LocalDateTime since);
+
+    @Select("SELECT COUNT(*) FROM llm_execution WHERE task_code = #{taskCode} AND status = #{status} AND created_at >= #{since}")
+    long countByTaskCodeAndStatusSince(@Param("taskCode") String taskCode,
+                                       @Param("status") String status,
+                                       @Param("since") LocalDateTime since);
+
     @Select("SELECT COALESCE(SUM(COALESCE(prompt_tokens, 0) + COALESCE(completion_tokens, 0)), 0) FROM llm_execution WHERE app_id = #{appId} AND created_at >= CURDATE()")
     long sumTodayTokensByAppId(Long appId);
 

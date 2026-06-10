@@ -223,15 +223,16 @@ foreach ($route in $spaRoutes) {
 
 # --- INTEGRATION AC39-44 ---
 Write-Report "--- INTEGRATION ---"
+$acSuffix = Get-Date -Format "HHmmss"
 try {
-    $extProfile = @'
+    $extProfile = @"
 {
   "taskCode": "aiChat",
-  "version": "v-ac39",
+  "version": "v-ac39-$acSuffix",
   "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\",\"baseUrl\":\"http://localhost:4000\"},\"knowledge\":{\"enabled\":false},\"learningLoop\":{\"enabled\":false}}}",
   "publish": false
 }
-'@
+"@
     $imp = Invoke-AdminPost "/api/admin/agent-profiles/import" $extProfile
     $ij = $imp | ConvertTo-Json -Compress
     Assert-Pass "AC39" ($ij.Contains("v-ac39") -or $ij.Contains("data")) "extensions import"
@@ -240,14 +241,14 @@ try {
 }
 
 try {
-    $hybridProfile = @'
+    $hybridProfile = @"
 {
   "taskCode": "aiChat",
-  "version": "v-ac40",
+  "version": "v-ac40-$acSuffix",
   "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"hybrid\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"knowledge\":{\"enabled\":true,\"provider\":\"noop\",\"datasetIds\":[\"demo\"],\"topK\":3,\"scoreThreshold\":0.5,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":false}}}",
   "publish": true
 }
-'@
+"@
     Invoke-AdminPost "/api/admin/agent-profiles/import" $hybridProfile | Out-Null
     $prep2 = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/prepare" -Method POST -Body '{"appKey":"order-service","code":"aiChat","inputs":{"question":"hybrid-test"}}' -ContentType "application/json" -Headers @{ Authorization = "Bearer demo-token-123" } -TimeoutSec 30
     $pj2 = $prep2 | ConvertTo-Json -Depth 8 -Compress
@@ -278,19 +279,19 @@ try {
 }
 
 try {
-    $gateProfile = @'
+    $gateProfile = @"
 {
   "taskCode": "aiChat",
-  "version": "v-ac43",
+  "version": "v-ac43-$acSuffix",
   "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"learningLoop\":{\"enabled\":true,\"evalDatasetRef\":\"demo-aichat@v1\",\"minPassRate\":0.99,\"probeBeforePublish\":false}}}",
   "publish": false
 }
-'@
+"@
     Invoke-AdminPost "/api/admin/agent-profiles/import" $gateProfile | Out-Null
     $failCase = '{"caseCode":"ac43-fail","inputs":{"question":"gate-test-xyz"},"expected":{"answerContains":"__IMPOSSIBLE__"}}'
     try { Invoke-AdminPost "/api/admin/eval/datasets/demo-aichat/cases" $failCase | Out-Null } catch { }
     try {
-        Invoke-AdminPost "/api/admin/agent-profiles/aiChat/publish" '{"version":"v-ac43"}' | Out-Null
+        Invoke-AdminPost "/api/admin/agent-profiles/aiChat/publish" "{`"version`":`"v-ac43-$acSuffix`"}" | Out-Null
         Assert-Pass "AC43" $false "publish should be blocked"
     } catch {
         $code = [int]$_.Exception.Response.StatusCode
@@ -306,6 +307,44 @@ try {
     Assert-Pass "AC44" ($sj.Contains("data") -or $sj.StartsWith("[")) "learning suggest-cases"
 } catch {
     Assert-Pass "AC44" $false "suggest-cases: $($_.Exception.Message)"
+}
+
+# --- Zest Stack Portal AC45-48 ---
+Write-Report "--- ZEST-STACK ---"
+try {
+    $cs = Invoke-AdminGet "/api/admin/capability-stack"
+    $csj = $cs | ConvertTo-Json -Depth 6 -Compress
+    if ($cs.data) { $csj = ($cs.data | ConvertTo-Json -Depth 6 -Compress) }
+    Assert-Pass "AC45" ($csj.Contains("currentTier") -and $csj.Contains("tiers")) "capability-stack overview"
+} catch {
+    Assert-Pass "AC45" $false "capability-stack: $($_.Exception.Message)"
+}
+
+try {
+    $st = Invoke-AdminGet "/api/admin/scenario-templates"
+    $stj = $st | ConvertTo-Json -Depth 4 -Compress
+    if ($st.data) { $stj = ($st.data | ConvertTo-Json -Depth 4 -Compress) }
+    Assert-Pass "AC46" ($stj.Contains("chat-basic") -or $stj.Contains("name")) "scenario-templates list"
+} catch {
+    Assert-Pass "AC46" $false "scenario-templates: $($_.Exception.Message)"
+}
+
+try {
+    $jo = Invoke-AdminGet "/api/admin/ai-jobs/overview"
+    $joj = $jo | ConvertTo-Json -Compress
+    if ($jo.data) { $joj = ($jo.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC47" ($joj.Contains("aiChat") -or $joj.Contains("code") -or $joj.StartsWith("[")) "ai-jobs overview"
+} catch {
+    Assert-Pass "AC47" $false "ai-jobs overview: $($_.Exception.Message)"
+}
+
+try {
+    $feat = Invoke-AdminGet "/api/admin/meta/features"
+    $fj = $feat | ConvertTo-Json -Compress
+    if ($feat.data) { $fj = ($feat.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC48" ($fj.Contains("capabilityStackApi") -and $fj.Contains("scenarioTemplateApi")) "meta features zest-stack"
+} catch {
+    Assert-Pass "AC48" $false "meta features: $($_.Exception.Message)"
 }
 
 # --- Summary ---

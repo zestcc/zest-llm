@@ -12,6 +12,8 @@ const router = createRouter({
       redirect: '/dashboard',
       children: [
         { path: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { title: '概览' } },
+        { path: 'capability-stack', component: () => import('../views/CapabilityStackView.vue'), meta: { title: '能力栈' } },
+        { path: 'scenario-templates', component: () => import('../views/ScenarioTemplatesView.vue'), meta: { title: '场景模板' } },
         { path: 'apps', component: () => import('../views/AppsView.vue'), meta: { title: '应用管理' } },
         { path: 'tenants', component: () => import('../views/TenantsView.vue'), meta: { title: '租户管理' } },
         { path: 'tasks', component: () => import('../views/TasksView.vue'), meta: { title: 'AI 作业' } },

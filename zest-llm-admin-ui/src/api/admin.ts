@@ -256,8 +256,59 @@ export interface AdminFeatures {
   flywayLatestScript?: string
   agentProbeApi?: boolean
   learningApi?: boolean
+  capabilityStackApi?: boolean
+  scenarioTemplateApi?: boolean
   integrationAdaptersEnabled?: boolean
   schemaReady?: Record<string, boolean>
+}
+
+export interface StackTierVO {
+  id?: string
+  name?: string
+  description?: string
+  components?: string[]
+  adapterDefaults?: Record<string, string>
+  expectedQps?: string
+  composeHint?: string
+}
+
+export interface CapabilityStackVO {
+  currentTier?: string
+  deployCommand?: string
+  tiers?: StackTierVO[]
+  adapters?: AdapterHealthVO[]
+  recommendedAdapters?: Record<string, string>
+}
+
+export interface ScenarioTemplateVO {
+  id?: string
+  name?: string
+  description?: string
+  recommendedTier?: string
+  taskCodeSuggestion?: string
+  taskName?: string
+  runtimeMode?: string
+  requiresMcp?: boolean
+  requiresKnowledge?: boolean
+}
+
+export interface ApplyScenarioTemplateResult {
+  taskCode?: string
+  profileVersion?: string
+  published?: boolean
+  message?: string
+}
+
+export interface AiJobOverviewVO {
+  code?: string
+  name?: string
+  appKey?: string
+  status?: string
+  publishedVersion?: string
+  probeStatus?: string
+  lastProbeAt?: string
+  executionsLast7d?: number
+  failedLast7d?: number
 }
 
 export interface LearningCycleRunVO {
@@ -841,6 +892,22 @@ export const adminApi = {
 
   getObservabilityConfig() {
     return http.get<ObservabilityConfigVO>('/api/admin/config/observability')
+  },
+
+  getCapabilityStack() {
+    return http.get<CapabilityStackVO>('/api/admin/capability-stack')
+  },
+
+  listScenarioTemplates() {
+    return http.get<ScenarioTemplateVO[]>('/api/admin/scenario-templates')
+  },
+
+  applyScenarioTemplate(body: { templateId: string; appKey: string; taskCode?: string; publish?: boolean }) {
+    return http.post<ApplyScenarioTemplateResult>('/api/admin/scenario-templates/apply', body)
+  },
+
+  getAiJobOverview() {
+    return http.get<AiJobOverviewVO[]>('/api/admin/ai-jobs/overview')
   }
 }
 

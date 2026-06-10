@@ -18,6 +18,32 @@
         <el-icon><Odometer /></el-icon>
         <span>概览</span>
       </el-menu-item>
+
+      <el-sub-menu index="platform">
+        <template #title>
+          <el-icon><Connection /></el-icon>
+          <span>平台能力</span>
+        </template>
+        <el-menu-item index="/capability-stack">能力栈</el-menu-item>
+        <el-menu-item index="/scenario-templates">场景模板</el-menu-item>
+        <el-menu-item index="/adapters">适配器健康</el-menu-item>
+        <el-menu-item index="/learning">自我改进</el-menu-item>
+      </el-sub-menu>
+
+      <el-sub-menu index="ai-jobs">
+        <template #title>
+          <el-icon><List /></el-icon>
+          <span>AI 作业</span>
+        </template>
+        <el-menu-item index="/tasks">作业定义</el-menu-item>
+        <el-menu-item index="/prompts">Prompt 管理</el-menu-item>
+        <el-menu-item index="/model-routes">模型路由</el-menu-item>
+        <el-menu-item index="/agent-config">智能体配置</el-menu-item>
+        <el-menu-item index="/eval">Eval 评测</el-menu-item>
+        <el-menu-item index="/executions">执行记录</el-menu-item>
+        <el-menu-item index="/registry">方法注册</el-menu-item>
+      </el-sub-menu>
+
       <el-menu-item index="/apps">
         <el-icon><Grid /></el-icon>
         <span>应用管理</span>
@@ -26,45 +52,17 @@
         <el-icon><OfficeBuilding /></el-icon>
         <span>租户管理</span>
       </el-menu-item>
-      <el-menu-item index="/tasks">
-        <el-icon><List /></el-icon>
-        <span>AI 作业</span>
-      </el-menu-item>
-      <el-menu-item index="/prompts">
-        <el-icon><Document /></el-icon>
-        <span>Prompt 管理</span>
-      </el-menu-item>
       <el-menu-item index="/playground">
         <el-icon><Cpu /></el-icon>
         <span>Playground</span>
-      </el-menu-item>
-      <el-menu-item index="/eval">
-        <el-icon><DataAnalysis /></el-icon>
-        <span>Eval 评测</span>
       </el-menu-item>
       <el-menu-item index="/flow-chains">
         <el-icon><Share /></el-icon>
         <span>Flow 链</span>
       </el-menu-item>
-      <el-menu-item index="/model-routes">
-        <el-icon><Share /></el-icon>
-        <span>模型路由</span>
-      </el-menu-item>
-      <el-menu-item index="/agent-config">
-        <el-icon><Setting /></el-icon>
-        <span>智能体配置</span>
-      </el-menu-item>
       <el-menu-item index="/users">
         <el-icon><User /></el-icon>
         <span>用户管理</span>
-      </el-menu-item>
-      <el-menu-item index="/executions">
-        <el-icon><Tickets /></el-icon>
-        <span>执行记录</span>
-      </el-menu-item>
-      <el-menu-item index="/registry">
-        <el-icon><Collection /></el-icon>
-        <span>方法注册</span>
       </el-menu-item>
       <el-menu-item index="/audit-logs">
         <el-icon><Notebook /></el-icon>
@@ -74,10 +72,6 @@
         <el-icon><Bell /></el-icon>
         <span>运维中心</span>
       </el-menu-item>
-      <el-menu-item index="/adapters">
-        <el-icon><Connection /></el-icon>
-        <span>适配器健康</span>
-      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -85,20 +79,15 @@
 <script setup lang="ts">
 import { useRoute } from 'vue-router'
 import {
-  Collection,
+  Bell,
   Connection,
   Cpu,
-  DataAnalysis,
-  Document,
   Grid,
   List,
   Notebook,
-  Bell,
   OfficeBuilding,
   Odometer,
-  Setting,
   Share,
-  Tickets,
   User
 } from '@element-plus/icons-vue'
 
@@ -150,7 +139,8 @@ function handleMenuSelect(index: string) {
   width: 100%;
 }
 
-.sidebar-menu :deep(.el-menu-item) {
+.sidebar-menu :deep(.el-menu-item),
+.sidebar-menu :deep(.el-sub-menu__title) {
   margin: 2px 10px;
   border-radius: 8px;
   height: 44px;
@@ -163,7 +153,8 @@ function handleMenuSelect(index: string) {
   font-weight: 500;
 }
 
-.sidebar-menu :deep(.el-menu-item:hover) {
+.sidebar-menu :deep(.el-menu-item:hover),
+.sidebar-menu :deep(.el-sub-menu__title:hover) {
   background-color: rgba(255, 255, 255, 0.06) !important;
 }
 </style>

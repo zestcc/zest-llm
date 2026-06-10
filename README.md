@@ -1,8 +1,12 @@
 # ZestLLM
 
+**XXL-Job for AI** — Java AI 控制面：A 层选能力栈，B 层配场景，业务 `@ZestLLM(code)` 定作业，平台统一调度 Prompt / 模型 / 治理。
+
 AI 作业调度与治理平台（LLM Control Plane）。业务通过 `@ZestLLM` 注解声明 AI 作业，平台统一执行 Prompt 匹配、模型路由、结果回填与治理。
 
 **数据库：仅 MySQL 8**（禁止 H2 / PostgreSQL）。
+
+完整方案见 [docs/Zest-Stack完整实现方案.md](docs/Zest-Stack完整实现方案.md)。
 
 ## 模块结构
 
@@ -26,6 +30,14 @@ cd zest-llm-admin-ui && npm install && npm run build
 ```
 
 ## 一键 Docker 部署
+
+### Zest Stack 分层（推荐）
+
+| Tier | 场景 | 命令 |
+|------|------|------|
+| **small** | POC / 1～2 作业 | `powershell -File deploy/scripts/zest-stack-up.ps1 -Tier small` |
+| **medium** | 部门级 + Langfuse | `-Tier medium` |
+| **large** | Dify + RAGFlow + Kafka | `-Tier large` |
 
 ```bash
 cd deploy
@@ -56,6 +68,8 @@ bash deploy/scripts/loadtest-cp-prepare.sh
 
 ```bash
 bash deploy/scripts/e2e-acceptance.sh
+powershell -File deploy/scripts/full-acceptance.ps1   # 含 AC39-48
+powershell -File deploy/scripts/stress-test-prepare.ps1 -Concurrency 50 -Total 200
 ```
 
 完整标准见 [docs/产品验收标准.md](docs/产品验收标准.md)。

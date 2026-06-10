@@ -84,4 +84,18 @@ public class LlmExecutionRepo {
     public List<DailyCostVO> dailyCostSince(java.time.LocalDateTime startAt) {
         return mapper.dailyCostSince(startAt);
     }
+
+    public long countByTaskCodeSince(String taskCode, java.time.LocalDateTime since) {
+        if (taskCode == null || taskCode.isBlank()) {
+            return 0;
+        }
+        return mapper.countByTaskCodeSince(taskCode, since);
+    }
+
+    public long countByTaskCodeAndStatusSince(String taskCode, String status, java.time.LocalDateTime since) {
+        if (taskCode == null || taskCode.isBlank()) {
+            return 0;
+        }
+        return mapper.countByTaskCodeAndStatusSince(taskCode, status, since);
+    }
 }
