@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.service;
 
+import cn.zest.www.zestllm.admin.config.AgentProfileProbeProperties;
 import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
@@ -40,6 +41,11 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Service
@@ -61,6 +67,7 @@ public class AgentProfileProbeService {
     private final McpToolAdapter mcpToolAdapter;
     private final ObjectMapper objectMapper;
     private final AgentProfileProbeRecordService probeRecordService;
+    private final AgentProfileProbeProperties probeProperties;
 
     public AgentProfileProbeResultVO probePublished(String taskCode, AgentProfileProbeRequest request) {
         return probePublished(taskCode, request, AgentProfileProbeRecordService.SOURCE_MANUAL);
@@ -81,22 +88,62 @@ public class AgentProfileProbeService {
     }
 
     public int probeAllPublished(boolean smokeTest, String probeSource) {
-        int count = 0;
         AgentProfileProbeRequest request = new AgentProfileProbeRequest();
         request.setSmokeTest(smokeTest);
-        for (LlmAgentProfileDO profile : agentProfileRepo.findAllPublished()) {
-            LlmAiTaskDefDO task = taskDefRepo.findById(profile.getTaskId()).orElse(null);
-            if (task == null) {
-                continue;
-            }
-            try {
-                persistProbe(task, profile, request, probeSource);
-                count++;
-            } catch (Exception ex) {
-                log.warn("Scheduled agent probe failed taskCode={} version={}", task.getCode(), profile.getVersion(), ex);
-            }
+        List<LlmAgentProfileDO> profiles = agentProfileRepo.findAllPublished();
+        if (profiles.isEmpty()) {
+            return 0;
         }
-        return count;
+        int maxParallel = Math.max(1, Math.min(probeProperties.getMaxParallel(), profiles.size()));
+        ExecutorService executor = Executors.newFixedThreadPool(maxParallel);
+        try {
+            List<Future<Boolean>> futures = new ArrayList<>();
+            for (LlmAgentProfileDO profile : profiles) {
+                futures.add(executor.submit(() -> {
+                    LlmAiTaskDefDO task = taskDefRepo.findById(profile.getTaskId()).orElse(null);
+                    if (task == null) {
+                        return false;
+                    }
+                    try {
+                        persistProbe(task, profile, request, probeSource);
+                        return true;
+                    } catch (Exception ex) {
+                        log.warn("Agent probe failed taskCode={} version={}", task.getCode(), profile.getVersion(), ex);
+                        return false;
+                    }
+                }));
+            }
+            int count = 0;
+            long deadline = System.currentTimeMillis() + probeProperties.getBatchTimeoutSeconds() * 1000L;
+            for (Future<Boolean> future : futures) {
+                long waitMs = Math.max(1, deadline - System.currentTimeMillis());
+                try {
+                    if (Boolean.TRUE.equals(future.get(waitMs, TimeUnit.MILLISECONDS))) {
+                        count++;
+                    }
+                } catch (TimeoutException ex) {
+                    future.cancel(true);
+                    log.warn("Parallel agent probe timed out");
+                } catch (Exception ex) {
+                    log.warn("Parallel agent probe task failed", ex);
+                }
+            }
+            return count;
+        } finally {
+            executor.shutdownNow();
+        }
+    }
+
+    public AgentProfileProbeResultVO probeRetryFailed(String taskCode, AgentProfileProbeRequest request) {
+        Optional<AgentProfileProbeResultVO> last = probeRecordService.latest(taskCode);
+        if (last.isEmpty() || last.get().getChecks() == null) {
+            return probePublished(taskCode, request);
+        }
+        boolean hasFailure = last.get().getChecks().stream().anyMatch(c -> !c.isUp());
+        if (!hasFailure) {
+            return last.get();
+        }
+        return probePublished(taskCode, request);
     }
 
     private AgentProfileProbeResultVO persistProbe(LlmAiTaskDefDO task, LlmAgentProfileDO profile,

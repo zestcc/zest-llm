@@ -35,3 +35,5 @@ zest-llm:
       alert-webhook-url:
       alert-on-degraded: false
       alert-cooldown-minutes: 60
+      max-parallel: 4
+      batch-timeout-seconds: 120

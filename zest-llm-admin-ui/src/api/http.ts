@@ -9,10 +9,10 @@ export interface ApiResult<T = unknown> {
 }
 
 interface HttpClient {
-  get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
-  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
-  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig): Promise<T>
-  delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T>
+  get<T = unknown>(url: string, config?: AxiosRequestConfig & { skipErrorToast?: boolean }): Promise<T>
+  post<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig & { skipErrorToast?: boolean }): Promise<T>
+  put<T = unknown>(url: string, data?: unknown, config?: AxiosRequestConfig & { skipErrorToast?: boolean }): Promise<T>
+  delete<T = unknown>(url: string, config?: AxiosRequestConfig & { skipErrorToast?: boolean }): Promise<T>
 }
 
 const instance: AxiosInstance = axios.create({ baseURL: '', timeout: 30000 })
@@ -52,17 +52,22 @@ instance.interceptors.response.use(
     return body
   },
   (error) => {
+    const skipToast = Boolean((error.config as AxiosRequestConfig & { skipErrorToast?: boolean })?.skipErrorToast)
     if (error.response?.status === 401) {
       localStorage.removeItem('zest-llm-token')
       localStorage.removeItem('zest-llm-user')
       if (router.currentRoute.value.path !== '/login') {
         router.push('/login')
       }
-      ElMessage.error(getErrorMessage(error.response?.data) || '登录已过期，请重新登录')
-    } else if (error.response?.data) {
-      ElMessage.error(getErrorMessage(error.response.data))
-    } else {
-      ElMessage.error('网络异常，请稍后重试')
+      if (!skipToast) {
+        ElMessage.error(getErrorMessage(error.response?.data) || '登录已过期，请重新登录')
+      }
+    } else if (!skipToast) {
+      if (error.response?.data) {
+        ElMessage.error(getErrorMessage(error.response.data))
+      } else {
+        ElMessage.error('网络异常，请稍后重试')
+      }
     }
     return Promise.reject(error)
   }

@@ -1,4 +1,5 @@
 import http from './http'
+import axios from 'axios'
 
 export interface PageResult<T> {
   records: T[]
@@ -222,6 +223,56 @@ export interface AgentProfileProbeResultVO {
   checks?: AgentProfileProbeCheckVO[]
 }
 
+export interface AgentProfileProbeTrendPoint {
+  date: string
+  ready: number
+  degraded: number
+  unavailable: number
+  total: number
+}
+
+export interface AgentProfileProbeCheckDiff {
+  name: string
+  category?: string
+  critical?: boolean
+  fromUp?: boolean | null
+  toUp?: boolean | null
+  fromMessage?: string
+  toMessage?: string
+  changeType?: string
+}
+
+export interface AgentProfileProbeCompare {
+  taskCode?: string
+  fromVersion?: string
+  toVersion?: string
+  fromStatus?: string
+  toStatus?: string
+  diffs?: AgentProfileProbeCheckDiff[]
+}
+
+export interface AdminFeatures {
+  appVersion?: string
+  flywayLatestScript?: string
+  agentProbeApi?: boolean
+  schemaReady?: Record<string, boolean>
+}
+
+export interface ExecutionArchiveRunVO {
+  id?: number
+  archivedCount?: number
+  deletedCount?: number
+  triggerSource?: string
+  createdAt?: string
+}
+
+export interface CostAlertDailySummary {
+  date: string
+  appKey?: string
+  alertCount: number
+  sentCount: number
+}
+
 export interface AgentProfileProbeRequest {
   appKey?: string
   smokeTest?: boolean
@@ -332,7 +383,7 @@ export interface EvalRunVO {
   passedCases?: number
   failedCases?: number
   passRate?: number
-  caseResults?: Array<Record<string, unknown>>
+  caseResults?: Array<{ caseCode?: string; passed?: boolean; reason?: string; traceId?: string; status?: string }>
   startedAt?: string
   finishedAt?: string
 }
@@ -377,6 +428,7 @@ export interface CostAlertVO {
 }
 
 export interface AgentProbeAlertVO {
+  id?: number
   taskCode?: string
   profileVersion?: string
   overallStatus?: string
@@ -542,29 +594,74 @@ export const adminApi = {
   },
 
   probeAgentProfilePublished(taskCode: string, body?: AgentProfileProbeRequest) {
-    return http.post<AgentProfileProbeResultVO>(`/api/admin/agent-profiles/${taskCode}/probe`, body ?? {})
+    return http.post<AgentProfileProbeResultVO>(`/api/admin/agent-profile-probes/${taskCode}/run`, body ?? {})
   },
 
   probeAllAgentProfiles(body?: AgentProfileProbeRequest) {
-    return http.post<{ probedCount: number }>('/api/admin/agent-profiles/probe-all', body ?? {})
+    return http.post<{ probedCount: number }>('/api/admin/agent-profile-probes/run-all', body ?? {})
   },
 
   probeAgentProfileVersion(taskCode: string, version: string, body?: AgentProfileProbeRequest) {
     return http.post<AgentProfileProbeResultVO>(
-      `/api/admin/agent-profiles/${taskCode}/versions/${version}/probe`,
+      `/api/admin/agent-profile-probes/${taskCode}/versions/${version}/run`,
       body ?? {}
     )
   },
 
   getAgentProfileProbeLatest(taskCode: string) {
-    return http.get<AgentProfileProbeResultVO | null>(`/api/admin/agent-profiles/${taskCode}/probe/latest`)
+    return http.get<AgentProfileProbeResultVO | null>(
+      `/api/admin/agent-profile-probes/${taskCode}/latest`,
+      { skipErrorToast: true }
+    )
   },
 
   listAgentProfileProbeHistory(taskCode: string, page = 1, size = 20, profileVersion?: string) {
     return http.get<PageResult<AgentProfileProbeResultVO>>(
-      `/api/admin/agent-profiles/${taskCode}/probe/history`,
-      { params: { page, size, profileVersion } }
+      `/api/admin/agent-profile-probes/${taskCode}/history`,
+      { params: { page, size, profileVersion }, skipErrorToast: true }
     )
+  },
+
+  getAgentProfileProbeTrend(taskCode: string, days = 7, profileVersion?: string) {
+    return http.get<AgentProfileProbeTrendPoint[]>(
+      `/api/admin/agent-profile-probes/${taskCode}/history/trend`,
+      { params: { days, profileVersion }, skipErrorToast: true }
+    )
+  },
+
+  compareAgentProfileProbe(taskCode: string, fromVersion: string, toVersion: string) {
+    return http.get<AgentProfileProbeCompare>(`/api/admin/agent-profile-probes/${taskCode}/compare`, {
+      params: { fromVersion, toVersion }
+    })
+  },
+
+  probeAgentProfileRetryFailed(taskCode: string, body?: AgentProfileProbeRequest) {
+    return http.post<AgentProfileProbeResultVO>(`/api/admin/agent-profile-probes/${taskCode}/run-failed`, body ?? {})
+  },
+
+  async downloadAgentProfileProbeHistory(
+    taskCode: string,
+    format: 'json' | 'csv' = 'json',
+    profileVersion?: string
+  ) {
+    const token = localStorage.getItem('zest-llm-token')
+    const params = new URLSearchParams({ format, limit: '500' })
+    if (profileVersion) params.set('profileVersion', profileVersion)
+    const response = await axios.get(`/api/admin/agent-profile-probes/${taskCode}/history/export?${params}`, {
+      responseType: 'blob',
+      headers: token ? { Authorization: `Bearer ${token}` } : {}
+    })
+    const blob = new Blob([response.data])
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `probe-history-${taskCode}.${format}`
+    link.click()
+    URL.revokeObjectURL(url)
+  },
+
+  getAdminFeatures() {
+    return http.get<AdminFeatures>('/api/admin/meta/features', { skipErrorToast: true })
   },
 
   dashboardAgentHealth() {
@@ -675,12 +772,24 @@ export const adminApi = {
     return http.post<ExecutionArchiveStatsVO>('/api/admin/executions/archive/run')
   },
 
+  listExecutionArchiveRuns(page = 1, size = 20) {
+    return http.get<PageResult<ExecutionArchiveRunVO>>('/api/admin/executions/archive/runs', { params: { page, size } })
+  },
+
   listCostAlerts(appKey?: string, page = 1, size = 20) {
     return http.get<PageResult<CostAlertVO>>('/api/admin/cost-alerts', { params: { appKey, page, size } })
   },
 
+  getCostAlertSummary(appKey?: string, days = 7) {
+    return http.get<CostAlertDailySummary[]>('/api/admin/cost-alerts/summary', { params: { appKey, days } })
+  },
+
   listAgentProbeAlerts(taskCode?: string, page = 1, size = 20) {
     return http.get<PageResult<AgentProbeAlertVO>>('/api/admin/agent-probe-alerts', { params: { taskCode, page, size } })
+  },
+
+  resendAgentProbeAlert(id: number) {
+    return http.post<AgentProbeAlertVO>(`/api/admin/agent-probe-alerts/${id}/resend`)
   },
 
   getObservabilityConfig() {

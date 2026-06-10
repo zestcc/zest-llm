@@ -8,6 +8,7 @@ import java.time.LocalDateTime;
 @Data
 @Builder
 public class AgentProbeAlertVO {
+    private Long id;
     private String taskCode;
     private String profileVersion;
     private String overallStatus;

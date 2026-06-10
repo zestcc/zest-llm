@@ -18,4 +18,8 @@ public class AgentProfileProbeProperties {
     private boolean alertOnDegraded = false;
     /** 同一作业同一状态告警冷却（分钟） */
     private int alertCooldownMinutes = 60;
+    /** 批量巡检最大并行度 */
+    private int maxParallel = 4;
+    /** 批量巡检总超时（秒） */
+    private int batchTimeoutSeconds = 120;
 }

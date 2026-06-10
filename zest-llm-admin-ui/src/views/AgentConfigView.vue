@@ -268,11 +268,18 @@
       </template>
     </el-dialog>
 
-    <el-dialog v-model="probeHistoryVisible" title="探测历史" width="860px" destroy-on-close>
+    <el-dialog v-model="probeHistoryVisible" title="探测历史" width="920px" destroy-on-close @opened="loadProbeTrend">
       <div v-if="selectedTask" class="probe-history-meta">
         作业 <strong>{{ selectedTask }}</strong>
         <span v-if="probeHistoryVersion"> · 版本 {{ probeHistoryVersion }}</span>
       </div>
+      <div class="probe-history-toolbar">
+        <el-button size="small" @click="exportProbeHistory('json')">导出 JSON</el-button>
+        <el-button size="small" @click="exportProbeHistory('csv')">导出 CSV</el-button>
+        <el-button size="small" type="primary" :disabled="profiles.length < 2" @click="openProbeCompare">版本对比</el-button>
+        <el-button size="small" type="warning" :disabled="!selectedTask" @click="retryFailedProbe">重检失败项</el-button>
+      </div>
+      <div ref="probeTrendChartRef" class="probe-trend-chart" />
       <el-table v-loading="probeHistoryLoading" :data="probeHistoryRecords" stripe empty-text="暂无探测记录">
         <el-table-column prop="probedAt" label="时间" width="170" />
         <el-table-column prop="profileVersion" label="版本" width="90" />
@@ -305,15 +312,45 @@
         <el-button @click="probeHistoryVisible = false">关闭</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="probeCompareVisible" title="探测版本对比" width="760px" destroy-on-close>
+      <div class="probe-compare-form">
+        <el-select v-model="probeCompareFrom" placeholder="from" style="width: 120px">
+          <el-option v-for="p in profiles" :key="'from-' + p.version" :label="p.version" :value="p.version" />
+        </el-select>
+        <span>→</span>
+        <el-select v-model="probeCompareTo" placeholder="to" style="width: 120px">
+          <el-option v-for="p in profiles" :key="'to-' + p.version" :label="p.version" :value="p.version" />
+        </el-select>
+        <el-button type="primary" :loading="probeCompareLoading" @click="runProbeCompare">对比</el-button>
+      </div>
+      <el-table v-if="probeCompareResult?.diffs?.length" :data="probeCompareResult.diffs" stripe>
+        <el-table-column prop="name" label="检查项" min-width="140" />
+        <el-table-column prop="changeType" label="变化" width="110" />
+        <el-table-column label="from" width="80">
+          <template #default="{ row }">{{ row.fromUp == null ? '-' : row.fromUp ? 'PASS' : 'FAIL' }}</template>
+        </el-table-column>
+        <el-table-column label="to" width="80">
+          <template #default="{ row }">{{ row.toUp == null ? '-' : row.toUp ? 'PASS' : 'FAIL' }}</template>
+        </el-table-column>
+        <el-table-column prop="toMessage" label="说明" min-width="200" show-overflow-tooltip />
+      </el-table>
+      <template #footer>
+        <el-button @click="probeCompareVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
+import axios from 'axios'
+import * as echarts from 'echarts'
+import type { ECharts } from 'echarts'
 import { ElMessage } from 'element-plus'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
-import { adminApi, normalizePage, type AppVO, type AgentProfileProbeResultVO, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
+import { adminApi, normalizePage, type AppVO, type AgentProfileProbeCompare, type AgentProfileProbeResultVO, type AgentProfileProbeTrendPoint, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
 
 const route = useRoute()
 const activeTab = ref('profiles')
@@ -375,6 +412,14 @@ const probeHistoryPage = ref(1)
 const probeHistorySize = ref(20)
 const probeHistoryTotal = ref(0)
 const probeHistoryVersion = ref<string | null>(null)
+const probeTrendChartRef = ref<HTMLElement | null>(null)
+const probeTrendPoints = ref<AgentProfileProbeTrendPoint[]>([])
+let probeTrendChart: ECharts | null = null
+const probeCompareVisible = ref(false)
+const probeCompareFrom = ref('')
+const probeCompareTo = ref('')
+const probeCompareLoading = ref(false)
+const probeCompareResult = ref<AgentProfileProbeCompare | null>(null)
 
 const mcpServers = ref<McpServerVO[]>([])
 const mcpLoading = ref(false)
@@ -784,6 +829,14 @@ async function loadProbeHistory() {
     )
     probeHistoryRecords.value = data.records || []
     probeHistoryTotal.value = data.total ?? 0
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      probeHistoryRecords.value = []
+      probeHistoryTotal.value = 0
+      ElMessage.warning('探测历史接口不可用，请重启 Admin（spring.profiles.active=local）并确认 Flyway V15/V16 已执行')
+      return
+    }
+    throw error
   } finally {
     probeHistoryLoading.value = false
   }
@@ -809,6 +862,86 @@ async function rerunProbeFromHistory(row: AgentProfileProbeResultVO) {
   }
 }
 
+async function loadProbeTrend() {
+  if (!selectedTask.value) return
+  try {
+    probeTrendPoints.value = await adminApi.getAgentProfileProbeTrend(
+      selectedTask.value,
+      7,
+      probeHistoryVersion.value || undefined
+    )
+    await nextTick()
+    renderProbeTrendChart()
+  } catch {
+    probeTrendPoints.value = []
+  }
+}
+
+function renderProbeTrendChart() {
+  if (!probeTrendChartRef.value) return
+  if (!probeTrendChart) {
+    probeTrendChart = echarts.init(probeTrendChartRef.value)
+  }
+  const dates = probeTrendPoints.value.map((p) => p.date)
+  probeTrendChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['READY', 'DEGRADED', 'UNAVAILABLE'], bottom: 0 },
+    grid: { left: 40, right: 16, top: 16, bottom: 40 },
+    xAxis: { type: 'category', data: dates },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [
+      { name: 'READY', type: 'bar', stack: 'status', data: probeTrendPoints.value.map((p) => p.ready), itemStyle: { color: '#16a34a' } },
+      { name: 'DEGRADED', type: 'bar', stack: 'status', data: probeTrendPoints.value.map((p) => p.degraded), itemStyle: { color: '#d97706' } },
+      { name: 'UNAVAILABLE', type: 'bar', stack: 'status', data: probeTrendPoints.value.map((p) => p.unavailable), itemStyle: { color: '#dc2626' } }
+    ]
+  })
+}
+
+async function exportProbeHistory(format: 'json' | 'csv') {
+  if (!selectedTask.value) return
+  try {
+    await adminApi.downloadAgentProfileProbeHistory(
+      selectedTask.value,
+      format,
+      probeHistoryVersion.value || undefined
+    )
+    ElMessage.success('导出已开始')
+  } catch {
+    ElMessage.error('导出失败')
+  }
+}
+
+function openProbeCompare() {
+  const versions = profiles.value.map((p) => p.version)
+  probeCompareFrom.value = versions[0] || ''
+  probeCompareTo.value = versions[1] || versions[0] || ''
+  probeCompareResult.value = null
+  probeCompareVisible.value = true
+}
+
+async function runProbeCompare() {
+  if (!selectedTask.value || !probeCompareFrom.value || !probeCompareTo.value) return
+  probeCompareLoading.value = true
+  try {
+    probeCompareResult.value = await adminApi.compareAgentProfileProbe(
+      selectedTask.value,
+      probeCompareFrom.value,
+      probeCompareTo.value
+    )
+  } finally {
+    probeCompareLoading.value = false
+  }
+}
+
+async function retryFailedProbe() {
+  if (!selectedTask.value) return
+  probeResult.value = await adminApi.probeAgentProfileRetryFailed(selectedTask.value, { smokeTest: false })
+  probeVisible.value = true
+  await loadProbeHistory()
+  await loadProbeTrend()
+  ElMessage.success('已重检失败项')
+}
+
 onMounted(async () => {
   await Promise.all([loadTasks(), loadApps(), loadPresets(), loadMcpServers()])
   const taskFromQuery = route.query.task
@@ -827,9 +960,31 @@ watch(
     }
   }
 )
+
+onBeforeUnmount(() => {
+  probeTrendChart?.dispose()
+  probeTrendChart = null
+})
 </script>
 
 <style scoped>
+.probe-history-toolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 12px 0;
+}
+.probe-trend-chart {
+  width: 100%;
+  height: 220px;
+  margin-bottom: 12px;
+}
+.probe-compare-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
 .toolbar {
   display: flex;
   gap: 12px;

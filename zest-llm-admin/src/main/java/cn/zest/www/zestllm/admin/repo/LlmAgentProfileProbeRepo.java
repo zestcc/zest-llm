@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,5 +46,35 @@ public class LlmAgentProfileProbeRepo {
 
     public long countLatestByStatus(String status) {
         return mapper.countLatestByStatus(status);
+    }
+
+    public Optional<LlmAgentProfileProbeDO> findLatestByTaskIdAndVersion(Long taskId, String profileVersion) {
+        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAgentProfileProbeDO>()
+                .eq(LlmAgentProfileProbeDO::getTaskId, taskId)
+                .eq(LlmAgentProfileProbeDO::getProfileVersion, profileVersion)
+                .orderByDesc(LlmAgentProfileProbeDO::getCreatedAt)
+                .last("LIMIT 1")));
+    }
+
+    public List<LlmAgentProfileProbeDO> listSince(Long taskId, LocalDateTime since, String profileVersion) {
+        LambdaQueryWrapper<LlmAgentProfileProbeDO> query = new LambdaQueryWrapper<LlmAgentProfileProbeDO>()
+                .eq(LlmAgentProfileProbeDO::getTaskId, taskId)
+                .ge(LlmAgentProfileProbeDO::getCreatedAt, since)
+                .orderByAsc(LlmAgentProfileProbeDO::getCreatedAt);
+        if (profileVersion != null && !profileVersion.isBlank()) {
+            query.eq(LlmAgentProfileProbeDO::getProfileVersion, profileVersion);
+        }
+        return mapper.selectList(query);
+    }
+
+    public List<LlmAgentProfileProbeDO> listAllForExport(Long taskId, String profileVersion, int limit) {
+        LambdaQueryWrapper<LlmAgentProfileProbeDO> query = new LambdaQueryWrapper<LlmAgentProfileProbeDO>()
+                .eq(LlmAgentProfileProbeDO::getTaskId, taskId)
+                .orderByDesc(LlmAgentProfileProbeDO::getCreatedAt)
+                .last("LIMIT " + Math.min(Math.max(limit, 1), 1000));
+        if (profileVersion != null && !profileVersion.isBlank()) {
+            query.eq(LlmAgentProfileProbeDO::getProfileVersion, profileVersion);
+        }
+        return mapper.selectList(query);
     }
 }

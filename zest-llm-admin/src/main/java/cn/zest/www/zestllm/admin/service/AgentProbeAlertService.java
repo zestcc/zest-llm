@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.service;
 
+import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.config.AgentProfileProbeProperties;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProbeAlertDO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
@@ -100,6 +101,7 @@ public class AgentProbeAlertService {
         Page<AgentProbeAlertVO> result = new Page<>(pager.getCurrent(), pager.getSize(), pager.getTotal());
         result.setRecords(pager.getRecords().stream()
                 .map(row -> AgentProbeAlertVO.builder()
+                        .id(row.getId())
                         .taskCode(row.getTaskCode())
                         .profileVersion(row.getProfileVersion())
                         .overallStatus(row.getOverallStatus())
@@ -110,6 +112,41 @@ public class AgentProbeAlertService {
                         .build())
                 .toList());
         return result;
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public AgentProbeAlertVO resend(Long alertId) {
+        LlmAgentProbeAlertDO row = probeAlertRepo.findById(alertId)
+                .orElseThrow(() -> new BusinessException("ALERT_NOT_FOUND", "告警记录不存在: " + alertId));
+        if (!StringUtils.hasText(row.getWebhookUrl())) {
+            throw new BusinessException("WEBHOOK_NOT_CONFIGURED", "未配置 Webhook URL");
+        }
+        String status = "SENT";
+        try {
+            restClientBuilder.build()
+                    .post()
+                    .uri(row.getWebhookUrl())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(row.getDetailJson())
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (Exception ex) {
+            status = "FAILED";
+            log.warn("Failed to resend agent probe alert id={}", alertId, ex);
+        }
+        row.setStatus(status);
+        row.setCreatedAt(LocalDateTime.now());
+        probeAlertRepo.updateById(row);
+        return AgentProbeAlertVO.builder()
+                .id(row.getId())
+                .taskCode(row.getTaskCode())
+                .profileVersion(row.getProfileVersion())
+                .overallStatus(row.getOverallStatus())
+                .probeId(row.getProbeId())
+                .status(row.getStatus())
+                .message(extractMessage(row.getDetailJson()))
+                .createdAt(row.getCreatedAt())
+                .build();
     }
 
     private String extractMessage(String detailJson) {

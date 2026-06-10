@@ -89,7 +89,7 @@ zest:
       litellm-url: http://127.0.0.1:4000
 ```
 
-## 产品验收标准（AC1–AC36）
+## 产品验收标准（AC1–AC38）
 
 | # | 用例 | 验证方式 |
 |---|------|----------|
@@ -120,6 +120,8 @@ zest:
 | AC34 | 观测配置 API | `/api/admin/config/observability` |
 | AC35 | 探测历史版本筛选 | probe/history?profileVersion=v1 |
 | AC36 | Execution 观测字段 | executions/{traceId} 含 observabilityAdapter |
+| AC37 | 批量巡检已发布 Profile | `POST .../agent-profile-probes/run-all` 含 probedCount |
+| AC38 | 探测新 API + meta/features | `GET .../agent-profile-probes/aiChat/latest` + schemaReady |
 
 运维手册：[docs/智能体探测与运维手册.md](docs/智能体探测与运维手册.md)
 

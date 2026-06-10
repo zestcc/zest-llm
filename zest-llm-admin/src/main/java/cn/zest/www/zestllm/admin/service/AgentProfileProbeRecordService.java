@@ -2,6 +2,9 @@ package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileProbeDO;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeCheckDiffVO;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeCompareVO;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeTrendPointVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentHealthDashboardVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentHealthItemVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeCheckVO;
@@ -18,10 +21,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -98,6 +105,118 @@ public class AgentProfileProbeRecordService {
                 .unknown(unknown)
                 .alerts(alerts)
                 .build();
+    }
+
+    public List<AgentProfileProbeTrendPointVO> trend(String taskCode, int days, String profileVersion) {
+        var task = taskDefRepo.findByCode(taskCode)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
+        int windowDays = Math.min(Math.max(days, 1), 90);
+        LocalDateTime since = LocalDateTime.now().minusDays(windowDays);
+        List<LlmAgentProfileProbeDO> rows = probeRepo.listSince(task.getId(), since, profileVersion);
+        Map<LocalDate, long[]> buckets = new LinkedHashMap<>();
+        for (LlmAgentProfileProbeDO row : rows) {
+            LocalDate day = row.getCreatedAt().toLocalDate();
+            long[] counts = buckets.computeIfAbsent(day, ignored -> new long[4]);
+            switch (row.getOverallStatus()) {
+                case "READY" -> counts[0]++;
+                case "DEGRADED" -> counts[1]++;
+                case "UNAVAILABLE" -> counts[2]++;
+                default -> { }
+            }
+            counts[3]++;
+        }
+        return buckets.entrySet().stream()
+                .map(entry -> AgentProfileProbeTrendPointVO.builder()
+                        .date(entry.getKey().toString())
+                        .ready(entry.getValue()[0])
+                        .degraded(entry.getValue()[1])
+                        .unavailable(entry.getValue()[2])
+                        .total(entry.getValue()[3])
+                        .build())
+                .toList();
+    }
+
+    public AgentProfileProbeCompareVO compareVersions(String taskCode, String fromVersion, String toVersion) {
+        var task = taskDefRepo.findByCode(taskCode)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
+        AgentProfileProbeResultVO from = probeRepo.findLatestByTaskIdAndVersion(task.getId(), fromVersion)
+                .map(this::toResultVO)
+                .orElseThrow(() -> new BusinessException("PROBE_NOT_FOUND", "版本无探测记录: " + fromVersion));
+        AgentProfileProbeResultVO to = probeRepo.findLatestByTaskIdAndVersion(task.getId(), toVersion)
+                .map(this::toResultVO)
+                .orElseThrow(() -> new BusinessException("PROBE_NOT_FOUND", "版本无探测记录: " + toVersion));
+        Map<String, AgentProfileProbeCheckVO> fromChecks = from.getChecks().stream()
+                .collect(Collectors.toMap(AgentProfileProbeCheckVO::getName, c -> c, (a, b) -> a));
+        Map<String, AgentProfileProbeCheckVO> toChecks = to.getChecks().stream()
+                .collect(Collectors.toMap(AgentProfileProbeCheckVO::getName, c -> c, (a, b) -> a));
+        List<String> names = java.util.stream.Stream.concat(fromChecks.keySet().stream(), toChecks.keySet().stream())
+                .distinct()
+                .sorted()
+                .toList();
+        List<AgentProfileProbeCheckDiffVO> diffs = names.stream().map(name -> {
+            AgentProfileProbeCheckVO fc = fromChecks.get(name);
+            AgentProfileProbeCheckVO tc = toChecks.get(name);
+            String changeType = "UNCHANGED";
+            if (fc == null) {
+                changeType = "ADDED";
+            } else if (tc == null) {
+                changeType = "REMOVED";
+            } else if (fc.isUp() != tc.isUp()) {
+                changeType = fc.isUp() ? "REGRESSED" : "IMPROVED";
+            }
+            return AgentProfileProbeCheckDiffVO.builder()
+                    .name(name)
+                    .category(tc != null ? tc.getCategory() : fc != null ? fc.getCategory() : null)
+                    .critical(tc != null ? tc.isCritical() : fc != null && fc.isCritical())
+                    .fromUp(fc != null ? fc.isUp() : null)
+                    .toUp(tc != null ? tc.isUp() : null)
+                    .fromMessage(fc != null ? fc.getMessage() : null)
+                    .toMessage(tc != null ? tc.getMessage() : null)
+                    .changeType(changeType)
+                    .build();
+        }).toList();
+        return AgentProfileProbeCompareVO.builder()
+                .taskCode(taskCode)
+                .fromVersion(fromVersion)
+                .toVersion(toVersion)
+                .fromStatus(from.getOverallStatus())
+                .toStatus(to.getOverallStatus())
+                .diffs(diffs)
+                .build();
+    }
+
+    public List<AgentProfileProbeResultVO> exportHistory(String taskCode, String profileVersion, int limit) {
+        var task = taskDefRepo.findByCode(taskCode)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
+        return probeRepo.listAllForExport(task.getId(), profileVersion, limit).stream()
+                .map(this::toResultVO)
+                .toList();
+    }
+
+    public String exportHistoryCsv(String taskCode, String profileVersion, int limit) {
+        List<AgentProfileProbeResultVO> rows = exportHistory(taskCode, profileVersion, limit);
+        StringBuilder sb = new StringBuilder("probeId,taskCode,profileVersion,overallStatus,latencyMs,probeSource,probedAt\n");
+        for (AgentProfileProbeResultVO row : rows) {
+            sb.append(row.getProbeId()).append(',')
+                    .append(csv(row.getTaskCode())).append(',')
+                    .append(csv(row.getProfileVersion())).append(',')
+                    .append(csv(row.getOverallStatus())).append(',')
+                    .append(row.getLatencyMs() != null ? row.getLatencyMs() : "").append(',')
+                    .append(csv(row.getProbeSource())).append(',')
+                    .append(row.getProbedAt() != null ? row.getProbedAt() : "")
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    private String csv(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     private AgentHealthItemVO toHealthItem(LlmAgentProfileProbeDO entity) {

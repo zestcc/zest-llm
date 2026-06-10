@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZestLLM 生产验收 E2E（AC1–AC37 + Agent 模式）
+# ZestLLM 生产验收 E2E（AC1–AC38 + Agent 模式）
 set -euo pipefail
 
 ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
@@ -270,5 +270,14 @@ PROBE_ALL=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: 
   -d '{"smokeTest":false}')
 echo "$PROBE_ALL" | grep -q "probedCount" \
   && echo "PASS AC37" || { echo "FAIL AC37: $PROBE_ALL"; exit 1; }
+
+echo "== AC38: Agent profile probe API (new paths) =="
+META=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/meta/features")
+echo "$META" | grep -q "agentProbeApi" \
+  && echo "PASS AC38 meta" || { echo "FAIL AC38 meta: $META"; exit 1; }
+PROBE_NEW=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "$ADMIN_URL/api/admin/agent-profile-probes/aiChat/latest")
+echo "$PROBE_NEW" | grep -q '"code":200' \
+  && echo "PASS AC38 latest" || { echo "FAIL AC38 latest: $PROBE_NEW"; exit 1; }
 
 echo "== All automated E2E checks passed =="

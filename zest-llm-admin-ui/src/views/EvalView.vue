@@ -36,7 +36,18 @@
           通过率 {{ lastRun.passRate }}% · {{ lastRun.passedCases }}/{{ lastRun.totalCases }} · {{ lastRun.status }}
         </p>
       </div>
-      <el-table :data="lastRun.caseResults || []" stripe>
+      <el-progress
+        v-if="lastRun.totalCases"
+        :percentage="Math.round(lastRun.passRate || 0)"
+        :status="lastRun.status === 'COMPLETED' ? 'success' : 'warning'"
+        style="margin-bottom: 12px"
+      />
+      <el-table :data="failedCases" stripe empty-text="全部通过">
+        <el-table-column prop="caseCode" label="失败 Case" width="140" />
+        <el-table-column prop="reason" label="Reason" min-width="200" show-overflow-tooltip />
+        <el-table-column prop="traceId" label="TraceId" min-width="200" show-overflow-tooltip />
+      </el-table>
+      <el-table :data="lastRun.caseResults || []" stripe style="margin-top: 12px">
         <el-table-column prop="caseCode" label="Case" width="140" />
         <el-table-column prop="status" label="Status" width="100" />
         <el-table-column label="Passed" width="90">
@@ -66,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { adminApi, type EvalDatasetVO, type EvalRunVO } from '../api/admin'
 
@@ -76,6 +87,8 @@ const datasets = ref<EvalDatasetVO[]>([])
 const runs = ref<EvalRunVO[]>([])
 const lastRun = ref<EvalRunVO | null>(null)
 const selectedDataset = ref('')
+
+const failedCases = computed(() => (lastRun.value?.caseResults || []).filter((c) => !c.passed))
 
 async function loadDatasets() {
   loading.value = true

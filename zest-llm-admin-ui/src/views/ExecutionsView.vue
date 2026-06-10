@@ -57,6 +57,20 @@
         <el-table-column prop="latencyMs" label="耗时" width="100">
           <template #default="{ row }">{{ row.latencyMs != null ? row.latencyMs + ' ms' : '-' }}</template>
         </el-table-column>
+        <el-table-column label="观测" width="90">
+          <template #default="{ row }">
+            <a
+              v-if="row.observabilityTraceUrl"
+              :href="row.observabilityTraceUrl"
+              target="_blank"
+              rel="noopener"
+              class="obs-link"
+            >
+              Trace
+            </a>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="createdAt" label="时间" min-width="170" />
       </el-table>
       <div class="page-pagination-wrap">
@@ -248,5 +262,10 @@ onMounted(async () => {
   line-height: 1.6;
   overflow: auto;
   max-height: 240px;
+}
+
+.obs-link {
+  color: var(--el-color-primary);
+  text-decoration: none;
 }
 </style>

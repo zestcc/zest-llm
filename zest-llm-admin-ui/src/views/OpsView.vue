@@ -12,6 +12,7 @@
           <el-input v-model="costAppKey" placeholder="按 appKey 筛选" clearable style="width: 220px" @keyup.enter="reloadCostAlerts" />
           <el-button type="primary" :icon="Refresh" @click="reloadCostAlerts">刷新</el-button>
         </div>
+        <div ref="costChartRef" v-loading="costLoading" class="ops-cost-chart" />
         <div v-loading="costLoading" class="table-panel">
           <el-table :data="costAlerts" stripe empty-text="暂无成本告警">
             <el-table-column prop="createdAt" label="时间" width="170" />
@@ -77,6 +78,12 @@
           <p v-if="archiveStats.lastRunAt" class="archive-last-run">
             上次归档：{{ archiveStats.lastRunAt }} · 迁移 {{ archiveStats.lastArchivedCount ?? 0 }} 条 · 删除热表 {{ archiveStats.lastDeletedCount ?? 0 }} 条
           </p>
+          <el-table v-loading="archiveRunsLoading" :data="archiveRuns" stripe empty-text="暂无归档运行记录" class="archive-runs-table">
+            <el-table-column prop="createdAt" label="时间" width="170" />
+            <el-table-column prop="triggerSource" label="来源" width="100" />
+            <el-table-column prop="archivedCount" label="迁移" width="90" />
+            <el-table-column prop="deletedCount" label="删除热表" width="100" />
+          </el-table>
           <p class="archive-hint">超过保留天数的 Execution 会从热表迁移至归档表，可在 Docker 配置中调整 `zest-llm.admin.execution-archive`。</p>
         </div>
       </el-tab-pane>
@@ -106,6 +113,18 @@
               </template>
             </el-table-column>
             <el-table-column prop="message" label="说明" min-width="240" show-overflow-tooltip />
+            <el-table-column label="操作" width="100" fixed="right">
+              <template #default="{ row }">
+                <el-button
+                  v-if="row.id && row.status === 'FAILED'"
+                  link
+                  type="warning"
+                  @click="resendAgentAlert(row.id)"
+                >
+                  重发
+                </el-button>
+              </template>
+            </el-table-column>
           </el-table>
           <div class="ops-pagination">
             <el-pagination
@@ -125,11 +144,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { adminApi, normalizePage, type AgentProbeAlertVO, type CostAlertVO, type ExecutionArchiveStatsVO } from '../api/admin'
+import * as echarts from 'echarts'
+import type { ECharts } from 'echarts'
+import { adminApi, normalizePage, type AgentProbeAlertVO, type CostAlertDailySummary, type CostAlertVO, type ExecutionArchiveRunVO, type ExecutionArchiveStatsVO } from '../api/admin'
 
 const router = useRouter()
 const route = useRoute()
@@ -154,6 +175,11 @@ const costTotal = ref(0)
 const archiveLoading = ref(false)
 const archiveRunning = ref(false)
 const archiveStats = ref<ExecutionArchiveStatsVO>({})
+const archiveRunsLoading = ref(false)
+const archiveRuns = ref<ExecutionArchiveRunVO[]>([])
+const costChartRef = ref<HTMLElement | null>(null)
+const costSummary = ref<CostAlertDailySummary[]>([])
+let costChart: ECharts | null = null
 
 const agentLoading = ref(false)
 const agentTaskCode = ref('')
@@ -182,13 +208,38 @@ function goAgentConfig(taskCode?: string) {
 async function loadCostAlerts() {
   costLoading.value = true
   try {
-    const data = await adminApi.listCostAlerts(costAppKey.value || undefined, costPage.value, costSize.value)
+    const [data, summary] = await Promise.all([
+      adminApi.listCostAlerts(costAppKey.value || undefined, costPage.value, costSize.value),
+      adminApi.getCostAlertSummary(costAppKey.value || undefined, 7)
+    ])
     const pageData = normalizePage(data, costPage.value, costSize.value)
     costAlerts.value = pageData.records
     costTotal.value = pageData.total
+    costSummary.value = summary || []
+    await nextTick()
+    renderCostChart()
   } finally {
     costLoading.value = false
   }
+}
+
+function renderCostChart() {
+  if (!costChartRef.value) return
+  if (!costChart) {
+    costChart = echarts.init(costChartRef.value)
+  }
+  const dates = costSummary.value.map((r) => r.date)
+  costChart.setOption({
+    tooltip: { trigger: 'axis' },
+    legend: { data: ['告警次数', '发送成功'], bottom: 0 },
+    grid: { left: 40, right: 16, top: 16, bottom: 40 },
+    xAxis: { type: 'category', data: dates },
+    yAxis: { type: 'value', minInterval: 1 },
+    series: [
+      { name: '告警次数', type: 'bar', data: costSummary.value.map((r) => r.alertCount), itemStyle: { color: '#667eea' } },
+      { name: '发送成功', type: 'line', smooth: true, data: costSummary.value.map((r) => r.sentCount), itemStyle: { color: '#16a34a' } }
+    ]
+  })
 }
 
 function reloadCostAlerts() {
@@ -200,8 +251,19 @@ async function loadArchiveStats() {
   archiveLoading.value = true
   try {
     archiveStats.value = await adminApi.getExecutionArchiveStats()
+    await loadArchiveRuns()
   } finally {
     archiveLoading.value = false
+  }
+}
+
+async function loadArchiveRuns() {
+  archiveRunsLoading.value = true
+  try {
+    const data = await adminApi.listExecutionArchiveRuns(1, 10)
+    archiveRuns.value = data.records || []
+  } finally {
+    archiveRunsLoading.value = false
   }
 }
 
@@ -232,6 +294,12 @@ function reloadAgentAlerts() {
   loadAgentAlerts()
 }
 
+async function resendAgentAlert(id: number) {
+  await adminApi.resendAgentProbeAlert(id)
+  ElMessage.success('Webhook 已重发')
+  await loadAgentAlerts()
+}
+
 function loadActiveTab() {
   if (activeTab.value === 'cost') {
     reloadCostAlerts()
@@ -248,9 +316,22 @@ watch(
 )
 
 watch(activeTab, () => loadActiveTab(), { immediate: true })
+
+onBeforeUnmount(() => {
+  costChart?.dispose()
+  costChart = null
+})
 </script>
 
 <style scoped>
+.ops-cost-chart {
+  width: 100%;
+  height: 220px;
+  margin-bottom: 12px;
+}
+.archive-runs-table {
+  margin-bottom: 12px;
+}
 .ops-tabs {
   background: var(--panel-bg, #fff);
   padding: 16px;

@@ -227,6 +227,7 @@ const agentHealth = reactive<AgentHealthDashboard>({
   alerts: []
 })
 const agentAlerts = ref<AgentHealthItem[]>([])
+let agentHealthTimer: ReturnType<typeof setInterval> | null = null
 
 function formatRate(rate: number) {
   if (!rate && rate !== 0) return '-'
@@ -400,10 +401,19 @@ onMounted(async () => {
     await nextTick()
     renderCostChart()
   }
+  agentHealthTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadAgentHealth()
+    }
+  }, 60_000)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', handleChartResize)
+  if (agentHealthTimer) {
+    clearInterval(agentHealthTimer)
+    agentHealthTimer = null
+  }
   costChart?.dispose()
   costChart = null
 })

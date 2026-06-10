@@ -21,6 +21,10 @@ public class LlmAgentProbeAlertRepo {
         mapper.insert(entity);
     }
 
+    public void updateById(LlmAgentProbeAlertDO entity) {
+        mapper.updateById(entity);
+    }
+
     public Optional<LlmAgentProbeAlertDO> findRecentAlert(Long taskId, String overallStatus, LocalDateTime since) {
         return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAgentProbeAlertDO>()
                 .eq(LlmAgentProbeAlertDO::getTaskId, taskId)
@@ -32,6 +36,10 @@ public class LlmAgentProbeAlertRepo {
 
     public List<LlmAgentProbeAlertDO> listRecent(String taskCode, int limit) {
         return page(taskCode, 1, limit).getRecords();
+    }
+
+    public Optional<LlmAgentProbeAlertDO> findById(Long id) {
+        return Optional.ofNullable(mapper.selectById(id));
     }
 
     public Page<LlmAgentProbeAlertDO> page(String taskCode, int pageNum, int pageSize) {

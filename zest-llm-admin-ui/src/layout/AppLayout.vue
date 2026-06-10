@@ -27,6 +27,15 @@
         />
       </el-header>
       <el-main class="main-content content-scroll">
+        <el-alert
+          v-if="featureWarning"
+          :title="featureWarning"
+          type="warning"
+          show-icon
+          :closable="true"
+          class="feature-alert"
+          @close="featureWarning = ''"
+        />
         <div v-if="route.meta?.title" class="page-title">{{ route.meta.title }}</div>
         <router-view />
       </el-main>
@@ -39,11 +48,13 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
+import { adminApi } from '../api/admin'
 
 const route = useRoute()
 const isMobile = ref(false)
 const sidebarOpen = ref(false)
 const collapsed = ref(false)
+const featureWarning = ref('')
 
 const mobileSidebarSize = computed(() => (isMobile.value ? 'min(280px, 85vw)' : 260))
 
@@ -74,6 +85,12 @@ watch(
 onMounted(() => {
   checkMobile()
   window.addEventListener('resize', checkMobile)
+  adminApi.getAdminFeatures().then((features) => {
+    if (features && features.agentProbeApi === false) {
+      featureWarning.value =
+        '智能体探测 API 未就绪：请重启 Admin（local/docker profile）并确认 Flyway V15–V17 已执行。'
+    }
+  }).catch(() => { /* ignore */ })
 })
 
 onUnmounted(() => {
@@ -119,6 +136,10 @@ onUnmounted(() => {
   color: var(--text-primary);
   margin: 0 0 20px;
   letter-spacing: -0.01em;
+}
+
+.feature-alert {
+  margin-bottom: 16px;
 }
 
 @media (max-width: 767px) {

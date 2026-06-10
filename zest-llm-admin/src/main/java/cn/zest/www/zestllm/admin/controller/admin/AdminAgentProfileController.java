@@ -106,6 +106,7 @@ public class AdminAgentProfileController {
         return Result.success(AgentProfileProbeBatchResultVO.builder().probedCount(count).build());
     }
 
+    /** @deprecated prefer {@code POST /api/admin/agent-profile-probes/run-all} */
     @PostMapping("/{taskCode}/probe")
     public Result<AgentProfileProbeResultVO> probePublished(@PathVariable String taskCode,
                                                             @RequestBody(required = false) AgentProfileProbeRequest request) {
@@ -125,6 +126,7 @@ public class AdminAgentProfileController {
                 .orElse(null));
     }
 
+    /** @deprecated prefer {@code GET /api/admin/agent-profile-probes/{taskCode}/history} */
     @GetMapping("/{taskCode}/probe/history")
     public Result<com.baomidou.mybatisplus.extension.plugins.pagination.Page<AgentProfileProbeResultVO>> probeHistory(
             @PathVariable String taskCode,
