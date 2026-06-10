@@ -45,7 +45,7 @@
           <template #default="{ row }">{{ (row.templateBody || '').slice(0, 120) }}</template>
         </el-table-column>
         <el-table-column prop="publishedAt" label="发布时间" width="170" />
-        <el-table-column label="操作" width="180" fixed="right">
+        <el-table-column label="操作" width="260" fixed="right">
           <template #default="{ row }">
             <template v-if="row.status === 'PUBLISHED'">
               <el-tag size="small" type="success" effect="plain">当前</el-tag>
@@ -60,6 +60,15 @@
                 @click="rollback(row.version)"
               >
                 回滚
+              </el-button>
+              <el-button
+                v-if="publishedVersion && publishedVersion !== row.version"
+                link
+                type="info"
+                class="action-btn"
+                @click="compareWithPublished(row.version)"
+              >
+                对比
               </el-button>
             </template>
           </template>
@@ -96,19 +105,24 @@
         <el-button type="primary" :loading="submitting" @click="submitCreate">创建草稿</el-button>
       </template>
     </el-dialog>
+
+    <VersionDiffDialog ref="diffDialogRef" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import VersionDiffDialog from '../components/VersionDiffDialog.vue'
 import { adminApi, type PromptVersionVO } from '../api/admin'
 
 const code = ref('aiChat')
 const loading = ref(false)
 const submitting = ref(false)
 const versions = ref<PromptVersionVO[]>([])
+const diffDialogRef = ref<InstanceType<typeof VersionDiffDialog> | null>(null)
+const publishedVersion = computed(() => versions.value.find((v) => v.status === 'PUBLISHED')?.version)
 
 const createVisible = ref(false)
 const createFormRef = ref<FormInstance>()
@@ -176,6 +190,15 @@ async function rollback(version: string) {
   } catch {
     /* handled by interceptor */
   }
+}
+
+function compareWithPublished(version: string) {
+  const published = publishedVersion.value
+  if (!published || !diffDialogRef.value) return
+  diffDialogRef.value.open({
+    title: `Prompt 对比 · ${published} → ${version}`,
+    loader: () => adminApi.diffPrompt(code.value, published, version)
+  })
 }
 
 load()

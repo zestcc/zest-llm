@@ -1,6 +1,13 @@
 server:
   port: 8081
 
+spring:
+  application:
+    name: zest-llm-demo
+  config:
+    import:
+      - classpath:application-zestflow.yml
+
 zest:
   llm:
     enabled: true
@@ -8,10 +15,8 @@ zest:
     app-key: order-service
     auth-token: demo-token-123
     registry-on-startup: true
-  flow:
-    executor:
-      port: 20551
-
-spring:
-  application:
-    name: zest-llm-demo
+    flow:
+      enabled: true
+      control-plane-url: http://127.0.0.1:8088
+      app-key: order-service
+      auth-token: demo-token-123

@@ -74,3 +74,31 @@ journeys:
         path: "/api/admin/registry/methods?page=1&size=20"
         expect:
           status: 200
+
+  - id: zestflow_ai_chat_chain
+    description: "ZestFlow 单节点 DAG：invoke + execution 审计"
+    baseUrl: "http://localhost:20552"
+    auth: none
+    steps:
+      - method: POST
+        path: "/api/execute"
+        headers:
+          Content-Type: "application/json"
+        body: '{"chainCode":"CHN_ZESTLLM_AI_CHAT","params":{"question":"journey-flow-dag"}}'
+        expect:
+          status: 200
+          bodyContains: "traceId"
+
+  - id: zestflow_invoke_audit_chain
+    description: "ZestFlow 双节点 DAG：invoke → execution"
+    baseUrl: "http://localhost:20552"
+    auth: none
+    steps:
+      - method: POST
+        path: "/api/execute"
+        headers:
+          Content-Type: "application/json"
+        body: '{"chainCode":"CHN_ZESTLLM_INVOKE_AUDIT","params":{"question":"journey-audit-dag"}}'
+        expect:
+          status: 200
+          bodyContains: "traceId"

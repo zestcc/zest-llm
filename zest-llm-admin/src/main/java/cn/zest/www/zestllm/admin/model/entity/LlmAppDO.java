@@ -16,6 +16,8 @@ public class LlmAppDO {
     private String appKey;
     private String appName;
     private String tokenHash;
+    private String authMode;
+    private String authConfigJson;
     private String status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

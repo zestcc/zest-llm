@@ -10,6 +10,7 @@ export interface PageResult<T> {
 export interface AdminLoginVO {
   token: string
   username: string
+  role?: string
   expiresIn?: number
 }
 
@@ -140,6 +141,8 @@ export interface QuotaVO {
   dailyTokenLimit?: number | null
   qpsLimit?: number | null
   dailyCostLimit?: number | null
+  alertWebhookUrl?: string | null
+  alertThresholdPct?: number | null
 }
 
 export interface AuditLogVO {
@@ -159,6 +162,145 @@ export interface ModelRouteVO {
   temperature?: number | null
   timeoutMs?: number | null
   status?: string
+}
+
+export interface AgentProfileVO {
+  id?: number
+  taskCode?: string
+  version: string
+  profileJson?: string
+  providerPresetCode?: string
+  runtimeMode?: string
+  status?: string
+  publishedAt?: string
+}
+
+export interface ProviderPresetVO {
+  id?: number
+  presetCode: string
+  presetName: string
+  providerType?: string
+  authMode?: string
+  configJson?: string
+  sortOrder?: number
+  status?: string
+}
+
+export interface VersionDiffVO {
+  fromVersion?: string
+  toVersion?: string
+  changes?: DiffEntryVO[]
+}
+
+export interface DiffEntryVO {
+  field?: string
+  changeType?: string
+  before?: string
+  after?: string
+  unifiedDiff?: string
+}
+
+export interface AuthBindingVO {
+  scopeType?: string
+  scopeId?: number
+  appKey?: string
+  inboundMode?: string
+  inboundConfigJson?: string
+  outboundMode?: string
+  outboundConfigJson?: string
+}
+
+export interface McpServerVO {
+  id?: number
+  serverCode: string
+  serverName: string
+  baseUrl: string
+  authSecretRef?: string
+  configJson?: string
+  status?: string
+}
+
+export interface McpServerForm {
+  serverCode: string
+  serverName: string
+  baseUrl: string
+  authSecretRef?: string
+  configJson?: string
+  status?: string
+}
+
+export interface McpToolDescriptor {
+  name: string
+  description?: string
+  inputSchema?: unknown
+}
+
+export interface AdminUserVO {
+  id?: number
+  username: string
+  displayName?: string
+  role?: string
+  status?: string
+  createdAt?: string
+}
+
+export interface PlaygroundPreviewVO {
+  traceId?: string
+  code?: string
+  promptVersion?: string
+  renderedPrompt?: string
+  model?: string
+}
+
+export interface PlaygroundRunVO {
+  traceId?: string
+  status?: string
+  code?: string
+  output?: Record<string, unknown>
+  metrics?: { latencyMs?: number; cacheHit?: boolean }
+  cacheHit?: boolean
+  errorCode?: string
+  errorMessage?: string
+}
+
+export interface EvalDatasetVO {
+  id?: number
+  datasetCode: string
+  datasetName: string
+  appKey: string
+  taskCode: string
+  status?: string
+}
+
+export interface EvalRunVO {
+  runCode: string
+  datasetCode?: string
+  status?: string
+  totalCases?: number
+  passedCases?: number
+  failedCases?: number
+  passRate?: number
+  caseResults?: Array<Record<string, unknown>>
+  startedAt?: string
+  finishedAt?: string
+}
+
+export interface FlowChainVO {
+  id?: number
+  chainCode: string
+  chainName?: string
+  version?: number
+  lifecycle?: string
+  chainData?: string
+  status?: string
+  updatedAt?: string
+}
+
+export interface ExecutionArchiveStatsVO {
+  hotExecutions?: number
+  archivedExecutions?: number
+  retentionDays?: number
+  archiveEnabled?: boolean
 }
 
 export const adminApi = {
@@ -208,6 +350,10 @@ export const adminApi = {
 
   rollbackPrompt(code: string, version: string) {
     return http.post(`/api/admin/prompts/${code}/rollback`, { version })
+  },
+
+  diffPrompt(code: string, from: string, to: string) {
+    return http.get<VersionDiffVO>(`/api/admin/prompts/${code}/diff`, { params: { from, to } })
   },
 
   listExecutions(page = 1, size = 20, taskCode?: string, status?: string) {
@@ -274,6 +420,142 @@ export const adminApi = {
 
   updateModelRoute(taskCode: string, body: ModelRouteVO) {
     return http.put<ModelRouteVO>(`/api/admin/model-routes/${taskCode}`, body)
+  },
+
+  listAgentProfiles(taskCode: string) {
+    return http.get<AgentProfileVO[]>(`/api/admin/agent-profiles/${taskCode}/versions`)
+  },
+
+  createAgentProfile(taskCode: string, body: Partial<AgentProfileVO> & { profileJson: string; version: string }) {
+    return http.post<AgentProfileVO>(`/api/admin/agent-profiles/${taskCode}/versions`, body)
+  },
+
+  updateAgentProfile(taskCode: string, version: string, body: Partial<AgentProfileVO> & { profileJson: string }) {
+    return http.put<AgentProfileVO>(`/api/admin/agent-profiles/${taskCode}/versions/${version}`, body)
+  },
+
+  publishAgentProfile(taskCode: string, version: string, operator?: string) {
+    return http.post(`/api/admin/agent-profiles/${taskCode}/publish`, { version, operator })
+  },
+
+  rollbackAgentProfile(taskCode: string, version: string) {
+    return http.post(`/api/admin/agent-profiles/${taskCode}/rollback`, { version })
+  },
+
+  diffAgentProfile(taskCode: string, from: string, to: string) {
+    return http.get<VersionDiffVO>(`/api/admin/agent-profiles/${taskCode}/diff`, { params: { from, to } })
+  },
+
+  importAgentProfile(body: { taskCode: string; profileJson: string; publish?: boolean; version?: string }) {
+    return http.post<AgentProfileVO>('/api/admin/agent-profiles/import', body)
+  },
+
+  exportAgentProfile(taskCode: string, version: string) {
+    return http.get<{ profileJson: string }>(`/api/admin/agent-profiles/${taskCode}/versions/${version}/export`)
+  },
+
+  activateAgentProvider(taskCode: string, providerRef: string) {
+    return http.post(`/api/admin/agent-profiles/${taskCode}/activate-provider`, { providerRef })
+  },
+
+  listProviderPresets() {
+    return http.get<ProviderPresetVO[]>('/api/admin/provider-presets')
+  },
+
+  createProviderPreset(body: ProviderPresetVO) {
+    return http.post<ProviderPresetVO>('/api/admin/provider-presets', body)
+  },
+
+  updateProviderPreset(presetCode: string, body: Partial<ProviderPresetVO>) {
+    return http.put<ProviderPresetVO>(`/api/admin/provider-presets/${presetCode}`, body)
+  },
+
+  getAuthBinding(appKey: string) {
+    return http.get<AuthBindingVO>(`/api/admin/auth-bindings/apps/${appKey}`)
+  },
+
+  upsertAuthBinding(body: {
+    scopeType: string
+    appKey?: string
+    inboundMode: string
+    inboundConfigJson?: string
+    outboundMode?: string
+    outboundConfigJson?: string
+  }) {
+    return http.put<AuthBindingVO>('/api/admin/auth-bindings', body)
+  },
+
+  listMcpServers() {
+    return http.get<McpServerVO[]>('/api/admin/mcp-servers')
+  },
+
+  createMcpServer(body: McpServerForm) {
+    return http.post<McpServerVO>('/api/admin/mcp-servers', body)
+  },
+
+  updateMcpServer(serverCode: string, body: Partial<McpServerForm>) {
+    return http.put<McpServerVO>(`/api/admin/mcp-servers/${serverCode}`, body)
+  },
+
+  listMcpServerTools(serverCode: string) {
+    return http.get<McpToolDescriptor[]>(`/api/admin/mcp-servers/${serverCode}/tools`)
+  },
+
+  listAdminUsers() {
+    return http.get<AdminUserVO[]>('/api/admin/users')
+  },
+
+  createAdminUser(body: { username: string; password: string; displayName?: string; role?: string }) {
+    return http.post<AdminUserVO>('/api/admin/users', body)
+  },
+
+  updateAdminUser(username: string, body: { displayName?: string; password?: string; role?: string; status?: string }) {
+    return http.put<AdminUserVO>(`/api/admin/users/${username}`, body)
+  },
+
+  playgroundPreview(body: { appKey: string; code: string; inputs?: Record<string, unknown> }) {
+    return http.post<PlaygroundPreviewVO>('/api/admin/playground/preview', body)
+  },
+
+  playgroundRun(body: { appKey: string; code: string; inputs?: Record<string, unknown>; bizId?: string }) {
+    return http.post<PlaygroundRunVO>('/api/admin/playground/run', body)
+  },
+
+  listEvalDatasets() {
+    return http.get<EvalDatasetVO[]>('/api/admin/eval/datasets')
+  },
+
+  listEvalRuns(datasetCode: string) {
+    return http.get<EvalRunVO[]>(`/api/admin/eval/datasets/${datasetCode}/runs`)
+  },
+
+  runEvalDataset(datasetCode: string) {
+    return http.post<EvalRunVO>(`/api/admin/eval/datasets/${datasetCode}/run`)
+  },
+
+  getEvalRun(runCode: string) {
+    return http.get<EvalRunVO>(`/api/admin/eval/runs/${runCode}`)
+  },
+
+  createEvalDataset(body: {
+    datasetCode: string
+    datasetName: string
+    appKey: string
+    taskCode: string
+  }) {
+    return http.post<EvalDatasetVO>('/api/admin/eval/datasets', body)
+  },
+
+  listFlowChains() {
+    return http.get<FlowChainVO[]>('/api/admin/flow-chains')
+  },
+
+  getFlowChain(chainCode: string) {
+    return http.get<FlowChainVO>(`/api/admin/flow-chains/${chainCode}`)
+  },
+
+  getExecutionArchiveStats() {
+    return http.get<ExecutionArchiveStatsVO>('/api/admin/executions/archive/stats')
   }
 }
 

@@ -4,6 +4,7 @@ import cn.zest.www.zestllm.admin.model.vo.AdapterHealthVO;
 import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
 import cn.zest.www.zestllm.spi.audit.AuditAdapter;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
+import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import cn.zest.www.zestllm.spi.gateway.ModelGatewayAdapter;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.spi.observability.ObservabilityAdapter;
@@ -24,6 +25,7 @@ public class AdapterHealthService {
     private final ModelGatewayAdapter modelGatewayAdapter;
     private final ObservabilityAdapter observabilityAdapter;
     private final PolicyCacheAdapter policyCacheAdapter;
+    private final ResponseCacheAdapter responseCacheAdapter;
     private final QuotaAdapter quotaAdapter;
     private final AuditAdapter auditAdapter;
     private final PromptRenderer promptRenderer;
@@ -36,6 +38,8 @@ public class AdapterHealthService {
         items.add(fromObservability());
         items.add(fromHealth("policy-cache", adapterProperties.getPolicyCache(),
                 policyCacheAdapter.adapterId(), HealthStatus.builder().up(true).message("ok").build()));
+        items.add(fromHealth("response-cache", adapterProperties.getResponseCache(),
+                responseCacheAdapter.adapterId(), HealthStatus.builder().up(true).message("ok").build()));
         items.add(fromHealth("quota", adapterProperties.getQuota(),
                 quotaAdapter.adapterId(), quotaAdapter.health()));
         items.add(fromHealth("audit", adapterProperties.getAudit(),

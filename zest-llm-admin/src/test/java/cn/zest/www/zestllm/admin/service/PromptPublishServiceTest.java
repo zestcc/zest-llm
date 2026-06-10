@@ -8,6 +8,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
+import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,6 +32,8 @@ class PromptPublishServiceTest {
     private LlmAppRepo appRepo;
     @Mock
     private PolicyCacheAdapter policyCacheAdapter;
+    @Mock
+    private ResponseCacheAdapter responseCacheAdapter;
     @Mock
     private AuditService auditService;
 
@@ -63,5 +66,6 @@ class PromptPublishServiceTest {
         promptPublishService.publish(command);
 
         verify(policyCacheAdapter).invalidate(eq("order-service"), eq("aiChat"));
+        verify(responseCacheAdapter).invalidate(eq("order-service"), eq("aiChat"));
     }
 }

@@ -36,10 +36,16 @@ zest:
       quota: noop
       output-schema-validator: json
       audit: noop
+      report-channel: sync
     litellm:
       base-url: http://localhost:4000
       connect-timeout-ms: 5000
       read-timeout-ms: 60000
+    flow:
+      enabled: true
+      control-plane-url: http://localhost:8088
+      app-key: order-service
+      auth-token: demo-token-123
 
 zest-llm:
   admin:

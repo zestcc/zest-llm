@@ -1,0 +1,40 @@
+replicaCount: 1
+
+image:
+  admin:
+    repository: zest-llm-admin
+    tag: latest
+    pullPolicy: IfNotPresent
+  demo:
+    repository: zest-llm-demo
+    tag: latest
+    pullPolicy: IfNotPresent
+
+service:
+  admin:
+    port: 8088
+  demo:
+    port: 8081
+
+mysql:
+  host: mysql
+  port: 3306
+  database: zest_llm
+  username: root
+  password: root
+
+redis:
+  host: valkey
+  port: 6379
+
+litellm:
+  baseUrl: http://litellm:4000
+
+adapters:
+  policyCache: valkey
+  responseCache: valkey
+  observability: noop
+
+resources:
+  admin: {}
+  demo: {}

@@ -21,9 +21,12 @@
             <artifactId>zest-llm-starter</artifactId>
         </dependency>
         <dependency>
+            <groupId>cn.zest.www</groupId>
+            <artifactId>zest-llm-flow-adapter</artifactId>
+        </dependency>
+        <dependency>
             <groupId>cn.zestflow.www</groupId>
             <artifactId>zestflow-starter</artifactId>
-            <optional>true</optional>
         </dependency>
     </dependencies>
     <build>

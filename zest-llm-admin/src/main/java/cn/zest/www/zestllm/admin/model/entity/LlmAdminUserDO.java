@@ -16,6 +16,7 @@ public class LlmAdminUserDO {
     private String passwordHash;
     private String displayName;
     private String status;
+    private String role;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

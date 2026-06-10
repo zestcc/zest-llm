@@ -73,7 +73,7 @@ public class ZestLlmAspect {
     private InvokeResponse invokeViaAgent(InvokeRequest request) {
         LlmAgentClient agentClient = agentClientProvider.getIfAvailable();
         PrepareResponse prepared = agentClient.prepare(request);
-        InvokeResponse response = agentClient.execute(prepared);
+        InvokeResponse response = agentClient.execute(prepared, request.getInputs());
         ReportRequest report = agentClient.buildReport(request, prepared, response);
         agentClient.report(report);
         return response;

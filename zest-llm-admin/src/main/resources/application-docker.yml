@@ -13,15 +13,27 @@ zest:
   llm:
     litellm:
       base-url: http://litellm:4000
+    flow:
+      enabled: true
+      control-plane-url: http://localhost:8088
+      app-key: order-service
+      auth-token: demo-token-123
     adapters:
       policy-cache: valkey
+      response-cache: valkey
       quota: redis-token-bucket
       audit: jdbc
       observability: noop
+      report-channel: sync
+      content-moderation: keyword-blocklist
+      alert-webhook: http
     langfuse:
       enabled: false
 
 zest-llm:
   admin:
+    execution-archive:
+      enabled: true
+      retention-days: 90
     jwt:
       secret: ${ZEST_LLM_JWT_SECRET:change-me-in-production-zest-llm-admin-jwt-secret-key}

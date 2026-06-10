@@ -48,6 +48,8 @@ public class AppManageService {
         app.setAppKey(request.getAppKey());
         app.setAppName(request.getAppName());
         app.setTokenHash(TokenHashUtil.encodeToken(rawToken));
+        app.setAuthMode("STATIC_TOKEN");
+        app.setAuthConfigJson("{\"mode\":\"STATIC_TOKEN\"}");
         app.setStatus("ACTIVE");
         app.setCreatedAt(LocalDateTime.now());
         app.setUpdatedAt(LocalDateTime.now());

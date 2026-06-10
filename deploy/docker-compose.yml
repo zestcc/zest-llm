@@ -30,6 +30,17 @@ services:
       timeout: 3s
       retries: 5
 
+  openai-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: zest-llm-openai-mock
+    volumes:
+      - ./openai-mock/mappings:/home/wiremock/mappings:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/__admin/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   litellm:
     image: ghcr.io/berriai/litellm:main-latest
     container_name: zest-llm-litellm
@@ -37,13 +48,13 @@ services:
     ports:
       - "4000:4000"
     volumes:
-      - ./litellm/config.yaml:/app/config.yaml:ro
+      - ./litellm/config-docker.yaml:/app/config.yaml:ro
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-mock-key}
     depends_on:
       valkey:
+        condition: service_healthy
+      openai-mock:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:4000/health || exit 1"]
@@ -59,6 +70,7 @@ services:
     container_name: zest-llm-admin
     ports:
       - "8088:8088"
+      - "20552:20552"
     environment:
       SPRING_PROFILES_ACTIVE: docker
       ZEST_LLM_JWT_SECRET: ${ZEST_LLM_JWT_SECRET:-change-me-in-production-zest-llm-admin-jwt-secret-key}
@@ -70,6 +82,10 @@ services:
       valkey:
         condition: service_healthy
       litellm:
+        condition: service_healthy
+      mcp-mock:
+        condition: service_healthy
+      alert-mock:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/swagger-ui.html >/dev/null || exit 1"]
@@ -85,6 +101,7 @@ services:
     container_name: zest-llm-demo
     ports:
       - "8081:8081"
+      - "20551:20551"
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
@@ -98,6 +115,30 @@ services:
       timeout: 10s
       retries: 6
       start_period: 120s
+
+  mcp-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: zest-llm-mcp-mock
+    ports:
+      - "9090:8080"
+    volumes:
+      - ./mcp-mock/mappings:/home/wiremock/mappings:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/__admin/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  alert-mock:
+    image: wiremock/wiremock:3.3.1
+    container_name: zest-llm-alert-mock
+    volumes:
+      - ./alert-mock/mappings:/home/wiremock/mappings:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/__admin/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
 
 volumes:
   mysql_data:

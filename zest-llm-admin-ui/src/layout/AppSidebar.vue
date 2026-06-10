@@ -34,9 +34,29 @@
         <el-icon><Document /></el-icon>
         <span>Prompt 管理</span>
       </el-menu-item>
+      <el-menu-item index="/playground">
+        <el-icon><Cpu /></el-icon>
+        <span>Playground</span>
+      </el-menu-item>
+      <el-menu-item index="/eval">
+        <el-icon><DataAnalysis /></el-icon>
+        <span>Eval 评测</span>
+      </el-menu-item>
+      <el-menu-item index="/flow-chains">
+        <el-icon><Share /></el-icon>
+        <span>Flow 链</span>
+      </el-menu-item>
       <el-menu-item index="/model-routes">
         <el-icon><Share /></el-icon>
         <span>模型路由</span>
+      </el-menu-item>
+      <el-menu-item index="/agent-config">
+        <el-icon><Setting /></el-icon>
+        <span>智能体配置</span>
+      </el-menu-item>
+      <el-menu-item index="/users">
+        <el-icon><User /></el-icon>
+        <span>用户管理</span>
       </el-menu-item>
       <el-menu-item index="/executions">
         <el-icon><Tickets /></el-icon>
@@ -63,14 +83,18 @@ import { useRoute } from 'vue-router'
 import {
   Collection,
   Connection,
+  Cpu,
+  DataAnalysis,
   Document,
   Grid,
   List,
   Notebook,
   OfficeBuilding,
   Odometer,
+  Setting,
   Share,
-  Tickets
+  Tickets,
+  User
 } from '@element-plus/icons-vue'
 
 defineProps<{ collapsed: boolean }>()

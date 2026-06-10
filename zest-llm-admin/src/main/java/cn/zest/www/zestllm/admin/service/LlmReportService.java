@@ -7,6 +7,8 @@ import cn.zest.www.zestllm.common.error.LlmErrorCode;
 import cn.zest.www.zestllm.common.error.ZestLlmException;
 import cn.zest.www.zestllm.spi.model.TraceEndEvent;
 import cn.zest.www.zestllm.spi.observability.ObservabilityAdapter;
+import cn.zest.www.zestllm.spi.report.ReportChannelAdapter;
+import cn.zest.www.zestllm.spi.report.ReportDelivery;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ public class LlmReportService {
     private final AppAuthService appAuthService;
     private final LlmExecutionRepo executionRepo;
     private final ObservabilityAdapter observabilityAdapter;
+    private final ReportChannelAdapter reportChannelAdapter;
     private final ObjectMapper objectMapper;
 
     @Transactional(rollbackFor = Exception.class)
@@ -54,6 +57,22 @@ public class LlmReportService {
                 .completionTokens(request.getCompletionTokens())
                 .cost(request.getCost())
                 .latencyMs(request.getLatencyMs())
+                .build());
+
+        reportChannelAdapter.deliver(ReportDelivery.builder()
+                .traceId(request.getTraceId())
+                .appKey(request.getAppKey())
+                .code(execution.getTaskCode())
+                .status(request.getStatus())
+                .model(request.getModel())
+                .promptVersion(request.getPromptVersion())
+                .output(request.getOutput())
+                .errorCode(request.getErrorCode())
+                .errorMessage(request.getErrorMessage())
+                .latencyMs(request.getLatencyMs())
+                .promptTokens(request.getPromptTokens())
+                .completionTokens(request.getCompletionTokens())
+                .cost(request.getCost())
                 .build());
     }
 

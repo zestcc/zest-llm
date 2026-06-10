@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zest-llm.fullname" . }}-admin
+  labels:
+    app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+    app.kubernetes.io/component: admin
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+      app.kubernetes.io/component: admin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+        app.kubernetes.io/component: admin
+    spec:
+      containers:
+        - name: admin
+          image: "{{ .Values.image.admin.repository }}:{{ .Values.image.admin.tag }}"
+          imagePullPolicy: {{ .Values.image.admin.pullPolicy }}
+          ports:
+            - containerPort: 8088
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:mysql://{{ .Values.mysql.host }}:{{ .Values.mysql.port }}/{{ .Values.mysql.database }}?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"
+            - name: SPRING_DATASOURCE_USERNAME
+              value: {{ .Values.mysql.username | quote }}
+            - name: SPRING_DATASOURCE_PASSWORD
+              value: {{ .Values.mysql.password | quote }}
+            - name: SPRING_DATA_REDIS_HOST
+              value: {{ .Values.redis.host | quote }}
+            - name: ZEST_LLM_LITELLM_BASE_URL
+              value: {{ .Values.litellm.baseUrl | quote }}
+          resources:
+            {{- toYaml .Values.resources.admin | nindent 12 }}

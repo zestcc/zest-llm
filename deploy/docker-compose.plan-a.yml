@@ -1,0 +1,10 @@
+# 方案 A 生产推荐栈：Langfuse 可观测 + Admin observability profile
+# 用法: bash deploy/scripts/start-plan-a.sh
+
+services:
+  admin:
+    environment:
+      SPRING_PROFILES_ACTIVE: docker,observability
+    depends_on:
+      langfuse:
+        condition: service_started

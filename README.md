@@ -30,7 +30,15 @@ cd zest-llm-admin-ui && npm install && npm run build
 ```bash
 cd deploy
 docker compose up -d mysql    # 先起 MySQL
-docker compose up -d --build    # 全栈
+docker compose up -d --build  # 全栈（含 openai-mock，无需真实 API Key）
+```
+
+**方案 A 生产推荐**（Langfuse 可观测 + Admin observability profile）：
+
+```bash
+bash deploy/scripts/start-plan-a.sh
+bash deploy/scripts/e2e-acceptance.sh   # AC1–AC28
+bash deploy/scripts/loadtest-cp-prepare.sh
 ```
 
 | 服务 | 端口 | 账号 |
@@ -38,7 +46,10 @@ docker compose up -d --build    # 全栈
 | MySQL | 3306 | root / root，库 `zest_llm` |
 | Admin + UI | 8088 | admin / admin123 |
 | Demo | 8081 | appKey `order-service` / token `demo-token-123` |
-| LiteLLM | 4000 | — |
+| LiteLLM | 4000 | 上游 openai-mock |
+| Langfuse（方案 A） | 3000 | pk-lf-zest-demo / sk-lf-zest-demo |
+| ZestFlow CP | 20552 | POST `/api/execute` |
+| ZestFlow Demo | 20551 | POST `/api/execute` |
 | Valkey | 6379 | — |
 
 验收脚本：
@@ -78,18 +89,33 @@ zest:
       litellm-url: http://127.0.0.1:4000
 ```
 
-## 产品验收标准（AC1–AC6）
+## 产品验收标准（AC1–AC28）
 
 | # | 用例 | 验证方式 |
 |---|------|----------|
 | AC1 | Demo 同步 AI 返回 answer + traceId | `GET /demo/order/methodA?orderId=1&question=hello` |
 | AC2 | Admin 按 traceId 查 Execution | Admin UI → 执行记录 |
-| AC3 | Prompt 发布后立即生效（缓存失效） | Admin 发布 v2，不重启 Demo，下次调用用 v2 |
-| AC4 | SPI noop 下 invoke 仍成功 | `zest.llm.adapters.observability: noop` |
-| AC5 | MCP/CI 验收旅程 | `.zestflow/acceptance/journeys.yml` |
-| AC6 | 错误 appToken → AUTH_FAILED | Runtime 返回 `InvokeResponse.status=FAILED` |
+| AC3 | Prompt 发布后立即生效（缓存失效） | Admin 发布 v2，不重启 Demo |
+| AC4 | SPI noop 下 invoke 仍成功 | `observability: noop` |
+| AC5 | MCP/CI 验收旅程 | `deploy/scripts/run-journeys.sh` |
+| AC6 | 错误 appToken → AUTH_FAILED | Runtime 返回 FAILED |
+| AC7–AC10 | Profile / Provider / OIDC 配置 | `e2e-acceptance.sh` |
+| AC11–AC15 | MCP CRUD / stream SSE | `e2e-acceptance.sh` |
+| AC16–AC17 | ZestFlow 真实 DAG | `:20552/api/execute` |
+| AC18–AC19 | Tool Loop Profile / Flow Gateway | `e2e-acceptance.sh` |
+| AC20 | Demo 双 Executor flowChat | `GET /demo/order/flowChat` |
+| AC21 | Tool Loop 真调用链 | invoke `aiChatTools` 含 `tool-loop-ok` |
+| AC22 | Prompt Playground 预览 | Admin `/api/admin/playground/preview` |
+| AC23 | Eval 批量评测 | Admin `/api/admin/eval/datasets/demo-aichat/run` |
+| AC24 | 语义响应缓存 | 同 prompt 二次 invoke `metrics.cacheHit=true` |
+| AC25 | ZestFlow 链 DB 注册表 | Admin `/api/admin/flow-chains` |
+| AC26 | FinOps 成本告警 Webhook | 配额含 `alertWebhookUrl` |
+| AC27 | Eval 数据集创建 | Admin POST `/api/admin/eval/datasets` |
+| AC28 | Execution 归档统计 | Admin `/api/admin/executions/archive/stats` |
 
-自动化测试：`mvn -pl zest-llm-admin test`（鉴权、缓存失效、Runtime 错误契约）。
+Phase3 额外能力：FinOps 成本告警、Kafka Report profile、Flow 链 Admin UI、Eval CRUD、Execution 归档默认开启（Docker）。
+
+自动化：`bash deploy/scripts/e2e-acceptance.sh` + `mvn test`
 
 ## API 文档
 

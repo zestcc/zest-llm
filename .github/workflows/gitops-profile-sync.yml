@@ -1,0 +1,22 @@
+name: GitOps Profile Sync
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'deploy/examples/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wait for Admin (optional local stack)
+        run: |
+          if curl -sf http://localhost:8088/swagger-ui.html 2>/dev/null; then
+            bash deploy/scripts/gitops-sync-profiles.sh
+          else
+            echo "Admin not running locally; validate examples only"
+            test -f deploy/examples/agent-profile-aichat.yaml
+            test -f deploy/examples/agent-profile-aichatTools.yaml
+          fi

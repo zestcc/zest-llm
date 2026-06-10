@@ -1,0 +1,6 @@
+apiVersion: v2
+name: zest-llm
+description: ZestLLM 方案 A — Admin CP + Demo + 依赖
+type: application
+version: 0.2.0
+appVersion: "0.2.0"

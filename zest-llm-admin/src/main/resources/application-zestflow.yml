@@ -6,7 +6,7 @@ zestflow:
     # ZestLLM 合一部署，不向外部 ZestFlow Admin 注册
     admin-addresses: ""
     execute-endpoint-enabled: true
-    chain-route-enabled: false
+    chain-route-enabled: true
     execute-response-mode: BODY
     execute-failure-policy: PROPAGATE
     chain:

@@ -1,0 +1,22 @@
+# ZestFlow Acceptance Journeys — init-dev 种子模板
+# 请按业务补充 path/fixture；完成后 gen_smoke_suite 可覆盖增强
+
+version: 1
+journeys:
+  - id: public_read_happy_path
+    description: "公开读接口 happy path"
+    auth: none
+    steps:
+      - method: GET
+        path: "/actuator/health"
+        expect:
+          status: 200
+
+  - id: protected_write_forbidden
+    description: "未登录写操作应拒绝"
+    auth: none
+    steps:
+      - method: POST
+        path: "/api/protected/example"
+        expect:
+          status: 403

@@ -1,0 +1,28 @@
+# Example agent profile for GitOps / import API
+apiVersion: zestllm/v1
+runtimeMode: agent
+providerRef: litellm-default
+toolCallMode: loop
+model:
+  primary: gpt-4o-mini
+  fallback:
+    - gpt-3.5-turbo
+generation:
+  maxTokens: 1024
+  temperature: 0.7
+  timeoutMs: 30000
+  maxToolSteps: 3
+tools:
+  - type: mcp
+    name: search
+    serverRef: internal-docs
+    config:
+      toolName: search
+guardrails:
+  piiRedact: false
+  blockOnSchemaMismatch: true
+inboundAuth:
+  mode: STATIC_TOKEN
+outboundAuth:
+  mode: API_KEY_REF
+  secretRef: env:LITELLM_API_KEY

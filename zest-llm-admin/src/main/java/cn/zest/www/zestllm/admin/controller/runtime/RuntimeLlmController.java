@@ -12,12 +12,14 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/v1/llm")
@@ -32,6 +34,12 @@ public class RuntimeLlmController {
     public InvokeResponse invoke(@Valid @RequestBody InvokeRequest request,
                                  @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
         return llmInvokeService.invoke(extractBearerToken(authorization), request);
+    }
+
+    @PostMapping(value = "/invoke/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter invokeStream(@Valid @RequestBody InvokeRequest request,
+                                   @RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization) {
+        return llmInvokeService.invokeStream(extractBearerToken(authorization), request);
     }
 
     @PostMapping("/prepare")

@@ -9,6 +9,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
+import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ public class PromptPublishService {
     private final LlmPromptVersionRepo promptVersionRepo;
     private final LlmAppRepo appRepo;
     private final PolicyCacheAdapter policyCacheAdapter;
+    private final ResponseCacheAdapter responseCacheAdapter;
     private final AuditService auditService;
 
     @Transactional(rollbackFor = Exception.class)
@@ -49,6 +51,7 @@ public class PromptPublishService {
         auditService.log("PUBLISH", "PROMPT", task.getCode(),
                 Map.of("version", command.getVersion(), "operator", operator));
         invalidatePolicyCache(task);
+        invalidateResponseCache(task);
 
         return PromptPublishResultVO.builder()
                 .taskCode(task.getCode())
@@ -62,5 +65,10 @@ public class PromptPublishService {
     private void invalidatePolicyCache(LlmAiTaskDefDO task) {
         appRepo.findById(task.getAppId()).ifPresent(app ->
                 policyCacheAdapter.invalidate(app.getAppKey(), task.getCode()));
+    }
+
+    private void invalidateResponseCache(LlmAiTaskDefDO task) {
+        appRepo.findById(task.getAppId()).ifPresent(app ->
+                responseCacheAdapter.invalidate(app.getAppKey(), task.getCode()));
     }
 }

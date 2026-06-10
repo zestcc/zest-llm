@@ -29,11 +29,12 @@ public class AdminAuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw BusinessException.unauthorized("用户名或密码错误");
         }
-        String token = jwtTokenProvider.createToken(user.getUsername());
+        String token = jwtTokenProvider.createToken(user.getUsername(), user.getRole());
         AdminLoginVO vo = new AdminLoginVO();
         vo.setToken(token);
         vo.setExpiresIn(jwtProperties.getExpirationMs() / 1000);
         vo.setUsername(user.getUsername());
+        vo.setRole(user.getRole() != null ? user.getRole() : "ADMIN");
         return vo;
     }
 }

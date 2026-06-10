@@ -11,6 +11,11 @@ import ModelRoutesView from '../views/ModelRoutesView.vue'
 import RegistryView from '../views/RegistryView.vue'
 import AuditLogsView from '../views/AuditLogsView.vue'
 import TenantsView from '../views/TenantsView.vue'
+import AgentConfigView from '../views/AgentConfigView.vue'
+import UsersView from '../views/UsersView.vue'
+import PlaygroundView from '../views/PlaygroundView.vue'
+import EvalView from '../views/EvalView.vue'
+import FlowChainsView from '../views/FlowChainsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -26,7 +31,12 @@ const router = createRouter({
         { path: 'tenants', component: TenantsView, meta: { title: '租户管理' } },
         { path: 'tasks', component: TasksView, meta: { title: 'AI 作业' } },
         { path: 'prompts', component: PromptsView, meta: { title: 'Prompt 管理' } },
+        { path: 'playground', component: PlaygroundView, meta: { title: 'Playground' } },
+        { path: 'eval', component: EvalView, meta: { title: 'Eval 评测' } },
+        { path: 'flow-chains', component: FlowChainsView, meta: { title: 'Flow 链' } },
         { path: 'model-routes', component: ModelRoutesView, meta: { title: '模型路由' } },
+        { path: 'agent-config', component: AgentConfigView, meta: { title: '智能体配置' } },
+        { path: 'users', component: UsersView, meta: { title: '用户管理' } },
         { path: 'executions', component: ExecutionsView, meta: { title: '执行记录' } },
         { path: 'registry', component: RegistryView, meta: { title: '方法注册' } },
         { path: 'audit-logs', component: AuditLogsView, meta: { title: '审计日志' } },

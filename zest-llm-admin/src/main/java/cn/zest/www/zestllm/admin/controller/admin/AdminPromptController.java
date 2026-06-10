@@ -5,7 +5,9 @@ import cn.zest.www.zestllm.admin.model.request.PublishPromptRequest;
 import cn.zest.www.zestllm.admin.model.request.RollbackPromptRequest;
 import cn.zest.www.zestllm.admin.model.vo.PromptPublishResultVO;
 import cn.zest.www.zestllm.admin.model.vo.PromptVersionVO;
+import cn.zest.www.zestllm.admin.model.vo.VersionDiffVO;
 import cn.zest.www.zestllm.admin.service.AdminQueryService;
+import cn.zest.www.zestllm.admin.service.PromptDiffService;
 import cn.zest.www.zestllm.admin.service.PromptPublishService;
 import cn.zest.www.zestllm.admin.service.PromptVersionService;
 import com.zestflow.common.model.Result;
@@ -28,10 +30,18 @@ public class AdminPromptController {
     private final AdminQueryService adminQueryService;
     private final PromptPublishService promptPublishService;
     private final PromptVersionService promptVersionService;
+    private final PromptDiffService promptDiffService;
 
     @GetMapping("/{code}/versions")
     public Result<List<PromptVersionVO>> listVersions(@PathVariable String code) {
         return Result.success(adminQueryService.listPromptVersions(code));
+    }
+
+    @GetMapping("/{code}/diff")
+    public Result<VersionDiffVO> diff(@PathVariable String code,
+                                        @org.springframework.web.bind.annotation.RequestParam String from,
+                                        @org.springframework.web.bind.annotation.RequestParam String to) {
+        return Result.success(promptDiffService.diff(code, from, to));
     }
 
     @PostMapping("/{code}/versions")

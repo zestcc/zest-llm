@@ -13,4 +13,8 @@ public class LlmAdapterProperties {
     private String quota = "noop";
     private String outputSchemaValidator = "json";
     private String audit = "noop";
+    private String reportChannel = "sync";
+    private String contentModeration = "keyword-blocklist";
+    private String responseCache = "noop";
+    private String alertWebhook = "http";
 }

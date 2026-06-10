@@ -197,6 +197,7 @@ async function submit() {
     const result = await adminApi.login(form.username, form.password)
     localStorage.setItem('zest-llm-token', result.token)
     localStorage.setItem('zest-llm-user', result.username || form.username)
+    localStorage.setItem('zest-llm-role', result.role || 'ADMIN')
     ElMessage.success('登录成功')
     router.push('/dashboard')
   } finally {

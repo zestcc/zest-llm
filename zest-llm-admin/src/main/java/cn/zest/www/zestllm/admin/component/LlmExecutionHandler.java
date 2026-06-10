@@ -2,9 +2,11 @@ package cn.zest.www.zestllm.admin.component;
 
 import cn.zest.www.zestllm.admin.model.vo.ExecutionVO;
 import cn.zest.www.zestllm.admin.service.ExecutionQueryService;
+import cn.zest.www.zestllm.common.api.InvokeResponse;
 import com.zestflow.executor.annotation.ZestComponent;
 import com.zestflow.executor.annotation.ZestExecute;
 import com.zestflow.executor.annotation.ZestParam;
+import com.zestflow.executor.annotation.ZestResult;
 import lombok.RequiredArgsConstructor;
 
 /**
@@ -25,5 +27,16 @@ public class LlmExecutionHandler {
     @ZestExecute(value = "getExecution", name = "查询 Execution")
     public ExecutionVO getExecution(@ZestParam("traceId") String traceId) {
         return executionQueryService.getByTraceId(traceId);
+    }
+
+    /**
+     * 链式第二跳：从上一步 invoke 结果取 traceId 查询 Execution。
+     */
+    @ZestExecute(value = "getExecutionFromInvoke", name = "查询上一步 Execution")
+    public ExecutionVO getExecutionFromInvoke(@ZestResult InvokeResponse invokeResponse) {
+        if (invokeResponse == null || invokeResponse.getTraceId() == null) {
+            return null;
+        }
+        return executionQueryService.getByTraceId(invokeResponse.getTraceId());
     }
 }

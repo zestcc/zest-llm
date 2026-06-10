@@ -9,6 +9,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import cn.zest.www.zestllm.admin.repo.LlmModelRouteRepo;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
+import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class ModelRouteManageService {
     private final LlmModelRouteRepo modelRouteRepo;
     private final LlmAppRepo appRepo;
     private final PolicyCacheAdapter policyCacheAdapter;
+    private final ResponseCacheAdapter responseCacheAdapter;
     private final AuditService auditService;
 
     public List<ModelRouteVO> list(String taskCode) {
@@ -68,8 +70,10 @@ public class ModelRouteManageService {
         }
         auditService.log("UPDATE", "MODEL_ROUTE", taskCode,
                 Map.of("primaryModel", request.getPrimaryModel()));
-        appRepo.findById(task.getAppId()).ifPresent(app ->
-                policyCacheAdapter.invalidate(app.getAppKey(), task.getCode()));
+        appRepo.findById(task.getAppId()).ifPresent(app -> {
+            policyCacheAdapter.invalidate(app.getAppKey(), task.getCode());
+            responseCacheAdapter.invalidate(app.getAppKey(), task.getCode());
+        });
         return toVO(taskCode, route);
     }
 

@@ -1,0 +1,18 @@
+zestflow:
+  executor:
+    port: 20551
+    app-name: zest-llm-demo
+    admin-addresses: ""
+    execute-endpoint-enabled: true
+    chain-route-enabled: false
+    execute-response-mode: BODY
+    execute-failure-policy: PROPAGATE
+    chain:
+      declaration-sync-enabled: true
+    schedule:
+      enabled: false
+      driver: noop
+  collector:
+    async-enabled: false
+    registry:
+      admin-addresses: ""

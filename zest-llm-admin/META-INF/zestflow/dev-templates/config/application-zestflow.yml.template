@@ -1,0 +1,22 @@
+# ZestFlow 扩展配置（由 zestflow-dev-init 增量生成，可独立维护）
+zestflow:
+  executor:
+    port: {{EXECUTOR_PORT}}
+    execute-endpoint-enabled: true
+    chain-route-enabled: false
+    execute-response-mode: BODY
+    execute-failure-policy: PROPAGATE
+    chain:
+      declaration-sync-enabled: true
+      declaration-delete-guard-enabled: true
+    registry-token:
+    event:
+      async-enabled: true
+    # AI 知识库与 LLM suggest（完整项见 zestflow-executor/application.yml → zestflow.executor.ai）
+    ai:
+      llm-enabled: false
+      rag-mode: hybrid
+      rag-use-embedding: true
+      pattern-fallback-enabled: true
+  collector:
+    async-enabled: false

@@ -101,6 +101,28 @@ class RuntimeLlmControllerIT {
     }
 
     @Test
+    void prepare_withValidToken_returnsProfileFields() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setBearerAuth("demo-token-123");
+
+        Map<String, Object> body = Map.of(
+                "appKey", "order-service",
+                "code", "aiChat",
+                "inputs", Map.of("question", "hello prepare")
+        );
+
+        ResponseEntity<Map> response = restTemplate.postForEntity(
+                "/v1/llm/prepare", new HttpEntity<>(body, headers), Map.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().get("profileVersion"));
+        assertNotNull(response.getBody().get("gatewayBaseUrl"));
+        assertNotNull(response.getBody().get("outboundSecretRef"));
+    }
+
+    @Test
     void invoke_withWrongToken_returnsAuthFailed() {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

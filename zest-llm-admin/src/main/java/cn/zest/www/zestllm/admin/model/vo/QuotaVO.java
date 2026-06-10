@@ -13,5 +13,7 @@ public class QuotaVO {
     private Long dailyTokenLimit;
     private Integer qpsLimit;
     private BigDecimal dailyCostLimit;
+    private String alertWebhookUrl;
+    private Integer alertThresholdPct;
     private LocalDateTime updatedAt;
 }

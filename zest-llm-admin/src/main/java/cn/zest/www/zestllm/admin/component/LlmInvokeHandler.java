@@ -9,7 +9,7 @@ import com.zestflow.executor.annotation.ZestParam;
 import lombok.RequiredArgsConstructor;
 
 /**
- * LLM 运行时调用元件 — 供 ZestFlow 编排 invokeByCode 节点。
+ * LLM 运行时调用元件 — 供 ZestFlow 编排 invokeByCommand 节点。
  */
 @ZestComponent("llmInvokeHandler")
 @RequiredArgsConstructor
@@ -23,8 +23,8 @@ public class LlmInvokeHandler {
      * @param command 含 Bearer token 与 InvokeRequest 的调用命令
      * @return 调用结果
      */
-    @ZestExecute(value = "invokeByCode", name = "按 code 调用 LLM")
-    public InvokeResponse invokeByCode(@ZestParam("command") InvokeCommand command) {
+    @ZestExecute(value = "invokeByCommand", name = "按 command 调用 LLM")
+    public InvokeResponse invokeByCommand(@ZestParam("command") InvokeCommand command) {
         return llmInvokeService.invoke(command);
     }
 }

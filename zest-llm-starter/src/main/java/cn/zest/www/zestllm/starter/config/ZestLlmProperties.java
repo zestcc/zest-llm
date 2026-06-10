@@ -15,6 +15,11 @@ public class ZestLlmProperties {
 
     private String authToken;
 
+    /** 可选：本地 Profile 引用 taskCode@version，开发覆盖用 */
+    private String profileRef;
+
+    private java.util.Map<String, Object> overrides = new java.util.LinkedHashMap<>();
+
     private boolean registryOnStartup = true;
 
     /** invoke: 合一调用；agent: prepare → execute → report */

@@ -47,6 +47,12 @@ public class QuotaManageService {
         if (request.getDailyCostLimit() != null) {
             quota.setDailyCostLimit(request.getDailyCostLimit());
         }
+        if (request.getAlertWebhookUrl() != null) {
+            quota.setAlertWebhookUrl(request.getAlertWebhookUrl());
+        }
+        if (request.getAlertThresholdPct() != null) {
+            quota.setAlertThresholdPct(request.getAlertThresholdPct());
+        }
         quota.setUpdatedAt(LocalDateTime.now());
         if (quota.getId() == null) {
             quotaRepo.insert(quota);
@@ -71,6 +77,8 @@ public class QuotaManageService {
                 .dailyTokenLimit(quota.getDailyTokenLimit())
                 .qpsLimit(quota.getQpsLimit())
                 .dailyCostLimit(quota.getDailyCostLimit())
+                .alertWebhookUrl(quota.getAlertWebhookUrl())
+                .alertThresholdPct(quota.getAlertThresholdPct())
                 .updatedAt(quota.getUpdatedAt())
                 .build();
     }

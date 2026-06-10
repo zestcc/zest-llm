@@ -112,6 +112,12 @@
         <el-form-item label="日成本上限">
           <el-input-number v-model="quotaForm.dailyCostLimit" :min="0" :precision="2" :step="10" controls-position="right" style="width: 100%" />
         </el-form-item>
+        <el-form-item label="告警 Webhook">
+          <el-input v-model="quotaForm.alertWebhookUrl" placeholder="https://hooks.example.com/cost" />
+        </el-form-item>
+        <el-form-item label="告警阈值(%)">
+          <el-input-number v-model="quotaForm.alertThresholdPct" :min="1" :max="100" controls-position="right" style="width: 100%" />
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="quotaSaving" @click="saveQuota">保存配额</el-button>
         </el-form-item>
@@ -150,7 +156,9 @@ const quotaSaving = ref(false)
 const quotaForm = reactive<QuotaVO>({
   dailyTokenLimit: null,
   qpsLimit: null,
-  dailyCostLimit: null
+  dailyCostLimit: null,
+  alertWebhookUrl: '',
+  alertThresholdPct: 80
 })
 
 const appRules: FormRules = {
@@ -251,6 +259,8 @@ async function openQuota(row: AppVO) {
     quotaForm.dailyTokenLimit = data.dailyTokenLimit ?? null
     quotaForm.qpsLimit = data.qpsLimit ?? null
     quotaForm.dailyCostLimit = data.dailyCostLimit ?? null
+    quotaForm.alertWebhookUrl = data.alertWebhookUrl ?? ''
+    quotaForm.alertThresholdPct = data.alertThresholdPct ?? 80
   } finally {
     quotaLoading.value = false
   }

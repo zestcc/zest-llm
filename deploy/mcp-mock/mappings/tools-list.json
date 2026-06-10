@@ -1,0 +1,33 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/mcp",
+    "bodyPatterns": [
+      { "contains": "tools/list" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "jsonBody": {
+      "jsonrpc": "2.0",
+      "id": 1,
+      "result": {
+        "tools": [
+          {
+            "name": "search",
+            "description": "Search documentation",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "query": { "type": "string" }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -18,6 +19,11 @@ public class LlmAdminUserRepo {
         return mapper.selectCount(null);
     }
 
+    public List<LlmAdminUserDO> findAll() {
+        return mapper.selectList(new LambdaQueryWrapper<LlmAdminUserDO>()
+                .orderByAsc(LlmAdminUserDO::getUsername));
+    }
+
     public Optional<LlmAdminUserDO> findByUsername(String username) {
         return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAdminUserDO>()
                 .eq(LlmAdminUserDO::getUsername, username)));
@@ -25,5 +31,9 @@ public class LlmAdminUserRepo {
 
     public void insert(LlmAdminUserDO entity) {
         mapper.insert(entity);
+    }
+
+    public void update(LlmAdminUserDO entity) {
+        mapper.updateById(entity);
     }
 }

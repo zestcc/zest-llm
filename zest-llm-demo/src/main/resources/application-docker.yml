@@ -4,17 +4,29 @@ server:
 spring:
   application:
     name: zest-llm-demo
+  config:
+    import:
+      - classpath:application-zestflow.yml
 
 zest:
   llm:
     enabled: true
-    runtime-mode: invoke
+    runtime-mode: agent
     control-plane-url: http://admin:8088
     app-key: order-service
     auth-token: demo-token-123
     registry-on-startup: true
+    agent:
+      enabled: true
+      control-plane-url: http://admin:8088
+      app-key: order-service
+      auth-token: demo-token-123
+      litellm-url: http://litellm:4000
+      cache-ttl: 300s
     litellm:
       base-url: http://litellm:4000
-  flow:
-    executor:
-      port: 20551
+    flow:
+      enabled: true
+      control-plane-url: http://admin:8088
+      app-key: order-service
+      auth-token: demo-token-123

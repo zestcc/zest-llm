@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "zest-llm.fullname" . }}-demo
+  labels:
+    app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+    app.kubernetes.io/component: demo
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+      app.kubernetes.io/component: demo
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "zest-llm.name" . }}
+        app.kubernetes.io/component: demo
+    spec:
+      containers:
+        - name: demo
+          image: "{{ .Values.image.demo.repository }}:{{ .Values.image.demo.tag }}"
+          imagePullPolicy: {{ .Values.image.demo.pullPolicy }}
+          ports:
+            - containerPort: 8081
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: docker
+          resources:
+            {{- toYaml .Values.resources.demo | nindent 12 }}

@@ -1,0 +1,12 @@
+spring:
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+zest:
+  llm:
+    adapters:
+      report-channel: kafka
+    kafka:
+      enabled: true
+      topic: zest-llm.execution.report
+      bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

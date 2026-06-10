@@ -1,0 +1,39 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/chat/completions",
+    "bodyPatterns": [
+      { "contains": "\"tools\"" },
+      { "doesNotContain": "\"role\": \"tool\"" }
+    ]
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "id": "chatcmpl-mock-tool",
+      "object": "chat.completion",
+      "choices": [
+        {
+          "index": 0,
+          "message": {
+            "role": "assistant",
+            "content": null,
+            "tool_calls": [
+              {
+                "id": "call_mock_search_1",
+                "type": "function",
+                "function": {
+                  "name": "search",
+                  "arguments": "{\"query\":\"docs\"}"
+                }
+              }
+            ]
+          },
+          "finish_reason": "tool_calls"
+        }
+      ],
+      "usage": { "prompt_tokens": 12, "completion_tokens": 8, "total_tokens": 20 }
+    }
+  }
+}

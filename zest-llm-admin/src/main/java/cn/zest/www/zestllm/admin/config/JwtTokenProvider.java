@@ -16,15 +16,20 @@ public class JwtTokenProvider {
 
     private final JwtProperties jwtProperties;
 
-    public String createToken(String subject) {
+    public String createToken(String subject, String role) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + jwtProperties.getExpirationMs());
         return Jwts.builder()
                 .subject(subject)
+                .claim("role", role != null ? role : "ADMIN")
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(signingKey())
                 .compact();
+    }
+
+    public String createToken(String subject) {
+        return createToken(subject, "ADMIN");
     }
 
     public boolean validateToken(String token) {
@@ -38,6 +43,11 @@ public class JwtTokenProvider {
 
     public String getSubject(String token) {
         return parseClaims(token).getSubject();
+    }
+
+    public String getRole(String token) {
+        Object role = parseClaims(token).get("role");
+        return role != null ? role.toString() : "ADMIN";
     }
 
     private Claims parseClaims(String token) {

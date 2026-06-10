@@ -8,4 +8,6 @@ public class InvokeMetrics {
     private Integer promptTokens;
     private Integer completionTokens;
     private Double cost;
+    /** 是否命中语义响应缓存 */
+    private Boolean cacheHit;
 }

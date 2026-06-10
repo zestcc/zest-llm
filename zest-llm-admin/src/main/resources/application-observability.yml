@@ -1,0 +1,10 @@
+# 启用 Langfuse 可观测（叠加 docker-compose.observability.yml 使用）
+zest:
+  llm:
+    adapters:
+      observability: langfuse
+    langfuse:
+      enabled: true
+      base-url: http://langfuse:3000
+      public-key: pk-lf-zest-demo
+      secret-key: sk-lf-zest-demo

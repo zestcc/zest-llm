@@ -17,7 +17,7 @@ jobs:
           java-version: '17'
           cache: maven
       - name: Maven test
-        run: mvn -B -pl zest-llm-admin -am test
+        run: mvn -B test
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -37,13 +37,20 @@ jobs:
       - name: Start stack
         run: |
           cd deploy
-          docker compose up -d --build mysql valkey litellm admin demo
+          docker compose up -d --build mysql valkey litellm mcp-mock admin demo
       - name: Wait for health
         run: |
           for i in $(seq 1 60); do
-            curl -sf http://localhost:8088/swagger-ui.html && curl -sf "http://localhost:8081/demo/order/methodA?orderId=1&question=ping" && exit 0
+            curl -sf http://localhost:8088/swagger-ui.html \
+              && curl -sf "http://localhost:8081/demo/order/flowChat?orderId=1&question=ci-warmup" \
+              && curl -sf -X POST http://localhost:20552/api/execute \
+                   -H "Content-Type: application/json" \
+                   -d '{"chainCode":"CHN_ZESTLLM_AI_CHAT","params":{"question":"ci-warmup","bearerToken":"demo-token-123"}}' \
+              && exit 0
             sleep 10
           done
           exit 1
       - name: E2E acceptance script
         run: bash deploy/scripts/e2e-acceptance.sh
+      - name: Admin API journeys
+        run: bash deploy/scripts/run-journeys.sh

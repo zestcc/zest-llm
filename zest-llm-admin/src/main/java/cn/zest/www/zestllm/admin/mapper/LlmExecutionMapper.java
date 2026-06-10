@@ -32,6 +32,12 @@ public interface LlmExecutionMapper extends BaseMapper<LlmExecutionDO> {
     @Select("SELECT COALESCE(SUM(COALESCE(prompt_tokens, 0) + COALESCE(completion_tokens, 0)), 0) FROM llm_execution WHERE app_id = #{appId} AND created_at >= CURDATE()")
     long sumTodayTokensByAppId(Long appId);
 
+    @Select("SELECT COALESCE(SUM(cost), 0) FROM llm_execution WHERE app_id = #{appId} AND created_at >= CURDATE()")
+    BigDecimal sumTodayCostByAppId(@Param("appId") Long appId);
+
+    @Select("SELECT COUNT(*) FROM llm_execution_archive")
+    long countArchived();
+
     @Select("""
             SELECT DATE(created_at) AS date,
                    COALESCE(SUM(cost), 0) AS totalCost,
