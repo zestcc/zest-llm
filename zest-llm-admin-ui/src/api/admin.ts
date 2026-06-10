@@ -372,6 +372,7 @@ export interface CostAlertVO {
   costLimit?: number
   thresholdPct?: number
   status?: string
+  message?: string
   createdAt?: string
 }
 
@@ -542,6 +543,10 @@ export const adminApi = {
 
   probeAgentProfilePublished(taskCode: string, body?: AgentProfileProbeRequest) {
     return http.post<AgentProfileProbeResultVO>(`/api/admin/agent-profiles/${taskCode}/probe`, body ?? {})
+  },
+
+  probeAllAgentProfiles(body?: AgentProfileProbeRequest) {
+    return http.post<{ probedCount: number }>('/api/admin/agent-profiles/probe-all', body ?? {})
   },
 
   probeAgentProfileVersion(taskCode: string, version: string, body?: AgentProfileProbeRequest) {

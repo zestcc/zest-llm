@@ -6,6 +6,7 @@ import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.PublishAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.RollbackAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.UpdateAgentProfileRequest;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeBatchResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfilePublishResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileVO;
@@ -96,6 +97,13 @@ public class AdminAgentProfileController {
                                          @RequestBody Map<String, String> body) {
         agentProfileManageService.activateProvider(taskCode, body.get("providerRef"));
         return Result.success(null);
+    }
+
+    @PostMapping("/probe-all")
+    public Result<AgentProfileProbeBatchResultVO> probeAll(@RequestBody(required = false) AgentProfileProbeRequest request) {
+        boolean smokeTest = request != null && request.isSmokeTest();
+        int count = agentProfileProbeService.probeAllPublished(smokeTest, AgentProfileProbeRecordService.SOURCE_MANUAL);
+        return Result.success(AgentProfileProbeBatchResultVO.builder().probedCount(count).build());
     }
 
     @PostMapping("/{taskCode}/probe")

@@ -15,6 +15,7 @@
           <el-button type="success" :disabled="!selectedTask" :loading="probeLoading" @click="probePublished(false)">
             检测已发布
           </el-button>
+          <el-button :loading="probeAllLoading" @click="probeAllPublished">巡检全部</el-button>
           <el-button :disabled="!selectedTask" :loading="probeLoading" @click="probePublished(true)">
             冒烟测试
           </el-button>
@@ -361,6 +362,7 @@ const publishedProfileVersion = computed(() => profiles.value.find((p) => p.stat
 
 const probeVisible = ref(false)
 const probeLoading = ref(false)
+const probeAllLoading = ref(false)
 const probeResult = ref<AgentProfileProbeResultVO | null>(null)
 const probeSmokeTest = ref(false)
 const probeTargetVersion = ref<string | null>(null)
@@ -706,6 +708,19 @@ async function probePublished(smokeTest: boolean) {
   probeTargetVersion.value = publishedProfileVersion.value || null
   probeSmokeTest.value = smokeTest
   await runProbe(async () => adminApi.probeAgentProfilePublished(selectedTask.value, { smokeTest }))
+}
+
+async function probeAllPublished() {
+  probeAllLoading.value = true
+  try {
+    const result = await adminApi.probeAllAgentProfiles({ smokeTest: false })
+    ElMessage.success(`已巡检 ${result.probedCount} 个已发布 Profile`)
+    if (selectedTask.value) {
+      await loadLatestProbeStatus()
+    }
+  } finally {
+    probeAllLoading.value = false
+  }
 }
 
 async function probeVersion(row: AgentProfileVO, smokeTest: boolean) {

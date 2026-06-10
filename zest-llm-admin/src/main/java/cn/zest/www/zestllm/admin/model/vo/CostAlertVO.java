@@ -16,5 +16,6 @@ public class CostAlertVO {
     private BigDecimal costLimit;
     private Integer thresholdPct;
     private String status;
+    private String message;
     private LocalDateTime createdAt;
 }

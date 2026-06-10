@@ -8,6 +8,9 @@
           Model Gateway · {{ adapterUp ? 'UP' : 'DOWN' }}
         </span>
         <span class="runtime-chip">{{ adapterId || 'litellm' }}</span>
+        <span class="runtime-chip" :class="observability.langfuseEnabled ? 'runtime-chip--ok' : ''">
+          Observability · {{ observability.adapterId || 'noop' }}
+        </span>
       </div>
     </div>
 
@@ -61,6 +64,11 @@
     </el-row>
 
     <h3 class="section-title">智能体健康</h3>
+    <div class="agent-health-toolbar">
+      <el-button type="success" :loading="probeAllLoading" @click="runProbeAll">立即巡检</el-button>
+      <el-button link type="primary" @click="router.push('/agent-config')">智能体配置</el-button>
+      <el-button link type="primary" @click="router.push({ path: '/ops', query: { tab: 'agent' } })">运维中心</el-button>
+    </div>
     <el-row :gutter="16" class="stat-row">
       <el-col :xs="12" :sm="8" :md="4">
         <div class="stat-card">
@@ -170,6 +178,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
 import {
@@ -179,15 +188,18 @@ import {
   type AgentHealthDashboard,
   type AgentHealthItem,
   type CostDayRow,
-  type ExecutionVO
+  type ExecutionVO,
+  type ObservabilityConfigVO
 } from '../api/admin'
 
 const router = useRouter()
 const loading = ref(false)
 const costLoading = ref(false)
 const agentHealthLoading = ref(false)
+const probeAllLoading = ref(false)
 const adapterUp = ref(false)
 const adapterId = ref('')
+const observability = ref<ObservabilityConfigVO>({})
 const recentRows = ref<ExecutionVO[]>([])
 const costRows = ref<CostDayRow[]>([])
 const costChartRef = ref<HTMLElement | null>(null)
@@ -234,6 +246,38 @@ function agentStatusTag(status?: string) {
   if (status === 'DEGRADED') return 'warning'
   if (status === 'UNAVAILABLE') return 'danger'
   return 'info'
+}
+
+async function loadAgentHealth() {
+  agentHealthLoading.value = true
+  try {
+    const [healthRes, statsRes] = await Promise.all([
+      adminApi.dashboardAgentHealth(),
+      adminApi.dashboardStats()
+    ])
+    Object.assign(agentHealth, healthRes)
+    agentAlerts.value = healthRes.alerts || []
+    if (statsRes) {
+      agentHealth.monitored = statsRes.agentsMonitored ?? agentHealth.monitored
+      agentHealth.ready = statsRes.agentsReady ?? agentHealth.ready
+      agentHealth.degraded = statsRes.agentsDegraded ?? agentHealth.degraded
+      agentHealth.unavailable = statsRes.agentsUnavailable ?? agentHealth.unavailable
+      agentHealth.unknown = statsRes.agentsUnknown ?? agentHealth.unknown
+    }
+  } finally {
+    agentHealthLoading.value = false
+  }
+}
+
+async function runProbeAll() {
+  probeAllLoading.value = true
+  try {
+    const result = await adminApi.probeAllAgentProfiles({ smokeTest: false })
+    ElMessage.success(`已巡检 ${result.probedCount} 个已发布 Profile`)
+    await loadAgentHealth()
+  } finally {
+    probeAllLoading.value = false
+  }
 }
 
 function renderCostChart() {
@@ -307,12 +351,12 @@ onMounted(async () => {
   costLoading.value = true
   agentHealthLoading.value = true
   try {
-    const [statsRes, costRes, healthRes, execRes, agentHealthRes] = await Promise.allSettled([
+    const [statsRes, costRes, healthRes, execRes, obsRes] = await Promise.allSettled([
       adminApi.dashboardStats(),
       adminApi.dashboardCost(7),
       adminApi.adapterHealth(),
       adminApi.listExecutions(1, 10),
-      adminApi.dashboardAgentHealth()
+      adminApi.getObservabilityConfig()
     ])
 
     if (statsRes.status === 'fulfilled' && statsRes.value) {
@@ -326,9 +370,10 @@ onMounted(async () => {
       await loadFallbackStats()
     }
 
-    if (agentHealthRes.status === 'fulfilled' && agentHealthRes.value) {
-      Object.assign(agentHealth, agentHealthRes.value)
-      agentAlerts.value = agentHealthRes.value.alerts || []
+    await loadAgentHealth()
+
+    if (obsRes.status === 'fulfilled' && obsRes.value) {
+      observability.value = obsRes.value
     }
 
     if (costRes.status === 'fulfilled') {
@@ -475,6 +520,13 @@ onBeforeUnmount(() => {
   margin-top: 8px;
 }
 
+.agent-health-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
 .agent-alert-panel {
   margin-bottom: 20px;
 }

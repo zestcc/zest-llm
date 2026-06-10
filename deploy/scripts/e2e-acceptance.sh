@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZestLLM 生产验收 E2E（AC1–AC36 + Agent 模式）
+# ZestLLM 生产验收 E2E（AC1–AC37 + Agent 模式）
 set -euo pipefail
 
 ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
@@ -263,5 +263,12 @@ echo "== AC36: Execution detail includes observability fields =="
 EXEC_DETAIL=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/executions/$TRACE_ID")
 echo "$EXEC_DETAIL" | grep -q "observabilityAdapter" \
   && echo "PASS AC36" || { echo "FAIL AC36: $EXEC_DETAIL"; exit 1; }
+
+echo "== AC37: Batch probe all published profiles =="
+PROBE_ALL=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profiles/probe-all" \
+  -d '{"smokeTest":false}')
+echo "$PROBE_ALL" | grep -q "probedCount" \
+  && echo "PASS AC37" || { echo "FAIL AC37: $PROBE_ALL"; exit 1; }
 
 echo "== All automated E2E checks passed =="

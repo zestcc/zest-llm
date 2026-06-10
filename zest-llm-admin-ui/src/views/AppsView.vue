@@ -118,6 +118,11 @@
         <el-form-item label="告警阈值(%)">
           <el-input-number v-model="quotaForm.alertThresholdPct" :min="1" :max="100" controls-position="right" style="width: 100%" />
         </el-form-item>
+        <p class="quota-hint">
+          成本告警记录可在
+          <router-link :to="{ path: '/ops', query: { tab: 'cost' } }">运维中心 · 成本告警</router-link>
+          查看
+        </p>
         <el-form-item>
           <el-button type="primary" :loading="quotaSaving" @click="saveQuota">保存配额</el-button>
         </el-form-item>
@@ -297,5 +302,10 @@ onMounted(load)
   font-family: ui-monospace, monospace;
   font-size: 13px;
   color: #667eea;
+}
+.quota-hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
 }
 </style>

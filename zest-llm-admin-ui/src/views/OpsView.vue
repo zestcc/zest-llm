@@ -9,8 +9,8 @@
     <el-tabs v-model="activeTab" class="ops-tabs">
       <el-tab-pane label="成本告警" name="cost">
         <div class="toolbar">
-          <el-input v-model="costAppKey" placeholder="按 appKey 筛选" clearable style="width: 220px" @keyup.enter="loadCostAlerts" />
-          <el-button type="primary" :icon="Refresh" @click="loadCostAlerts">刷新</el-button>
+          <el-input v-model="costAppKey" placeholder="按 appKey 筛选" clearable style="width: 220px" @keyup.enter="reloadCostAlerts" />
+          <el-button type="primary" :icon="Refresh" @click="reloadCostAlerts">刷新</el-button>
         </div>
         <div v-loading="costLoading" class="table-panel">
           <el-table :data="costAlerts" stripe empty-text="暂无成本告警">
@@ -29,6 +29,7 @@
                 <el-tag :type="row.status === 'SENT' ? 'success' : 'danger'" size="small">{{ row.status }}</el-tag>
               </template>
             </el-table-column>
+            <el-table-column prop="message" label="说明" min-width="220" show-overflow-tooltip />
           </el-table>
           <div class="ops-pagination">
             <el-pagination
@@ -82,8 +83,8 @@
 
       <el-tab-pane label="智能体告警" name="agent">
         <div class="toolbar">
-          <el-input v-model="agentTaskCode" placeholder="按 taskCode 筛选" clearable style="width: 220px" @keyup.enter="loadAgentAlerts" />
-          <el-button type="primary" :icon="Refresh" @click="loadAgentAlerts">刷新</el-button>
+          <el-input v-model="agentTaskCode" placeholder="按 taskCode 筛选" clearable style="width: 220px" @keyup.enter="reloadAgentAlerts" />
+          <el-button type="primary" :icon="Refresh" @click="reloadAgentAlerts">刷新</el-button>
         </div>
         <div v-loading="agentLoading" class="table-panel">
           <el-table :data="agentAlerts" stripe empty-text="暂无智能体探测告警">
@@ -124,7 +125,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref, watch } from 'vue'
+import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
@@ -190,6 +191,11 @@ async function loadCostAlerts() {
   }
 }
 
+function reloadCostAlerts() {
+  costPage.value = 1
+  loadCostAlerts()
+}
+
 async function loadArchiveStats() {
   archiveLoading.value = true
   try {
@@ -221,15 +227,27 @@ async function loadAgentAlerts() {
   }
 }
 
-onMounted(async () => {
-  syncTabFromRoute()
-  await Promise.all([loadCostAlerts(), loadArchiveStats(), loadAgentAlerts()])
-})
+function reloadAgentAlerts() {
+  agentPage.value = 1
+  loadAgentAlerts()
+}
+
+function loadActiveTab() {
+  if (activeTab.value === 'cost') {
+    reloadCostAlerts()
+  } else if (activeTab.value === 'archive') {
+    loadArchiveStats()
+  } else if (activeTab.value === 'agent') {
+    reloadAgentAlerts()
+  }
+}
 
 watch(
   () => route.query.tab,
   () => syncTabFromRoute()
 )
+
+watch(activeTab, () => loadActiveTab(), { immediate: true })
 </script>
 
 <style scoped>

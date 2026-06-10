@@ -7,8 +7,10 @@ import cn.zest.www.zestllm.admin.model.vo.CostAlertVO;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -18,6 +20,7 @@ public class CostAlertQueryService {
 
     private final LlmCostAlertMapper costAlertMapper;
     private final LlmAppRepo appRepo;
+    private final ObjectMapper objectMapper;
 
     public Page<CostAlertVO> page(String appKey, int pageNum, int pageSize) {
         LambdaQueryWrapper<LlmCostAlertDO> query = new LambdaQueryWrapper<LlmCostAlertDO>()
@@ -50,8 +53,20 @@ public class CostAlertQueryService {
                 .costLimit(row.getCostLimit())
                 .thresholdPct(row.getThresholdPct())
                 .status(row.getStatus())
+                .message(extractMessage(row.getDetailJson()))
                 .createdAt(row.getCreatedAt())
                 .build();
+    }
+
+    private String extractMessage(String detailJson) {
+        if (!StringUtils.hasText(detailJson)) {
+            return null;
+        }
+        try {
+            return objectMapper.readTree(detailJson).path("message").asText(null);
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private Page<CostAlertVO> emptyPage(int pageNum, int pageSize) {
