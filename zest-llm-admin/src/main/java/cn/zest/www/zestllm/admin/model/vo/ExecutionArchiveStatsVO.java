@@ -10,4 +10,7 @@ public class ExecutionArchiveStatsVO {
     private long archivedExecutions;
     private int retentionDays;
     private boolean archiveEnabled;
+    private java.time.LocalDateTime lastRunAt;
+    private int lastArchivedCount;
+    private int lastDeletedCount;
 }

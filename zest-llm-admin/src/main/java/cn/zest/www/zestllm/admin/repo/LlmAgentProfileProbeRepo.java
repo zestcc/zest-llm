@@ -27,11 +27,15 @@ public class LlmAgentProfileProbeRepo {
                 .last("LIMIT 1")));
     }
 
-    public Page<LlmAgentProfileProbeDO> pageByTaskId(Long taskId, int page, int size) {
+    public Page<LlmAgentProfileProbeDO> pageByTaskId(Long taskId, int page, int size, String profileVersion) {
         Page<LlmAgentProfileProbeDO> pager = new Page<>(page, size);
-        mapper.selectPage(pager, new LambdaQueryWrapper<LlmAgentProfileProbeDO>()
+        LambdaQueryWrapper<LlmAgentProfileProbeDO> query = new LambdaQueryWrapper<LlmAgentProfileProbeDO>()
                 .eq(LlmAgentProfileProbeDO::getTaskId, taskId)
-                .orderByDesc(LlmAgentProfileProbeDO::getCreatedAt));
+                .orderByDesc(LlmAgentProfileProbeDO::getCreatedAt);
+        if (profileVersion != null && !profileVersion.isBlank()) {
+            query.eq(LlmAgentProfileProbeDO::getProfileVersion, profileVersion);
+        }
+        mapper.selectPage(pager, query);
         return pager;
     }
 

@@ -145,3 +145,14 @@ journeys:
         expect:
           status: 200
           bodyContains: "hotExecutions"
+
+  - id: admin_observability_config
+    description: "观测配置 API"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/config/observability"
+        expect:
+          status: 200
+          bodyContains: "adapterId"

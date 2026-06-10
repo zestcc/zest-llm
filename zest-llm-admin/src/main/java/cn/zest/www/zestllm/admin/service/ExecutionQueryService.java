@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 public class ExecutionQueryService {
 
     private final LlmExecutionRepo executionRepo;
+    private final ObservabilityLinkService observabilityLinkService;
 
     public ExecutionVO getByTraceId(String traceId) {
         LlmExecutionDO execution = executionRepo.findByTraceId(traceId)
@@ -45,6 +46,8 @@ public class ExecutionQueryService {
                 .completionTokens(execution.getCompletionTokens())
                 .cost(execution.getCost())
                 .createdAt(execution.getCreatedAt())
+                .observabilityAdapter(observabilityLinkService.config().getAdapterId())
+                .observabilityTraceUrl(observabilityLinkService.buildTraceUrl(execution.getTraceId()))
                 .build();
     }
 }

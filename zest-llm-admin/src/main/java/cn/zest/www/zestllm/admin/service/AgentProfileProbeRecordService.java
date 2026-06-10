@@ -66,10 +66,10 @@ public class AgentProfileProbeRecordService {
                 .map(this::toResultVO);
     }
 
-    public Page<AgentProfileProbeResultVO> history(String taskCode, int page, int size) {
+    public Page<AgentProfileProbeResultVO> history(String taskCode, int page, int size, String profileVersion) {
         var task = taskDefRepo.findByCode(taskCode)
                 .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
-        Page<LlmAgentProfileProbeDO> pager = probeRepo.pageByTaskId(task.getId(), page, size);
+        Page<LlmAgentProfileProbeDO> pager = probeRepo.pageByTaskId(task.getId(), page, size, profileVersion);
         Page<AgentProfileProbeResultVO> result = new Page<>(pager.getCurrent(), pager.getSize(), pager.getTotal());
         result.setRecords(pager.getRecords().stream().map(this::toResultVO).toList());
         return result;

@@ -35,7 +35,7 @@
       <div class="table-panel-header">
         <div>
           <h3 class="table-panel-title">Execution 列表</h3>
-          <p class="table-panel-subtitle">共 {{ total }} 条</p>
+          <p class="table-panel-subtitle">共 {{ total }} 条 · 观测适配器 {{ observabilityConfig.adapterId || 'noop' }}</p>
         </div>
       </div>
       <el-table :data="rows" stripe empty-text="暂无执行记录">
@@ -73,8 +73,41 @@
       </div>
     </div>
 
-    <el-drawer v-model="drawer" title="Execution 详情" size="520px">
-      <pre class="detail-json">{{ detail }}</pre>
+    <el-drawer v-model="drawer" title="Execution 详情" size="560px">
+      <template v-if="detail">
+        <div class="detail-actions">
+          <el-button
+            v-if="detail.observabilityTraceUrl"
+            type="primary"
+            link
+            tag="a"
+            :href="detail.observabilityTraceUrl"
+            target="_blank"
+            rel="noopener"
+          >
+            在 Langfuse 中打开
+          </el-button>
+          <el-tag v-else size="small" type="info">Langfuse 未启用</el-tag>
+        </div>
+        <el-descriptions :column="1" border size="small" class="detail-desc">
+          <el-descriptions-item label="Trace ID">{{ detail.traceId }}</el-descriptions-item>
+          <el-descriptions-item label="作业">{{ detail.taskCode }}</el-descriptions-item>
+          <el-descriptions-item label="状态">{{ detail.status }}</el-descriptions-item>
+          <el-descriptions-item label="模型">{{ detail.model || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="Prompt">{{ detail.promptVersion || '-' }}</el-descriptions-item>
+          <el-descriptions-item label="耗时">{{ detail.latencyMs != null ? detail.latencyMs + ' ms' : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="Tokens">
+            {{ detail.promptTokens ?? '-' }} / {{ detail.completionTokens ?? '-' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="成本">{{ detail.cost ?? '-' }}</el-descriptions-item>
+          <el-descriptions-item label="时间">{{ detail.createdAt || '-' }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.errorCode" label="错误">{{ detail.errorCode }} · {{ detail.errorMessage }}</el-descriptions-item>
+        </el-descriptions>
+        <h4 class="detail-section-title">Input</h4>
+        <pre class="detail-json">{{ formatJson(detail.inputJson) }}</pre>
+        <h4 class="detail-section-title">Output</h4>
+        <pre class="detail-json">{{ formatJson(detail.outputJson) }}</pre>
+      </template>
     </el-drawer>
   </div>
 </template>
@@ -83,7 +116,7 @@
 import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Refresh, Search } from '@element-plus/icons-vue'
-import { adminApi, type ExecutionVO } from '../api/admin'
+import { adminApi, type ExecutionVO, type ObservabilityConfigVO } from '../api/admin'
 
 const route = useRoute()
 const loading = ref(false)
@@ -95,7 +128,17 @@ const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
 const drawer = ref(false)
-const detail = ref('')
+const detail = ref<ExecutionVO | null>(null)
+const observabilityConfig = ref<ObservabilityConfigVO>({})
+
+function formatJson(value?: string) {
+  if (!value) return '-'
+  try {
+    return JSON.stringify(JSON.parse(value), null, 2)
+  } catch {
+    return value
+  }
+}
 
 async function loadList() {
   loading.value = true
@@ -137,8 +180,7 @@ async function searchTrace() {
 
 async function openDetail(id: string) {
   try {
-    const data = await adminApi.getExecution(id)
-    detail.value = JSON.stringify(data, null, 2)
+    detail.value = await adminApi.getExecution(id)
     drawer.value = true
   } catch {
     /* handled by interceptor */
@@ -156,7 +198,10 @@ watch(
   { immediate: true }
 )
 
-onMounted(loadList)
+onMounted(async () => {
+  observabilityConfig.value = await adminApi.getObservabilityConfig()
+  await loadList()
+})
 </script>
 
 <style scoped>
@@ -179,15 +224,29 @@ onMounted(loadList)
   width: 120px;
 }
 
+.detail-actions {
+  margin-bottom: 12px;
+}
+
+.detail-desc {
+  margin-bottom: 16px;
+}
+
+.detail-section-title {
+  margin: 12px 0 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #666);
+}
+
 .detail-json {
   margin: 0;
-  padding: 16px;
+  padding: 12px;
   background: #1f2d3d;
   color: #e8eaed;
   border-radius: var(--radius-md);
   font-size: 12px;
   line-height: 1.6;
   overflow: auto;
-  max-height: calc(100vh - 120px);
+  max-height: 240px;
 }
 </style>

@@ -6,6 +6,7 @@ import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProbeAlertVO;
 import cn.zest.www.zestllm.admin.repo.LlmAgentProbeAlertRepo;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -91,7 +92,13 @@ public class AgentProbeAlertService {
     }
 
     public List<AgentProbeAlertVO> listRecent(String taskCode, int limit) {
-        return probeAlertRepo.listRecent(taskCode, limit).stream()
+        return page(taskCode, 1, limit).getRecords();
+    }
+
+    public Page<AgentProbeAlertVO> page(String taskCode, int pageNum, int pageSize) {
+        Page<LlmAgentProbeAlertDO> pager = probeAlertRepo.page(taskCode, pageNum, pageSize);
+        Page<AgentProbeAlertVO> result = new Page<>(pager.getCurrent(), pager.getSize(), pager.getTotal());
+        result.setRecords(pager.getRecords().stream()
                 .map(row -> AgentProbeAlertVO.builder()
                         .taskCode(row.getTaskCode())
                         .profileVersion(row.getProfileVersion())
@@ -101,7 +108,8 @@ public class AgentProbeAlertService {
                         .message(extractMessage(row.getDetailJson()))
                         .createdAt(row.getCreatedAt())
                         .build())
-                .toList();
+                .toList());
+        return result;
     }
 
     private String extractMessage(String detailJson) {

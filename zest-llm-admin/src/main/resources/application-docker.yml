@@ -35,6 +35,9 @@ zest-llm:
     execution-archive:
       enabled: true
       retention-days: 90
+    observability:
+      langfuse-ui-base-url: http://localhost:3000
+      trace-path-template: /trace/{traceId}
     agent-probe:
       schedule-enabled: true
       cron: "0 */30 * * * ?"

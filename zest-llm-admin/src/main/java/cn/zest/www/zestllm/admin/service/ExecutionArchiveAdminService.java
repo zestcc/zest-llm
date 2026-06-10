@@ -6,6 +6,8 @@ import cn.zest.www.zestllm.admin.model.vo.ExecutionArchiveStatsVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class ExecutionArchiveAdminService {
@@ -14,17 +16,27 @@ public class ExecutionArchiveAdminService {
     private final LlmExecutionMapper executionMapper;
     private final ExecutionArchiveService executionArchiveService;
 
+    private volatile LocalDateTime lastRunAt;
+    private volatile int lastArchivedCount;
+    private volatile int lastDeletedCount;
+
     public ExecutionArchiveStatsVO stats() {
         return ExecutionArchiveStatsVO.builder()
                 .hotExecutions(executionMapper.countAll())
                 .archivedExecutions(executionMapper.countArchived())
                 .retentionDays(properties.getRetentionDays())
                 .archiveEnabled(properties.isEnabled())
+                .lastRunAt(lastRunAt)
+                .lastArchivedCount(lastArchivedCount)
+                .lastDeletedCount(lastDeletedCount)
                 .build();
     }
 
     public ExecutionArchiveStatsVO runNow() {
-        executionArchiveService.archiveOldExecutions();
+        int[] result = executionArchiveService.archiveOldExecutions();
+        lastRunAt = LocalDateTime.now();
+        lastArchivedCount = result[0];
+        lastDeletedCount = result[1];
         return stats();
     }
 }

@@ -1,0 +1,49 @@
+# 生产环境配置示例 — 复制为 application-production.yml 或通过环境变量注入
+# 叠加 profile: docker,observability,kafka 按需启用
+
+spring:
+  datasource:
+    url: jdbc:mysql://${MYSQL_HOST:mysql}:3306/zest_llm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=true
+    username: ${MYSQL_USER:zest}
+    password: ${MYSQL_PASSWORD}
+  data:
+    redis:
+      host: ${VALKEY_HOST:valkey}
+      port: 6379
+
+zest:
+  llm:
+    litellm:
+      base-url: ${LITELLM_BASE_URL:http://litellm:4000}
+    adapters:
+      policy-cache: valkey
+      response-cache: valkey
+      quota: redis-token-bucket
+      audit: jdbc
+      observability: langfuse
+      report-channel: sync
+      content-moderation: keyword-blocklist
+      alert-webhook: http
+    langfuse:
+      enabled: true
+      base-url: ${LANGFUSE_INGEST_URL:http://langfuse:3000}
+      public-key: ${LANGFUSE_PUBLIC_KEY}
+      secret-key: ${LANGFUSE_SECRET_KEY}
+
+zest-llm:
+  admin:
+    jwt:
+      secret: ${ZEST_LLM_JWT_SECRET}
+    execution-archive:
+      enabled: true
+      retention-days: 90
+    observability:
+      langfuse-ui-base-url: ${LANGFUSE_UI_URL:http://localhost:3000}
+      trace-path-template: /trace/{traceId}
+    agent-probe:
+      schedule-enabled: true
+      cron: "0 */30 * * * ?"
+      smoke-test-on-schedule: false
+      alert-webhook-url: ${AGENT_PROBE_ALERT_WEBHOOK_URL:}
+      alert-on-degraded: false
+      alert-cooldown-minutes: 60

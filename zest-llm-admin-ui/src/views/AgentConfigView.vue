@@ -272,7 +272,7 @@
         作业 <strong>{{ selectedTask }}</strong>
         <span v-if="probeHistoryVersion"> · 版本 {{ probeHistoryVersion }}</span>
       </div>
-      <el-table v-loading="probeHistoryLoading" :data="filteredProbeHistory" stripe empty-text="暂无探测记录">
+      <el-table v-loading="probeHistoryLoading" :data="probeHistoryRecords" stripe empty-text="暂无探测记录">
         <el-table-column prop="probedAt" label="时间" width="170" />
         <el-table-column prop="profileVersion" label="版本" width="90" />
         <el-table-column label="状态" width="120">
@@ -282,9 +282,10 @@
         </el-table-column>
         <el-table-column prop="latencyMs" label="耗时(ms)" width="100" />
         <el-table-column prop="probeSource" label="来源" width="110" />
-        <el-table-column label="操作" width="90">
+        <el-table-column label="操作" width="150">
           <template #default="{ row }">
             <el-button link type="primary" @click="showProbeHistoryDetail(row)">详情</el-button>
+            <el-button link type="success" @click="rerunProbeFromHistory(row)">重检</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -372,11 +373,6 @@ const probeHistoryPage = ref(1)
 const probeHistorySize = ref(20)
 const probeHistoryTotal = ref(0)
 const probeHistoryVersion = ref<string | null>(null)
-
-const filteredProbeHistory = computed(() => {
-  if (!probeHistoryVersion.value) return probeHistoryRecords.value
-  return probeHistoryRecords.value.filter((r) => r.profileVersion === probeHistoryVersion.value)
-})
 
 const mcpServers = ref<McpServerVO[]>([])
 const mcpLoading = ref(false)
@@ -768,7 +764,8 @@ async function loadProbeHistory() {
     const data = await adminApi.listAgentProfileProbeHistory(
       selectedTask.value,
       probeHistoryPage.value,
-      probeHistorySize.value
+      probeHistorySize.value,
+      probeHistoryVersion.value || undefined
     )
     probeHistoryRecords.value = data.records || []
     probeHistoryTotal.value = data.total ?? 0
@@ -782,6 +779,19 @@ function showProbeHistoryDetail(row: AgentProfileProbeResultVO) {
   probeTargetVersion.value = row.profileVersion || null
   probeSmokeTest.value = false
   probeVisible.value = true
+}
+
+async function rerunProbeFromHistory(row: AgentProfileProbeResultVO) {
+  if (!selectedTask.value || !row.profileVersion) return
+  probeHistoryVisible.value = false
+  const profileRow = profiles.value.find((p) => p.version === row.profileVersion)
+  if (profileRow) {
+    await probeVersion(profileRow, false)
+    return
+  }
+  if (row.profileVersion === publishedProfileVersion.value) {
+    await probePublished(false)
+  }
 }
 
 onMounted(async () => {

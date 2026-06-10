@@ -85,6 +85,8 @@ export interface ExecutionVO {
   completionTokens?: number
   cost?: number
   createdAt?: string
+  observabilityAdapter?: string
+  observabilityTraceUrl?: string
 }
 
 export interface AdapterHealthVO {
@@ -351,6 +353,16 @@ export interface ExecutionArchiveStatsVO {
   archivedExecutions?: number
   retentionDays?: number
   archiveEnabled?: boolean
+  lastRunAt?: string
+  lastArchivedCount?: number
+  lastDeletedCount?: number
+}
+
+export interface ObservabilityConfigVO {
+  adapterId?: string
+  langfuseEnabled?: boolean
+  langfuseUiBaseUrl?: string
+  tracePathTemplate?: string
 }
 
 export interface CostAlertVO {
@@ -543,10 +555,10 @@ export const adminApi = {
     return http.get<AgentProfileProbeResultVO | null>(`/api/admin/agent-profiles/${taskCode}/probe/latest`)
   },
 
-  listAgentProfileProbeHistory(taskCode: string, page = 1, size = 20) {
-    return http.get<{ records: AgentProfileProbeResultVO[]; total: number; current: number; size: number }>(
+  listAgentProfileProbeHistory(taskCode: string, page = 1, size = 20, profileVersion?: string) {
+    return http.get<PageResult<AgentProfileProbeResultVO>>(
       `/api/admin/agent-profiles/${taskCode}/probe/history`,
-      { params: { page, size } }
+      { params: { page, size, profileVersion } }
     )
   },
 
@@ -658,12 +670,16 @@ export const adminApi = {
     return http.post<ExecutionArchiveStatsVO>('/api/admin/executions/archive/run')
   },
 
-  listCostAlerts(appKey?: string) {
-    return http.get<CostAlertVO[]>('/api/admin/cost-alerts', { params: { appKey } })
+  listCostAlerts(appKey?: string, page = 1, size = 20) {
+    return http.get<PageResult<CostAlertVO>>('/api/admin/cost-alerts', { params: { appKey, page, size } })
   },
 
-  listAgentProbeAlerts(taskCode?: string, limit = 20) {
-    return http.get<AgentProbeAlertVO[]>('/api/admin/agent-probe-alerts', { params: { taskCode, limit } })
+  listAgentProbeAlerts(taskCode?: string, page = 1, size = 20) {
+    return http.get<PageResult<AgentProbeAlertVO>>('/api/admin/agent-probe-alerts', { params: { taskCode, page, size } })
+  },
+
+  getObservabilityConfig() {
+    return http.get<ObservabilityConfigVO>('/api/admin/config/observability')
   }
 }
 

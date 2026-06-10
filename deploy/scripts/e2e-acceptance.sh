@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZestLLM 生产验收 E2E（AC1–AC32 + Agent 模式）
+# ZestLLM 生产验收 E2E（AC1–AC36 + Agent 模式）
 set -euo pipefail
 
 ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
@@ -231,13 +231,37 @@ echo "$PROBE_HIST" | grep -q "records" \
   && echo "PASS AC31" || { echo "FAIL AC31: $PROBE_HIST"; exit 1; }
 
 echo "== AC32: Ops center APIs (cost alerts + probe alerts + dashboard stats) =="
-COST_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/cost-alerts")
-echo "$COST_ALERTS" | grep -q "\[" && echo "PASS AC32 cost-alerts" || { echo "FAIL AC32 cost-alerts: $COST_ALERTS"; exit 1; }
-PROBE_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-probe-alerts")
-echo "$PROBE_ALERTS" | grep -q "\[" && echo "PASS AC32 probe-alerts" || { echo "FAIL AC32 probe-alerts: $PROBE_ALERTS"; exit 1; }
+COST_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/cost-alerts?page=1&size=5")
+echo "$COST_ALERTS" | grep -q "records" && echo "PASS AC32 cost-alerts" || { echo "FAIL AC32 cost-alerts: $COST_ALERTS"; exit 1; }
+PROBE_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-probe-alerts?page=1&size=5")
+echo "$PROBE_ALERTS" | grep -q "records" && echo "PASS AC32 probe-alerts" || { echo "FAIL AC32 probe-alerts: $PROBE_ALERTS"; exit 1; }
 DASH_STATS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/dashboard/stats")
 echo "$DASH_STATS" | grep -q "agentsMonitored" \
   && echo "$DASH_STATS" | grep -q "agentsReady" \
   && echo "PASS AC32 dashboard-stats" || { echo "FAIL AC32 dashboard-stats: $DASH_STATS"; exit 1; }
+
+echo "== AC33: FinOps cost alert record (order-service) =="
+FINOPS_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/cost-alerts?appKey=order-service&page=1&size=5")
+echo "$FINOPS_ALERTS" | grep -q "order-service" \
+  && echo "$FINOPS_ALERTS" | grep -q "SENT" \
+  && echo "PASS AC33" || { echo "FAIL AC33: $FINOPS_ALERTS"; exit 1; }
+
+echo "== AC34: Observability config API =="
+OBS_CFG=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/config/observability")
+echo "$OBS_CFG" | grep -q "adapterId" \
+  && echo "$OBS_CFG" | grep -q "tracePathTemplate" \
+  && echo "PASS AC34" || { echo "FAIL AC34: $OBS_CFG"; exit 1; }
+
+echo "== AC35: Probe history profileVersion filter =="
+PROBE_FILTER=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "$ADMIN_URL/api/admin/agent-profiles/aiChat/probe/history?page=1&size=5&profileVersion=v1")
+echo "$PROBE_FILTER" | grep -q "records" \
+  && echo "$PROBE_FILTER" | grep -q "v1" \
+  && echo "PASS AC35" || { echo "FAIL AC35: $PROBE_FILTER"; exit 1; }
+
+echo "== AC36: Execution detail includes observability fields =="
+EXEC_DETAIL=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/executions/$TRACE_ID")
+echo "$EXEC_DETAIL" | grep -q "observabilityAdapter" \
+  && echo "PASS AC36" || { echo "FAIL AC36: $EXEC_DETAIL"; exit 1; }
 
 echo "== All automated E2E checks passed =="

@@ -24,4 +24,6 @@ public class ExecutionVO {
     private Integer completionTokens;
     private BigDecimal cost;
     private LocalDateTime createdAt;
+    private String observabilityAdapter;
+    private String observabilityTraceUrl;
 }

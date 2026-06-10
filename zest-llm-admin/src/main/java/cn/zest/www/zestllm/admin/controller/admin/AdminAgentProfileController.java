@@ -121,7 +121,8 @@ public class AdminAgentProfileController {
     public Result<com.baomidou.mybatisplus.extension.plugins.pagination.Page<AgentProfileProbeResultVO>> probeHistory(
             @PathVariable String taskCode,
             @RequestParam(defaultValue = "1") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        return Result.success(agentProfileProbeRecordService.history(taskCode, page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String profileVersion) {
+        return Result.success(agentProfileProbeRecordService.history(taskCode, page, size, profileVersion));
     }
 }

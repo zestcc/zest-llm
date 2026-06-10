@@ -8,3 +8,9 @@ zest:
       base-url: http://langfuse:3000
       public-key: pk-lf-zest-demo
       secret-key: sk-lf-zest-demo
+
+zest-llm:
+  admin:
+    observability:
+      langfuse-ui-base-url: http://localhost:3000
+      trace-path-template: /trace/{traceId}

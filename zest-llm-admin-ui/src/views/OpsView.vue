@@ -30,6 +30,17 @@
               </template>
             </el-table-column>
           </el-table>
+          <div class="ops-pagination">
+            <el-pagination
+              v-model:current-page="costPage"
+              v-model:page-size="costSize"
+              :total="costTotal"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              @current-change="loadCostAlerts"
+              @size-change="loadCostAlerts"
+            />
+          </div>
         </div>
       </el-tab-pane>
 
@@ -62,6 +73,9 @@
             <el-button type="primary" :loading="archiveRunning" @click="runArchive">立即归档</el-button>
             <el-button :icon="Refresh" @click="loadArchiveStats">刷新统计</el-button>
           </div>
+          <p v-if="archiveStats.lastRunAt" class="archive-last-run">
+            上次归档：{{ archiveStats.lastRunAt }} · 迁移 {{ archiveStats.lastArchivedCount ?? 0 }} 条 · 删除热表 {{ archiveStats.lastDeletedCount ?? 0 }} 条
+          </p>
           <p class="archive-hint">超过保留天数的 Execution 会从热表迁移至归档表，可在 Docker 配置中调整 `zest-llm.admin.execution-archive`。</p>
         </div>
       </el-tab-pane>
@@ -92,6 +106,17 @@
             </el-table-column>
             <el-table-column prop="message" label="说明" min-width="240" show-overflow-tooltip />
           </el-table>
+          <div class="ops-pagination">
+            <el-pagination
+              v-model:current-page="agentPage"
+              v-model:page-size="agentSize"
+              :total="agentTotal"
+              :page-sizes="[10, 20, 50]"
+              layout="total, sizes, prev, pager, next"
+              @current-change="loadAgentAlerts"
+              @size-change="loadAgentAlerts"
+            />
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -103,7 +128,7 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { adminApi, type AgentProbeAlertVO, type CostAlertVO, type ExecutionArchiveStatsVO } from '../api/admin'
+import { adminApi, normalizePage, type AgentProbeAlertVO, type CostAlertVO, type ExecutionArchiveStatsVO } from '../api/admin'
 
 const router = useRouter()
 const route = useRoute()
@@ -121,6 +146,9 @@ function syncTabFromRoute() {
 const costLoading = ref(false)
 const costAppKey = ref('')
 const costAlerts = ref<CostAlertVO[]>([])
+const costPage = ref(1)
+const costSize = ref(20)
+const costTotal = ref(0)
 
 const archiveLoading = ref(false)
 const archiveRunning = ref(false)
@@ -129,6 +157,9 @@ const archiveStats = ref<ExecutionArchiveStatsVO>({})
 const agentLoading = ref(false)
 const agentTaskCode = ref('')
 const agentAlerts = ref<AgentProbeAlertVO[]>([])
+const agentPage = ref(1)
+const agentSize = ref(20)
+const agentTotal = ref(0)
 
 function formatCost(value?: number | null) {
   if (value == null) return '-'
@@ -150,7 +181,10 @@ function goAgentConfig(taskCode?: string) {
 async function loadCostAlerts() {
   costLoading.value = true
   try {
-    costAlerts.value = await adminApi.listCostAlerts(costAppKey.value || undefined)
+    const data = await adminApi.listCostAlerts(costAppKey.value || undefined, costPage.value, costSize.value)
+    const pageData = normalizePage(data, costPage.value, costSize.value)
+    costAlerts.value = pageData.records
+    costTotal.value = pageData.total
   } finally {
     costLoading.value = false
   }
@@ -178,7 +212,10 @@ async function runArchive() {
 async function loadAgentAlerts() {
   agentLoading.value = true
   try {
-    agentAlerts.value = await adminApi.listAgentProbeAlerts(agentTaskCode.value || undefined)
+    const data = await adminApi.listAgentProbeAlerts(agentTaskCode.value || undefined, agentPage.value, agentSize.value)
+    const pageData = normalizePage(data, agentPage.value, agentSize.value)
+    agentAlerts.value = pageData.records
+    agentTotal.value = pageData.total
   } finally {
     agentLoading.value = false
   }
@@ -241,5 +278,15 @@ watch(
   color: var(--text-secondary);
   font-size: 13px;
   margin: 0;
+}
+.archive-last-run {
+  color: var(--text-secondary);
+  font-size: 13px;
+  margin: 0 0 8px;
+}
+.ops-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>
