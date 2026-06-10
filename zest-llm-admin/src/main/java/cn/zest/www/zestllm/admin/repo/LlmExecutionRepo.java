@@ -98,4 +98,18 @@ public class LlmExecutionRepo {
         }
         return mapper.countByTaskCodeAndStatusSince(taskCode, status, since);
     }
+
+    public long countByAppIdSince(Long appId, java.time.LocalDateTime since) {
+        if (appId == null) {
+            return 0;
+        }
+        return mapper.countByAppIdSince(appId, since);
+    }
+
+    public long countByAppIdAndStatusSince(Long appId, String status, java.time.LocalDateTime since) {
+        if (appId == null) {
+            return 0;
+        }
+        return mapper.countByAppIdAndStatusSince(appId, status, since);
+    }
 }

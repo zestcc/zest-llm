@@ -8,7 +8,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/admin/capability-stack")
@@ -25,5 +28,10 @@ public class AdminCapabilityStackController {
     @GetMapping("/tiers/{tierId}")
     public Result<StackTierVO> tier(@PathVariable String tierId) {
         return Result.success(capabilityStackService.getTier(tierId));
+    }
+
+    @GetMapping("/export")
+    public Result<Map<String, String>> exportCompose(@RequestParam(defaultValue = "small") String tier) {
+        return Result.success(capabilityStackService.exportComposeEnv(tier));
     }
 }

@@ -1,0 +1,32 @@
+# 报表解读场景 Profile（medium 栈 + hybrid 知识）
+
+```yaml
+apiVersion: zestllm/v1
+runtimeMode: hybrid
+providerRef: litellm-default
+model:
+  primary: gpt-4o-mini
+generation:
+  maxTokens: 2048
+  temperature: 0.3
+  timeoutMs: 60000
+extensions:
+  knowledge:
+    enabled: true
+    provider: noop
+    datasetIds: [report-docs]
+    topK: 5
+  learningLoop:
+    enabled: true
+    evalDatasetRef: demo-aichat@v1
+    minPassRate: 0.8
+    probeBeforePublish: true
+tools:
+  - type: mcp
+    name: report_query
+    serverRef: internal-docs
+    config:
+      toolName: report_query
+```
+
+MCP mock：`deploy/mcp-mock/mappings/report-query.json`

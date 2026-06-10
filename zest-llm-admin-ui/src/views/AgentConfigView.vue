@@ -379,7 +379,7 @@ import { useRoute } from 'vue-router'
 import axios from 'axios'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
 import { adminApi, normalizePage, type AppVO, type AgentProfileProbeCompare, type AgentProfileProbeResultVO, type AgentProfileProbeTrendPoint, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
 
@@ -670,10 +670,24 @@ async function submitProfile() {
 
 async function publishProfile(row: AgentProfileVO) {
   try {
+    const preview = await adminApi.getPublishPreview(selectedTask.value, row.version)
+    const p = preview.data ?? preview
+    const passRatePct = p.passRate != null ? `${(p.passRate * 100).toFixed(1)}%` : '-'
+    const detail = [
+      `Eval 通过率: ${passRatePct} (${p.passedCases ?? 0}/${p.totalCases ?? 0})`,
+      `Probe: ${p.probePassed ? '通过' : '未通过'}`,
+      p.message || ''
+    ].filter(Boolean).join('\n')
+    if (!p.publishAllowed) {
+      ElMessage.error(`发布门禁未通过\n${detail}`)
+      return
+    }
+    await ElMessageBox.confirm(`确认发布 ${row.version}？\n${detail}`, '发布预览', { type: 'warning' })
     await adminApi.publishAgentProfile(selectedTask.value, row.version)
     ElMessage.success('已发布')
     await loadProfiles()
   } catch (e: unknown) {
+    if (e === 'cancel') return
     const err = e as { response?: { data?: { errorCode?: string; message?: string } } }
     const code = err.response?.data?.errorCode
     const msg = err.response?.data?.message || '发布失败'

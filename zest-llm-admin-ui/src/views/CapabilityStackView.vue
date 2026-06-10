@@ -6,6 +6,7 @@
           A 层能力栈：按规模选择 LiteLLM / Langfuse / Dify / RAGFlow 等组件组合（类比 XXL-Job 执行器集群选型）
         </p>
         <el-button type="primary" :icon="Refresh" @click="load">刷新</el-button>
+        <el-button @click="exportEnv">导出 Compose 环境变量</el-button>
       </div>
     </div>
 
@@ -51,6 +52,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import { adminApi, type CapabilityStackVO } from '../api/admin'
 
@@ -68,6 +70,17 @@ async function load() {
 }
 
 onMounted(load)
+
+async function exportEnv() {
+  const tier = stack.value?.currentTier || 'small'
+  const res = await adminApi.exportCapabilityStack(tier)
+  const data = res.data ?? res
+  const text = Object.entries(data)
+    .map(([k, v]) => `${k}=${v}`)
+    .join('\n')
+  await navigator.clipboard.writeText(text)
+  ElMessage.success('已复制 Compose 环境变量到剪贴板')
+}
 </script>
 
 <style scoped>

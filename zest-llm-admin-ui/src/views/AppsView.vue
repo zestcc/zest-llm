@@ -7,6 +7,19 @@
       </div>
     </div>
 
+    <div v-loading="overviewLoading" class="table-panel" style="margin-bottom: 16px">
+      <div class="table-panel-header">
+        <h3 class="table-panel-title">已接入应用概览（今日）</h3>
+      </div>
+      <el-table :data="overview" stripe empty-text="暂无数据">
+        <el-table-column prop="appKey" label="App Key" width="160" />
+        <el-table-column prop="taskCount" label="AI 作业" width="90" />
+        <el-table-column prop="methodCount" label="注册方法" width="100" />
+        <el-table-column prop="executionsToday" label="今日调用" width="100" />
+        <el-table-column prop="failedToday" label="今日失败" width="100" />
+      </el-table>
+    </div>
+
     <div v-loading="loading" class="table-panel">
       <div class="table-panel-header">
         <div>
@@ -134,11 +147,13 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { adminApi, normalizePage, type AppVO, type QuotaVO } from '../api/admin'
+import { adminApi, normalizePage, type AppOverviewVO, type AppVO, type QuotaVO } from '../api/admin'
 
 const loading = ref(false)
+const overviewLoading = ref(false)
 const submitting = ref(false)
 const apps = ref<AppVO[]>([])
+const overview = ref<AppOverviewVO[]>([])
 const page = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -174,6 +189,16 @@ const appRules: FormRules = {
 const editRules: FormRules = {
   appName: [{ required: true, message: '请输入名称', trigger: 'blur' }],
   status: [{ required: true, message: '请选择状态', trigger: 'change' }]
+}
+
+async function loadOverview() {
+  overviewLoading.value = true
+  try {
+    const data = await adminApi.getAppOverview()
+    overview.value = data.data ?? data ?? []
+  } finally {
+    overviewLoading.value = false
+  }
 }
 
 async function load() {
@@ -281,7 +306,10 @@ async function saveQuota() {
   }
 }
 
-onMounted(load)
+onMounted(() => {
+  loadOverview()
+  load()
+})
 </script>
 
 <style scoped>

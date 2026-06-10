@@ -126,4 +126,15 @@ public class CapabilityStackService {
             default -> "powershell -File deploy/scripts/zest-stack-up.ps1 -Tier small";
         };
     }
+
+    public Map<String, String> exportComposeEnv(String tierId) {
+        StackTierVO tier = getTier(tierId);
+        Map<String, String> env = new LinkedHashMap<>();
+        env.put("ZEST_STACK_TIER", tier.getId());
+        tier.getAdapterDefaults().forEach((key, value) ->
+                env.put("ZEST_LLM_ADAPTERS_" + key.toUpperCase().replace('-', '_'), value));
+        env.put("deployCommand", deployCommand(tier.getId()));
+        env.put("composeHint", tier.getComposeHint());
+        return env;
+    }
 }

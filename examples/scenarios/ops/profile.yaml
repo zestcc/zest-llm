@@ -1,0 +1,32 @@
+# 运维诊断场景 Profile（large 栈 + MCP + Dify）
+
+```yaml
+apiVersion: zestllm/v1
+runtimeMode: agent
+providerRef: litellm-default
+toolCallMode: loop
+model:
+  primary: gpt-4o-mini
+generation:
+  maxTokens: 2048
+  maxToolSteps: 5
+tools:
+  - type: mcp
+    name: log_query
+    serverRef: internal-docs
+    config:
+      toolName: log_query
+extensions:
+  runtimeBackend:
+    type: dify
+    baseUrl: http://dify-api:5001
+  knowledge:
+    enabled: true
+    provider: ragflow
+    datasetIds: [ops-runbook]
+  learningLoop:
+    enabled: true
+    minPassRate: 0.75
+```
+
+MCP mock：`deploy/mcp-mock/mappings/log-query.json`

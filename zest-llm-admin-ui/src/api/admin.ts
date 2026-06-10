@@ -311,6 +311,40 @@ export interface AiJobOverviewVO {
   failedLast7d?: number
 }
 
+export interface AppOverviewVO {
+  appKey?: string
+  appName?: string
+  status?: string
+  taskCount?: number
+  methodCount?: number
+  executionsToday?: number
+  failedToday?: number
+}
+
+export interface PublishPreviewVO {
+  taskCode?: string
+  version?: string
+  publishAllowed?: boolean
+  probePassed?: boolean
+  passRate?: number
+  totalCases?: number
+  passedCases?: number
+  message?: string
+  failedCaseCodes?: string[]
+  learningLoopEnabled?: boolean
+}
+
+export interface AiJobWizardResult {
+  taskCode?: string
+  profileVersion?: string
+  published?: boolean
+  probeStatus?: string
+  scenarioName?: string
+  recommendedTier?: string
+  nextUrl?: string
+  message?: string
+}
+
 export interface LearningCycleRunVO {
   runCode?: string
   taskCode?: string
@@ -872,7 +906,7 @@ export const adminApi = {
     return http.get<PageResult<AgentProbeAlertVO>>('/api/admin/agent-probe-alerts', { params: { taskCode, page, size } })
   },
 
-  suggestLearningCases(body: { taskCode: string; limit?: number }) {
+  suggestLearningCases(body: { taskCode: string; limit?: number; distillationSources?: string[] }) {
     return http.post<EvalCaseSuggestion[]>('/api/admin/learning/suggest-cases', body)
   },
 
@@ -908,6 +942,22 @@ export const adminApi = {
 
   getAiJobOverview() {
     return http.get<AiJobOverviewVO[]>('/api/admin/ai-jobs/overview')
+  },
+
+  runAiJobWizard(body: { templateId: string; appKey: string; taskCode?: string; publish?: boolean; runProbe?: boolean }) {
+    return http.post<AiJobWizardResult>('/api/admin/ai-jobs/wizard', body)
+  },
+
+  getAppOverview() {
+    return http.get<AppOverviewVO[]>('/api/admin/apps/overview')
+  },
+
+  getPublishPreview(taskCode: string, version: string) {
+    return http.get<PublishPreviewVO>(`/api/admin/agent-profiles/${taskCode}/versions/${version}/publish-preview`)
+  },
+
+  exportCapabilityStack(tier = 'small') {
+    return http.get<Record<string, string>>('/api/admin/capability-stack/export', { params: { tier } })
   }
 }
 

@@ -2,9 +2,11 @@ package cn.zest.www.zestllm.admin.controller.admin;
 
 import cn.zest.www.zestllm.admin.model.request.CreateAppRequest;
 import cn.zest.www.zestllm.admin.model.request.UpdateAppRequest;
+import cn.zest.www.zestllm.admin.model.vo.AppOverviewVO;
 import cn.zest.www.zestllm.admin.model.vo.AppVO;
 import cn.zest.www.zestllm.admin.model.vo.RotateTokenVO;
 import cn.zest.www.zestllm.admin.service.AppManageService;
+import cn.zest.www.zestllm.admin.service.AppOverviewService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zestflow.common.model.Result;
 import jakarta.validation.Valid;
@@ -25,6 +27,12 @@ import org.springframework.web.bind.annotation.RestController;
 public class AdminAppController {
 
     private final AppManageService appManageService;
+    private final AppOverviewService appOverviewService;
+
+    @GetMapping("/overview")
+    public Result<java.util.List<AppOverviewVO>> overview() {
+        return Result.success(appOverviewService.listOverview());
+    }
 
     @GetMapping
     public Result<Page<AppVO>> listApps(

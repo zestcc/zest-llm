@@ -10,7 +10,9 @@ import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeBatchResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfilePublishResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileVO;
+import cn.zest.www.zestllm.admin.model.vo.PublishPreviewVO;
 import cn.zest.www.zestllm.admin.model.vo.VersionDiffVO;
+import cn.zest.www.zestllm.admin.service.AgentProfilePublishPreviewService;
 import cn.zest.www.zestllm.admin.service.AgentProfileProbeRecordService;
 import cn.zest.www.zestllm.admin.service.AgentProfileDiffService;
 import cn.zest.www.zestllm.admin.service.AgentProfileManageService;
@@ -39,6 +41,7 @@ public class AdminAgentProfileController {
     private final AgentProfileDiffService agentProfileDiffService;
     private final AgentProfileProbeService agentProfileProbeService;
     private final AgentProfileProbeRecordService agentProfileProbeRecordService;
+    private final AgentProfilePublishPreviewService agentProfilePublishPreviewService;
 
     @GetMapping("/{taskCode}/versions")
     public Result<List<AgentProfileVO>> listVersions(@PathVariable String taskCode) {
@@ -74,6 +77,11 @@ public class AdminAgentProfileController {
     public Result<AgentProfilePublishResultVO> publish(@PathVariable String taskCode,
                                                        @Valid @RequestBody PublishAgentProfileRequest request) {
         return Result.success(agentProfileManageService.publish(taskCode, request.getVersion(), request.getOperator()));
+    }
+
+    @GetMapping("/{taskCode}/versions/{version}/publish-preview")
+    public Result<PublishPreviewVO> publishPreview(@PathVariable String taskCode, @PathVariable String version) {
+        return Result.success(agentProfilePublishPreviewService.preview(taskCode, version));
     }
 
     @PostMapping("/{taskCode}/rollback")

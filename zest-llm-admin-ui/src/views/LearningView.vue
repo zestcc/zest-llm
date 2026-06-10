@@ -11,7 +11,11 @@
       </template>
       <el-row :gutter="16">
         <el-col :span="12">
-          <el-button type="primary" :loading="suggestLoading" @click="loadSuggestions">从 Execution 建议 Eval 样本</el-button>
+          <el-button type="primary" :loading="suggestLoading" @click="loadSuggestions">建议 Eval 样本</el-button>
+          <el-checkbox-group v-model="sources" style="margin-left: 12px" @change="loadSuggestions">
+            <el-checkbox label="execution">Execution 失败</el-checkbox>
+            <el-checkbox label="langfuse">Langfuse 低分</el-checkbox>
+          </el-checkbox-group>
           <el-table v-loading="suggestLoading" :data="suggestions" stripe empty-text="暂无建议" style="margin-top: 12px">
             <el-table-column prop="traceId" label="traceId" min-width="160" />
             <el-table-column prop="source" label="来源" width="160" />
@@ -55,6 +59,7 @@ const cycleResult = ref<LearningCycleResult | null>(null)
 const suggestLoading = ref(false)
 const cycleLoading = ref(false)
 const cycleListLoading = ref(false)
+const sources = ref(['execution', 'langfuse'])
 
 async function loadTasks() {
   const data = await adminApi.listTasks(1, 200)
@@ -68,7 +73,11 @@ async function loadSuggestions() {
   if (!taskCode.value) return
   suggestLoading.value = true
   try {
-    suggestions.value = await adminApi.suggestLearningCases({ taskCode: taskCode.value, limit: 20 })
+    suggestions.value = await adminApi.suggestLearningCases({
+      taskCode: taskCode.value,
+      limit: 20,
+      distillationSources: sources.value
+    })
   } finally {
     suggestLoading.value = false
   }

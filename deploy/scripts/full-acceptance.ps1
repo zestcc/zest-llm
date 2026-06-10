@@ -347,6 +347,50 @@ try {
     Assert-Pass "AC48" $false "meta features: $($_.Exception.Message)"
 }
 
+Write-Report "--- M5 ---"
+try {
+    $pv = Invoke-AdminGet "/api/admin/agent-profiles/aiChat/versions/v1/publish-preview"
+    $pvj = $pv | ConvertTo-Json -Compress
+    if ($pv.data) { $pvj = ($pv.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC49" ($pvj.Contains("publishAllowed")) "publish preview"
+} catch {
+    Assert-Pass "AC49" $false "publish preview: $($_.Exception.Message)"
+}
+
+try {
+    $ao = Invoke-AdminGet "/api/admin/apps/overview"
+    $aoj = $ao | ConvertTo-Json -Compress
+    if ($ao.data) { $aoj = ($ao.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC50" ($aoj.Contains("order-service")) "app overview"
+} catch {
+    Assert-Pass "AC50" $false "app overview: $($_.Exception.Message)"
+}
+
+try {
+    $ex = Invoke-AdminGet "/api/admin/capability-stack/export?tier=medium"
+    $exj = $ex | ConvertTo-Json -Compress
+    if ($ex.data) { $exj = ($ex.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC51" ($exj.Contains("ZEST_STACK_TIER")) "capability stack export"
+} catch {
+    Assert-Pass "AC51" $false "stack export: $($_.Exception.Message)"
+}
+
+try {
+    $wz = Invoke-AdminPost "/api/admin/ai-jobs/wizard" '{"templateId":"chat-basic","appKey":"order-service","taskCode":"aiChat","publish":false,"runProbe":false}'
+    $wzj = $wz | ConvertTo-Json -Compress
+    Assert-Pass "AC52" ($wzj.Contains("aiChat")) "ai job wizard"
+} catch {
+    Assert-Pass "AC52" $false "ai job wizard: $($_.Exception.Message)"
+}
+
+try {
+    $sg = Invoke-AdminPost "/api/admin/learning/suggest-cases" '{"taskCode":"aiChat","limit":5,"distillationSources":["execution","langfuse"]}'
+    $sgj = $sg | ConvertTo-Json -Compress
+    Assert-Pass "AC53" ($sgj.Contains("data") -or $sgj.StartsWith("[")) "learning multi-source suggest"
+} catch {
+    Assert-Pass "AC53" $false "learning suggest multi: $($_.Exception.Message)"
+}
+
 # --- Summary ---
 Write-Report "--- SUMMARY ---"
 Write-Report "PASSED=$script:Passed FAILED=$script:Failed SKIPPED=$script:Skipped"

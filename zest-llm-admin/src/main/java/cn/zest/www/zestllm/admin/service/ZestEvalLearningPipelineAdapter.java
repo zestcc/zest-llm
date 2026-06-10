@@ -39,6 +39,7 @@ public class ZestEvalLearningPipelineAdapter implements LearningPipelineAdapter 
     private final AgentProfileProbeService agentProfileProbeService;
     private final AgentProfileResolver agentProfileResolver;
     private final ExecutionSampleService executionSampleService;
+    private final LangfuseTraceSampleService langfuseTraceSampleService;
     private final LlmLearningCycleRunRepo learningCycleRunRepo;
 
     @Override
@@ -118,7 +119,20 @@ public class ZestEvalLearningPipelineAdapter implements LearningPipelineAdapter 
 
     @Override
     public List<EvalCaseSuggestion> suggestCasesFromTraces(TraceSampleQuery query) {
-        return executionSampleService.suggestFromExecutions(query);
+        List<EvalCaseSuggestion> merged = new ArrayList<>();
+        List<String> sources = query.getDistillationSources();
+        boolean all = sources == null || sources.isEmpty();
+        if (all || sources.contains("execution") || sources.contains("execution:failed")) {
+            merged.addAll(executionSampleService.suggestFromExecutions(query));
+        }
+        if (all || sources.contains("langfuse") || sources.contains("langfuse:low_score")) {
+            merged.addAll(langfuseTraceSampleService.suggestFromLangfuse(query));
+        }
+        int limit = query.getLimit() > 0 ? query.getLimit() : 20;
+        if (merged.size() <= limit) {
+            return merged;
+        }
+        return merged.subList(0, limit);
     }
 
     @Override

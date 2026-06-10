@@ -280,4 +280,38 @@ PROBE_NEW=$(curl -s -H "Authorization: Bearer $TOKEN" \
 echo "$PROBE_NEW" | grep -q '"code":200' \
   && echo "PASS AC38 latest" || { echo "FAIL AC38 latest: $PROBE_NEW"; exit 1; }
 
+AC_SUFFIX=$(date +%H%M%S)
+
+echo "== AC39: extensions import =="
+EXT_PROFILE="{\"taskCode\":\"aiChat\",\"version\":\"v-ac39-${AC_SUFFIX}\",\"profileJson\":\"{\\\"apiVersion\\\":\\\"zestllm/v1\\\",\\\"runtimeMode\\\":\\\"agent\\\",\\\"providerRef\\\":\\\"litellm-default\\\",\\\"model\\\":{\\\"primary\\\":\\\"gpt-4o-mini\\\"},\\\"generation\\\":{\\\"maxTokens\\\":512,\\\"temperature\\\":0.3,\\\"timeoutMs\\\":30000},\\\"extensions\\\":{\\\"runtimeBackend\\\":{\\\"type\\\":\\\"native\\\"},\\\"knowledge\\\":{\\\"enabled\\\":false},\\\"learningLoop\\\":{\\\"enabled\\\":false}}}\",\"publish\":false}"
+IMP=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profiles/import" -d "$EXT_PROFILE")
+echo "$IMP" | grep -q "v-ac39" && echo "PASS AC39" || { echo "FAIL AC39: $IMP"; exit 1; }
+
+echo "== AC45: capability stack =="
+CS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capability-stack")
+echo "$CS" | grep -q "currentTier" && echo "PASS AC45" || { echo "FAIL AC45: $CS"; exit 1; }
+
+echo "== AC46: scenario templates =="
+ST=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/scenario-templates")
+echo "$ST" | grep -q "chat-basic" && echo "PASS AC46" || { echo "FAIL AC46: $ST"; exit 1; }
+
+echo "== AC47: ai jobs overview =="
+JO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/ai-jobs/overview")
+echo "$JO" | grep -q "aiChat" && echo "PASS AC47" || { echo "FAIL AC47: $JO"; exit 1; }
+
+echo "== AC49: publish preview =="
+PV=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-profiles/aiChat/versions/v1/publish-preview")
+echo "$PV" | grep -q "publishAllowed" && echo "PASS AC49" || { echo "FAIL AC49: $PV"; exit 1; }
+
+echo "== AC50: app overview =="
+AO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/apps/overview")
+echo "$AO" | grep -q "order-service" && echo "PASS AC50" || { echo "FAIL AC50: $AO"; exit 1; }
+
+echo "== AC51: ai job wizard =="
+WZ=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/ai-jobs/wizard" \
+  -d "{\"templateId\":\"chat-basic\",\"appKey\":\"order-service\",\"taskCode\":\"aiChat\",\"publish\":false,\"runProbe\":false}")
+echo "$WZ" | grep -q "aiChat" && echo "PASS AC51" || { echo "FAIL AC51: $WZ"; exit 1; }
+
 echo "== All automated E2E checks passed =="

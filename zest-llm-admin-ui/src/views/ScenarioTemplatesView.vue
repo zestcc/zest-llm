@@ -39,6 +39,9 @@
         <el-form-item label="立即发布">
           <el-switch v-model="applyForm.publish" />
         </el-form-item>
+        <el-form-item label="运行 Probe">
+          <el-switch v-model="applyForm.runProbe" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="applyVisible = false">取消</el-button>
@@ -63,7 +66,8 @@ const applyForm = ref({
   templateName: '',
   appKey: 'order-service',
   taskCode: '',
-  publish: false
+  publish: false,
+  runProbe: true
 })
 
 async function load() {
@@ -82,7 +86,8 @@ function openApply(tpl: ScenarioTemplateVO) {
     templateName: tpl.name || '',
     appKey: 'order-service',
     taskCode: tpl.taskCodeSuggestion || '',
-    publish: false
+    publish: false,
+    runProbe: true
   }
   applyVisible.value = true
 }
@@ -90,14 +95,15 @@ function openApply(tpl: ScenarioTemplateVO) {
 async function submitApply() {
   submitting.value = true
   try {
-    const res = await adminApi.applyScenarioTemplate({
+    const res = await adminApi.runAiJobWizard({
       templateId: applyForm.value.templateId,
       appKey: applyForm.value.appKey,
       taskCode: applyForm.value.taskCode,
-      publish: applyForm.value.publish
+      publish: applyForm.value.publish,
+      runProbe: applyForm.value.runProbe
     })
     const data = res.data ?? res
-    ElMessage.success(`已创建 Profile ${data.profileVersion}（${data.taskCode}）`)
+    ElMessage.success(`向导完成：${data.taskCode} / ${data.profileVersion} Probe=${data.probeStatus}`)
     applyVisible.value = false
   } finally {
     submitting.value = false
