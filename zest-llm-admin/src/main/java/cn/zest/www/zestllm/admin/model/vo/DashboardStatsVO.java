@@ -14,4 +14,9 @@ public class DashboardStatsVO {
     private long failed;
     private BigDecimal totalCost;
     private long todayExecutions;
+    private long agentsMonitored;
+    private long agentsReady;
+    private long agentsDegraded;
+    private long agentsUnavailable;
+    private long agentsUnknown;
 }

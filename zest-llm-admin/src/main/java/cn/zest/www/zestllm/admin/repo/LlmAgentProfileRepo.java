@@ -66,4 +66,15 @@ public class LlmAgentProfileRepo {
     public void update(LlmAgentProfileDO entity) {
         mapper.updateById(entity);
     }
+
+    public List<LlmAgentProfileDO> findAllPublished() {
+        return mapper.selectList(new LambdaQueryWrapper<LlmAgentProfileDO>()
+                .eq(LlmAgentProfileDO::getStatus, STATUS_PUBLISHED)
+                .orderByAsc(LlmAgentProfileDO::getTaskId));
+    }
+
+    public long countPublishedTasks() {
+        return mapper.selectCount(new LambdaQueryWrapper<LlmAgentProfileDO>()
+                .eq(LlmAgentProfileDO::getStatus, STATUS_PUBLISHED));
+    }
 }

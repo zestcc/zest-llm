@@ -102,3 +102,46 @@ journeys:
         expect:
           status: 200
           bodyContains: "traceId"
+
+  - id: admin_agent_profile_probe
+    description: "智能体 Profile 探测 + 历史"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: POST
+        path: "/api/admin/agent-profiles/aiChat/probe"
+        headers:
+          Content-Type: "application/json"
+        body: '{"smokeTest":false}'
+        expect:
+          status: 200
+          bodyContains: "overallStatus"
+      - method: GET
+        path: "/api/admin/agent-profiles/aiChat/probe/history?page=1&size=5"
+        expect:
+          status: 200
+          bodyContains: "records"
+
+  - id: admin_ops_center
+    description: "运维中心 API：agent-health / cost-alerts / probe-alerts"
+    auth: bearer
+    authTokenFrom: admin_login
+    steps:
+      - method: GET
+        path: "/api/admin/dashboard/agent-health"
+        expect:
+          status: 200
+          bodyContains: "monitored"
+      - method: GET
+        path: "/api/admin/cost-alerts"
+        expect:
+          status: 200
+      - method: GET
+        path: "/api/admin/agent-probe-alerts"
+        expect:
+          status: 200
+      - method: GET
+        path: "/api/admin/executions/archive/stats"
+        expect:
+          status: 200
+          bodyContains: "hotExecutions"

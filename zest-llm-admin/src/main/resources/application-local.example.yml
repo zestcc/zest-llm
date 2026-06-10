@@ -22,3 +22,10 @@ zest-llm:
   admin:
     jwt:
       secret: local-dev-jwt-secret-key-at-least-32-chars
+    agent-probe:
+      schedule-enabled: true
+      cron: "0 */30 * * * ?"
+      smoke-test-on-schedule: false
+      alert-webhook-url:
+      alert-on-degraded: false
+      alert-cooldown-minutes: 60

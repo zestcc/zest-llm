@@ -117,6 +117,30 @@ export interface DashboardStats {
   todayExecutions?: number
   avgLatencyMs?: number
   successRate?: number
+  agentsMonitored?: number
+  agentsReady?: number
+  agentsDegraded?: number
+  agentsUnavailable?: number
+  agentsUnknown?: number
+}
+
+export interface AgentHealthItem {
+  taskCode?: string
+  profileVersion?: string
+  overallStatus?: string
+  ready?: boolean
+  latencyMs?: number
+  probedAt?: string
+  probeSource?: string
+}
+
+export interface AgentHealthDashboard {
+  monitored?: number
+  ready?: number
+  degraded?: number
+  unavailable?: number
+  unknown?: number
+  alerts?: AgentHealthItem[]
 }
 
 export interface CostDayRow {
@@ -173,6 +197,32 @@ export interface AgentProfileVO {
   runtimeMode?: string
   status?: string
   publishedAt?: string
+}
+
+export interface AgentProfileProbeCheckVO {
+  name: string
+  category?: string
+  critical?: boolean
+  up: boolean
+  message?: string
+}
+
+export interface AgentProfileProbeResultVO {
+  probeId?: number
+  taskCode?: string
+  profileVersion?: string
+  profileStatus?: string
+  overallStatus?: string
+  ready?: boolean
+  latencyMs?: number
+  probeSource?: string
+  probedAt?: string
+  checks?: AgentProfileProbeCheckVO[]
+}
+
+export interface AgentProfileProbeRequest {
+  appKey?: string
+  smokeTest?: boolean
 }
 
 export interface ProviderPresetVO {
@@ -301,6 +351,26 @@ export interface ExecutionArchiveStatsVO {
   archivedExecutions?: number
   retentionDays?: number
   archiveEnabled?: boolean
+}
+
+export interface CostAlertVO {
+  appKey?: string
+  alertDate?: string
+  dailyCost?: number
+  costLimit?: number
+  thresholdPct?: number
+  status?: string
+  createdAt?: string
+}
+
+export interface AgentProbeAlertVO {
+  taskCode?: string
+  profileVersion?: string
+  overallStatus?: string
+  probeId?: number
+  status?: string
+  message?: string
+  createdAt?: string
 }
 
 export const adminApi = {
@@ -458,6 +528,32 @@ export const adminApi = {
     return http.post(`/api/admin/agent-profiles/${taskCode}/activate-provider`, { providerRef })
   },
 
+  probeAgentProfilePublished(taskCode: string, body?: AgentProfileProbeRequest) {
+    return http.post<AgentProfileProbeResultVO>(`/api/admin/agent-profiles/${taskCode}/probe`, body ?? {})
+  },
+
+  probeAgentProfileVersion(taskCode: string, version: string, body?: AgentProfileProbeRequest) {
+    return http.post<AgentProfileProbeResultVO>(
+      `/api/admin/agent-profiles/${taskCode}/versions/${version}/probe`,
+      body ?? {}
+    )
+  },
+
+  getAgentProfileProbeLatest(taskCode: string) {
+    return http.get<AgentProfileProbeResultVO | null>(`/api/admin/agent-profiles/${taskCode}/probe/latest`)
+  },
+
+  listAgentProfileProbeHistory(taskCode: string, page = 1, size = 20) {
+    return http.get<{ records: AgentProfileProbeResultVO[]; total: number; current: number; size: number }>(
+      `/api/admin/agent-profiles/${taskCode}/probe/history`,
+      { params: { page, size } }
+    )
+  },
+
+  dashboardAgentHealth() {
+    return http.get<AgentHealthDashboard>('/api/admin/dashboard/agent-health')
+  },
+
   listProviderPresets() {
     return http.get<ProviderPresetVO[]>('/api/admin/provider-presets')
   },
@@ -556,6 +652,18 @@ export const adminApi = {
 
   getExecutionArchiveStats() {
     return http.get<ExecutionArchiveStatsVO>('/api/admin/executions/archive/stats')
+  },
+
+  runExecutionArchive() {
+    return http.post<ExecutionArchiveStatsVO>('/api/admin/executions/archive/run')
+  },
+
+  listCostAlerts(appKey?: string) {
+    return http.get<CostAlertVO[]>('/api/admin/cost-alerts', { params: { appKey } })
+  },
+
+  listAgentProbeAlerts(taskCode?: string, limit = 20) {
+    return http.get<AgentProbeAlertVO[]>('/api/admin/agent-probe-alerts', { params: { taskCode, limit } })
   }
 }
 

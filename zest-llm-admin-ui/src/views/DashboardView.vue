@@ -60,6 +60,65 @@
       </el-col>
     </el-row>
 
+    <h3 class="section-title">智能体健康</h3>
+    <el-row :gutter="16" class="stat-row">
+      <el-col :xs="12" :sm="8" :md="4">
+        <div class="stat-card">
+          <div class="stat-card-value">{{ agentHealth.monitored ?? 0 }}</div>
+          <div class="stat-card-label">已发布 Profile</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="8" :md="4">
+        <div class="stat-card stat-card--success">
+          <div class="stat-card-value">{{ agentHealth.ready ?? 0 }}</div>
+          <div class="stat-card-label">READY</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="8" :md="4">
+        <div class="stat-card stat-card--warn">
+          <div class="stat-card-value">{{ agentHealth.degraded ?? 0 }}</div>
+          <div class="stat-card-label">DEGRADED</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="8" :md="4">
+        <div class="stat-card stat-card--danger">
+          <div class="stat-card-value">{{ agentHealth.unavailable ?? 0 }}</div>
+          <div class="stat-card-label">UNAVAILABLE</div>
+        </div>
+      </el-col>
+      <el-col :xs="12" :sm="8" :md="4">
+        <div class="stat-card">
+          <div class="stat-card-value">{{ agentHealth.unknown ?? 0 }}</div>
+          <div class="stat-card-label">未检测</div>
+        </div>
+      </el-col>
+    </el-row>
+
+    <div v-if="agentAlerts.length" v-loading="agentHealthLoading" class="table-panel agent-alert-panel">
+      <div class="table-panel-header">
+        <div>
+          <h3 class="table-panel-title">智能体告警</h3>
+          <p class="table-panel-subtitle">最近一次探测非 READY 的作业</p>
+        </div>
+        <el-button link type="primary" @click="router.push({ path: '/ops', query: { tab: 'agent' } })">运维中心</el-button>
+      </div>
+      <el-table :data="agentAlerts" stripe>
+        <el-table-column prop="taskCode" label="作业 Code" width="140">
+          <template #default="{ row }">
+            <span class="code-link" @click="goAgentConfig(row.taskCode)">{{ row.taskCode }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="profileVersion" label="Profile" width="100" />
+        <el-table-column prop="overallStatus" label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="agentStatusTag(row.overallStatus)" size="small">{{ row.overallStatus }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="probeSource" label="来源" width="100" />
+        <el-table-column prop="probedAt" label="探测时间" min-width="170" />
+      </el-table>
+    </div>
+
     <h3 class="section-title">近 7 日成本</h3>
     <div v-loading="costLoading" class="table-panel cost-panel">
       <div ref="costChartRef" class="cost-chart" />
@@ -117,6 +176,8 @@ import {
   adminApi,
   normalizeCostRows,
   normalizePage,
+  type AgentHealthDashboard,
+  type AgentHealthItem,
   type CostDayRow,
   type ExecutionVO
 } from '../api/admin'
@@ -124,6 +185,7 @@ import {
 const router = useRouter()
 const loading = ref(false)
 const costLoading = ref(false)
+const agentHealthLoading = ref(false)
 const adapterUp = ref(false)
 const adapterId = ref('')
 const recentRows = ref<ExecutionVO[]>([])
@@ -137,8 +199,22 @@ const stats = reactive({
   success: 0,
   failed: 0,
   todayExecutions: 0,
-  successRate: 0
+  successRate: 0,
+  agentsMonitored: 0,
+  agentsReady: 0,
+  agentsDegraded: 0,
+  agentsUnavailable: 0,
+  agentsUnknown: 0
 })
+const agentHealth = reactive<AgentHealthDashboard>({
+  monitored: 0,
+  ready: 0,
+  degraded: 0,
+  unavailable: 0,
+  unknown: 0,
+  alerts: []
+})
+const agentAlerts = ref<AgentHealthItem[]>([])
 
 function formatRate(rate: number) {
   if (!rate && rate !== 0) return '-'
@@ -147,6 +223,17 @@ function formatRate(rate: number) {
 
 function goExecution(traceId: string) {
   router.push({ path: '/executions', query: { traceId } })
+}
+
+function goAgentConfig(taskCode: string) {
+  router.push({ path: '/agent-config', query: { task: taskCode } })
+}
+
+function agentStatusTag(status?: string) {
+  if (status === 'READY') return 'success'
+  if (status === 'DEGRADED') return 'warning'
+  if (status === 'UNAVAILABLE') return 'danger'
+  return 'info'
 }
 
 function renderCostChart() {
@@ -218,18 +305,30 @@ onMounted(async () => {
   window.addEventListener('resize', handleChartResize)
   loading.value = true
   costLoading.value = true
+  agentHealthLoading.value = true
   try {
-    const [statsRes, costRes, healthRes, execRes] = await Promise.allSettled([
+    const [statsRes, costRes, healthRes, execRes, agentHealthRes] = await Promise.allSettled([
       adminApi.dashboardStats(),
       adminApi.dashboardCost(7),
       adminApi.adapterHealth(),
-      adminApi.listExecutions(1, 10)
+      adminApi.listExecutions(1, 10),
+      adminApi.dashboardAgentHealth()
     ])
 
     if (statsRes.status === 'fulfilled' && statsRes.value) {
       Object.assign(stats, statsRes.value)
+      agentHealth.monitored = statsRes.value.agentsMonitored ?? agentHealth.monitored
+      agentHealth.ready = statsRes.value.agentsReady ?? agentHealth.ready
+      agentHealth.degraded = statsRes.value.agentsDegraded ?? agentHealth.degraded
+      agentHealth.unavailable = statsRes.value.agentsUnavailable ?? agentHealth.unavailable
+      agentHealth.unknown = statsRes.value.agentsUnknown ?? agentHealth.unknown
     } else {
       await loadFallbackStats()
+    }
+
+    if (agentHealthRes.status === 'fulfilled' && agentHealthRes.value) {
+      Object.assign(agentHealth, agentHealthRes.value)
+      agentAlerts.value = agentHealthRes.value.alerts || []
     }
 
     if (costRes.status === 'fulfilled') {
@@ -252,6 +351,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
     costLoading.value = false
+    agentHealthLoading.value = false
     await nextTick()
     renderCostChart()
   }
@@ -351,6 +451,10 @@ onBeforeUnmount(() => {
   color: #dc2626;
 }
 
+.stat-card--warn .stat-card-value {
+  color: #d97706;
+}
+
 .stat-card-label {
   font-size: 13px;
   color: var(--text-muted);
@@ -369,5 +473,9 @@ onBeforeUnmount(() => {
 
 .cost-table {
   margin-top: 8px;
+}
+
+.agent-alert-panel {
+  margin-bottom: 20px;
 }
 </style>

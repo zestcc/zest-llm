@@ -12,8 +12,15 @@
           <el-select v-model="selectedTask" placeholder="选择 AI 作业" filterable style="width: 220px" @change="loadProfiles">
             <el-option v-for="t in tasks" :key="t.code" :label="`${t.code} · ${t.name}`" :value="t.code" />
           </el-select>
+          <el-button type="success" :disabled="!selectedTask" :loading="probeLoading" @click="probePublished(false)">
+            检测已发布
+          </el-button>
+          <el-button :disabled="!selectedTask" :loading="probeLoading" @click="probePublished(true)">
+            冒烟测试
+          </el-button>
           <el-button type="primary" :disabled="!selectedTask" @click="openCreateProfile">新建版本</el-button>
           <el-button :disabled="!selectedTask" @click="openImport">导入 JSON</el-button>
+          <el-button :disabled="!selectedTask" @click="openProbeHistory">探测历史</el-button>
         </div>
 
         <el-table v-loading="profileLoading" :data="profiles" stripe empty-text="请选择作业或暂无 Profile">
@@ -25,8 +32,18 @@
               <el-tag :type="row.status === 'PUBLISHED' ? 'success' : 'info'" size="small">{{ row.status }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="480" fixed="right">
+          <el-table-column label="可用性" width="110">
             <template #default="{ row }">
+              <el-tag v-if="probeStatusMap[row.version]" :type="statusTagType(probeStatusMap[row.version])" size="small">
+                {{ probeStatusMap[row.version] }}
+              </el-tag>
+              <span v-else class="probe-unknown">未检测</span>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="560" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="success" @click="probeVersion(row, false)">检测</el-button>
+              <el-button link type="warning" @click="probeVersion(row, true)">冒烟</el-button>
               <el-button link type="primary" @click="openEditProfile(row)">编辑</el-button>
               <el-button link type="primary" @click="exportProfile(row)">导出</el-button>
               <el-button v-if="row.status !== 'PUBLISHED'" link type="success" @click="publishProfile(row)">发布</el-button>
@@ -38,6 +55,7 @@
               >
                 回滚
               </el-button>
+              <el-button link type="info" @click="openProbeHistoryFor(row.version)">历史</el-button>
               <el-button
                 v-if="publishedProfileVersion && publishedProfileVersion !== row.version"
                 link
@@ -217,15 +235,85 @@
       </template>
     </el-dialog>
     <VersionDiffDialog ref="profileDiffDialogRef" />
+
+    <el-dialog v-model="probeVisible" title="智能体可用性检测" width="760px" destroy-on-close>
+      <div v-if="probeResult" class="probe-summary">
+        <el-tag :type="statusTagType(probeResult.overallStatus)" size="large">
+          {{ probeResult.overallStatus }}
+        </el-tag>
+        <span class="probe-meta">
+          {{ probeResult.taskCode }} · {{ probeResult.profileVersion }} · {{ probeResult.latencyMs }}ms
+        </span>
+        <el-checkbox v-model="probeSmokeTest" style="margin-left: 12px" @change="rerunProbe">
+          包含网关冒烟（消耗 token）
+        </el-checkbox>
+      </div>
+      <el-table v-loading="probeLoading" :data="probeResult?.checks || []" stripe empty-text="暂无检测项">
+        <el-table-column prop="name" label="检查项" min-width="160" />
+        <el-table-column prop="category" label="类别" width="110" />
+        <el-table-column label="关键" width="70">
+          <template #default="{ row }">{{ row.critical ? '是' : '否' }}</template>
+        </el-table-column>
+        <el-table-column label="结果" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.up ? 'success' : 'danger'" size="small">{{ row.up ? 'PASS' : 'FAIL' }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="message" label="说明" min-width="240" show-overflow-tooltip />
+      </el-table>
+      <template #footer>
+        <el-button @click="probeVisible = false">关闭</el-button>
+        <el-button type="primary" :loading="probeLoading" @click="rerunProbe">重新检测</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="probeHistoryVisible" title="探测历史" width="860px" destroy-on-close>
+      <div v-if="selectedTask" class="probe-history-meta">
+        作业 <strong>{{ selectedTask }}</strong>
+        <span v-if="probeHistoryVersion"> · 版本 {{ probeHistoryVersion }}</span>
+      </div>
+      <el-table v-loading="probeHistoryLoading" :data="filteredProbeHistory" stripe empty-text="暂无探测记录">
+        <el-table-column prop="probedAt" label="时间" width="170" />
+        <el-table-column prop="profileVersion" label="版本" width="90" />
+        <el-table-column label="状态" width="120">
+          <template #default="{ row }">
+            <el-tag :type="statusTagType(row.overallStatus)" size="small">{{ row.overallStatus }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="latencyMs" label="耗时(ms)" width="100" />
+        <el-table-column prop="probeSource" label="来源" width="110" />
+        <el-table-column label="操作" width="90">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="showProbeHistoryDetail(row)">详情</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="probe-history-pagination">
+        <el-pagination
+          v-model:current-page="probeHistoryPage"
+          v-model:page-size="probeHistorySize"
+          :total="probeHistoryTotal"
+          :page-sizes="[10, 20, 50]"
+          layout="total, sizes, prev, pager, next"
+          @current-change="loadProbeHistory"
+          @size-change="loadProbeHistory"
+        />
+      </div>
+      <template #footer>
+        <el-button @click="probeHistoryVisible = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
-import { adminApi, normalizePage, type AppVO, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
+import { adminApi, normalizePage, type AppVO, type AgentProfileProbeResultVO, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
 
+const route = useRoute()
 const activeTab = ref('profiles')
 const tasks = ref<TaskVO[]>([])
 const apps = ref<AppVO[]>([])
@@ -269,6 +357,26 @@ const importPublish = ref(true)
 const importSaving = ref(false)
 const profileDiffDialogRef = ref<InstanceType<typeof VersionDiffDialog> | null>(null)
 const publishedProfileVersion = computed(() => profiles.value.find((p) => p.status === 'PUBLISHED')?.version)
+
+const probeVisible = ref(false)
+const probeLoading = ref(false)
+const probeResult = ref<AgentProfileProbeResultVO | null>(null)
+const probeSmokeTest = ref(false)
+const probeTargetVersion = ref<string | null>(null)
+const probeStatusMap = ref<Record<string, string>>({})
+
+const probeHistoryVisible = ref(false)
+const probeHistoryLoading = ref(false)
+const probeHistoryRecords = ref<AgentProfileProbeResultVO[]>([])
+const probeHistoryPage = ref(1)
+const probeHistorySize = ref(20)
+const probeHistoryTotal = ref(0)
+const probeHistoryVersion = ref<string | null>(null)
+
+const filteredProbeHistory = computed(() => {
+  if (!probeHistoryVersion.value) return probeHistoryRecords.value
+  return probeHistoryRecords.value.filter((r) => r.profileVersion === probeHistoryVersion.value)
+})
 
 const mcpServers = ref<McpServerVO[]>([])
 const mcpLoading = ref(false)
@@ -333,8 +441,24 @@ async function loadProfiles() {
     profiles.value = await adminApi.listAgentProfiles(selectedTask.value)
     const published = profiles.value.find((p) => p.status === 'PUBLISHED')
     activeProvider.value = published?.providerPresetCode || ''
+    await loadLatestProbeStatus()
   } finally {
     profileLoading.value = false
+  }
+}
+
+async function loadLatestProbeStatus() {
+  if (!selectedTask.value) return
+  try {
+    const latest = await adminApi.getAgentProfileProbeLatest(selectedTask.value)
+    if (latest?.profileVersion && latest.overallStatus) {
+      probeStatusMap.value = {
+        ...probeStatusMap.value,
+        [latest.profileVersion]: latest.overallStatus
+      }
+    }
+  } catch {
+    /* ignore */
   }
 }
 
@@ -574,9 +698,110 @@ async function probeMcpTools(row: McpServerVO) {
   ElMessage.info(tools.length ? `发现 ${tools.length} 个工具: ${tools.map((t) => t.name).join(', ')}` : '未发现远程工具（MCP Server 可能离线）')
 }
 
+function statusTagType(status?: string) {
+  if (status === 'READY') return 'success'
+  if (status === 'DEGRADED') return 'warning'
+  if (status === 'UNAVAILABLE') return 'danger'
+  return 'info'
+}
+
+async function probePublished(smokeTest: boolean) {
+  if (!selectedTask.value) return
+  probeTargetVersion.value = publishedProfileVersion.value || null
+  probeSmokeTest.value = smokeTest
+  await runProbe(async () => adminApi.probeAgentProfilePublished(selectedTask.value, { smokeTest }))
+}
+
+async function probeVersion(row: AgentProfileVO, smokeTest: boolean) {
+  if (!selectedTask.value) return
+  probeTargetVersion.value = row.version
+  probeSmokeTest.value = smokeTest
+  await runProbe(async () => adminApi.probeAgentProfileVersion(selectedTask.value, row.version, { smokeTest }))
+}
+
+async function runProbe(loader: () => Promise<AgentProfileProbeResultVO>) {
+  probeLoading.value = true
+  probeVisible.value = true
+  try {
+    probeResult.value = await loader()
+    if (probeResult.value.profileVersion) {
+      probeStatusMap.value = {
+        ...probeStatusMap.value,
+        [probeResult.value.profileVersion]: probeResult.value.overallStatus || 'UNKNOWN'
+      }
+    }
+  } finally {
+    probeLoading.value = false
+  }
+}
+
+async function rerunProbe() {
+  if (!selectedTask.value || !probeTargetVersion.value) return
+  if (probeTargetVersion.value === publishedProfileVersion.value) {
+    await probePublished(probeSmokeTest.value)
+    return
+  }
+  const row = profiles.value.find((p) => p.version === probeTargetVersion.value)
+  if (row) {
+    await probeVersion(row, probeSmokeTest.value)
+  }
+}
+
+function openProbeHistory() {
+  probeHistoryVersion.value = null
+  probeHistoryPage.value = 1
+  probeHistoryVisible.value = true
+  loadProbeHistory()
+}
+
+function openProbeHistoryFor(version: string) {
+  probeHistoryVersion.value = version
+  probeHistoryPage.value = 1
+  probeHistoryVisible.value = true
+  loadProbeHistory()
+}
+
+async function loadProbeHistory() {
+  if (!selectedTask.value) return
+  probeHistoryLoading.value = true
+  try {
+    const data = await adminApi.listAgentProfileProbeHistory(
+      selectedTask.value,
+      probeHistoryPage.value,
+      probeHistorySize.value
+    )
+    probeHistoryRecords.value = data.records || []
+    probeHistoryTotal.value = data.total ?? 0
+  } finally {
+    probeHistoryLoading.value = false
+  }
+}
+
+function showProbeHistoryDetail(row: AgentProfileProbeResultVO) {
+  probeResult.value = row
+  probeTargetVersion.value = row.profileVersion || null
+  probeSmokeTest.value = false
+  probeVisible.value = true
+}
+
 onMounted(async () => {
   await Promise.all([loadTasks(), loadApps(), loadPresets(), loadMcpServers()])
+  const taskFromQuery = route.query.task
+  if (typeof taskFromQuery === 'string' && taskFromQuery) {
+    selectedTask.value = taskFromQuery
+    await loadProfiles()
+  }
 })
+
+watch(
+  () => route.query.task,
+  async (taskCode) => {
+    if (typeof taskCode === 'string' && taskCode && taskCode !== selectedTask.value) {
+      selectedTask.value = taskCode
+      await loadProfiles()
+    }
+  }
+)
 </script>
 
 <style scoped>
@@ -604,5 +829,30 @@ onMounted(async () => {
 .auth-form {
   max-width: 720px;
   margin-top: 16px;
+}
+.probe-unknown {
+  color: var(--el-text-color-secondary);
+  font-size: 12px;
+}
+.probe-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.probe-meta {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+.probe-history-meta {
+  margin-bottom: 12px;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+}
+.probe-history-pagination {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

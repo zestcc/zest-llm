@@ -2,6 +2,7 @@ package cn.zest.www.zestllm.agent;
 
 import cn.zest.www.zestllm.agent.cache.AgentPolicyCache;
 import cn.zest.www.zestllm.agent.config.LlmAgentProperties;
+import cn.zest.www.zestllm.agent.report.AgentReportRetryQueue;
 import cn.zest.www.zestllm.common.api.StreamChunk;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
 import cn.zest.www.zestllm.infra.guardrails.GuardrailsEnforcer;
@@ -54,6 +55,7 @@ public class LlmAgentClient {
     private final SseStreamHandler streamHandler;
     private final AgentPolicyCache policyCache;
     private final ContentModerationAdapter contentModerationAdapter;
+    private final AgentReportRetryQueue reportRetryQueue;
     private final ExecutorService reportExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "llm-agent-report");
         t.setDaemon(true);
@@ -69,7 +71,8 @@ public class LlmAgentClient {
                           FunctionCallLoop functionCallLoop,
                           SseStreamHandler streamHandler,
                           AgentPolicyCache policyCache,
-                          ContentModerationAdapter contentModerationAdapter) {
+                          ContentModerationAdapter contentModerationAdapter,
+                          AgentReportRetryQueue reportRetryQueue) {
         this.properties = properties;
         this.controlPlaneClient = controlPlaneClient;
         this.litellmClient = litellmClient;
@@ -80,6 +83,7 @@ public class LlmAgentClient {
         this.streamHandler = streamHandler;
         this.policyCache = policyCache;
         this.contentModerationAdapter = contentModerationAdapter;
+        this.reportRetryQueue = reportRetryQueue;
     }
 
     public PrepareResponse prepare(InvokeRequest request) {
@@ -174,6 +178,7 @@ public class LlmAgentClient {
                         .toBodilessEntity();
             } catch (Exception ex) {
                 log.warn("Agent report failed traceId={}", reportRequest.getTraceId(), ex);
+                reportRetryQueue.enqueue(reportRequest);
             }
         });
     }
@@ -270,6 +275,7 @@ public class LlmAgentClient {
             if (usage != null && !usage.isMissingNode()) {
                 metrics.setPromptTokens(usage.path("prompt_tokens").asInt(0));
                 metrics.setCompletionTokens(usage.path("completion_tokens").asInt(0));
+                metrics.setCost(resolveUsageCost(usage));
             }
 
             InvokeResponse response = new InvokeResponse();
@@ -449,5 +455,18 @@ public class LlmAgentClient {
         if (request.getAppKey() == null) {
             request.setAppKey(properties.getAppKey());
         }
+    }
+
+    private Double resolveUsageCost(JsonNode usage) {
+        if (usage == null || usage.isMissingNode()) {
+            return null;
+        }
+        if (usage.has("total_cost") && !usage.path("total_cost").isNull()) {
+            return usage.path("total_cost").asDouble();
+        }
+        if (usage.has("cost") && !usage.path("cost").isNull()) {
+            return usage.path("cost").asDouble();
+        }
+        return null;
     }
 }

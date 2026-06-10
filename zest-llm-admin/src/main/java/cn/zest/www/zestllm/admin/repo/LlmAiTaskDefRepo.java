@@ -28,6 +28,10 @@ public class LlmAiTaskDefRepo {
                 .last("LIMIT 1")));
     }
 
+    public Optional<LlmAiTaskDefDO> findById(Long id) {
+        return Optional.ofNullable(mapper.selectById(id));
+    }
+
     public List<LlmAiTaskDefDO> findAll() {
         return mapper.selectList(new LambdaQueryWrapper<LlmAiTaskDefDO>().orderByAsc(LlmAiTaskDefDO::getCode));
     }

@@ -35,5 +35,12 @@ zest-llm:
     execution-archive:
       enabled: true
       retention-days: 90
+    agent-probe:
+      schedule-enabled: true
+      cron: "0 */30 * * * ?"
+      smoke-test-on-schedule: false
+      alert-webhook-url: http://alert-mock:8080/webhook
+      alert-on-degraded: false
+      alert-cooldown-minutes: 60
     jwt:
       secret: ${ZEST_LLM_JWT_SECRET:change-me-in-production-zest-llm-admin-jwt-secret-key}

@@ -1,15 +1,19 @@
 package cn.zest.www.zestllm.admin.controller.admin;
 
+import cn.zest.www.zestllm.admin.model.request.AgentProfileProbeRequest;
 import cn.zest.www.zestllm.admin.model.request.CreateAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.PublishAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.RollbackAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.UpdateAgentProfileRequest;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfilePublishResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileVO;
 import cn.zest.www.zestllm.admin.model.vo.VersionDiffVO;
+import cn.zest.www.zestllm.admin.service.AgentProfileProbeRecordService;
 import cn.zest.www.zestllm.admin.service.AgentProfileDiffService;
 import cn.zest.www.zestllm.admin.service.AgentProfileManageService;
+import cn.zest.www.zestllm.admin.service.AgentProfileProbeService;
 import com.zestflow.common.model.Result;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -31,6 +36,8 @@ public class AdminAgentProfileController {
 
     private final AgentProfileManageService agentProfileManageService;
     private final AgentProfileDiffService agentProfileDiffService;
+    private final AgentProfileProbeService agentProfileProbeService;
+    private final AgentProfileProbeRecordService agentProfileProbeRecordService;
 
     @GetMapping("/{taskCode}/versions")
     public Result<List<AgentProfileVO>> listVersions(@PathVariable String taskCode) {
@@ -89,5 +96,32 @@ public class AdminAgentProfileController {
                                          @RequestBody Map<String, String> body) {
         agentProfileManageService.activateProvider(taskCode, body.get("providerRef"));
         return Result.success(null);
+    }
+
+    @PostMapping("/{taskCode}/probe")
+    public Result<AgentProfileProbeResultVO> probePublished(@PathVariable String taskCode,
+                                                            @RequestBody(required = false) AgentProfileProbeRequest request) {
+        return Result.success(agentProfileProbeService.probePublished(taskCode, request));
+    }
+
+    @PostMapping("/{taskCode}/versions/{version}/probe")
+    public Result<AgentProfileProbeResultVO> probeVersion(@PathVariable String taskCode,
+                                                          @PathVariable String version,
+                                                          @RequestBody(required = false) AgentProfileProbeRequest request) {
+        return Result.success(agentProfileProbeService.probeVersion(taskCode, version, request));
+    }
+
+    @GetMapping("/{taskCode}/probe/latest")
+    public Result<AgentProfileProbeResultVO> probeLatest(@PathVariable String taskCode) {
+        return Result.success(agentProfileProbeRecordService.latest(taskCode)
+                .orElse(null));
+    }
+
+    @GetMapping("/{taskCode}/probe/history")
+    public Result<com.baomidou.mybatisplus.extension.plugins.pagination.Page<AgentProfileProbeResultVO>> probeHistory(
+            @PathVariable String taskCode,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return Result.success(agentProfileProbeRecordService.history(taskCode, page, size));
     }
 }

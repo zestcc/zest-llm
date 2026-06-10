@@ -18,7 +18,7 @@ import java.sql.Connection;
 
 @Slf4j
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, AdminOidcProperties.class, ExecutionArchiveProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, AdminOidcProperties.class, ExecutionArchiveProperties.class, AgentProfileProbeProperties.class})
 @RequiredArgsConstructor
 public class AdminAutoConfiguration {
 

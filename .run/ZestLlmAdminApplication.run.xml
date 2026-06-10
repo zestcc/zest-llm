@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="ZestLlmAdminApplication (local)" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot">
+    <module name="zest-llm-admin" />
+    <option name="SPRING_BOOT_MAIN_CLASS" value="cn.zest.www.zestllm.admin.ZestLlmAdminApplication" />
+    <option name="ACTIVE_PROFILES" value="local" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

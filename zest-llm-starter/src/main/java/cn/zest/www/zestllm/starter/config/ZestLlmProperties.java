@@ -23,5 +23,5 @@ public class ZestLlmProperties {
     private boolean registryOnStartup = true;
 
     /** invoke: 合一调用；agent: prepare → execute → report */
-    private String runtimeMode = "invoke";
+    private String runtimeMode = "agent";
 }

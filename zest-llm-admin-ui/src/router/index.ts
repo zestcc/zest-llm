@@ -16,6 +16,7 @@ import UsersView from '../views/UsersView.vue'
 import PlaygroundView from '../views/PlaygroundView.vue'
 import EvalView from '../views/EvalView.vue'
 import FlowChainsView from '../views/FlowChainsView.vue'
+import OpsView from '../views/OpsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -40,6 +41,7 @@ const router = createRouter({
         { path: 'executions', component: ExecutionsView, meta: { title: '执行记录' } },
         { path: 'registry', component: RegistryView, meta: { title: '方法注册' } },
         { path: 'audit-logs', component: AuditLogsView, meta: { title: '审计日志' } },
+        { path: 'ops', component: OpsView, meta: { title: '运维中心' } },
         { path: 'adapters', component: AdaptersView, meta: { title: '适配器健康' } }
       ]
     }

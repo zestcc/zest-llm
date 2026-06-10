@@ -52,12 +52,21 @@ public class AgentProfileResolver {
     private final ObjectMapper objectMapper;
 
     public CachedPolicy resolve(LlmAppDO app, LlmAiTaskDefDO task, String traceId) {
+        return resolve(app, task, null, traceId);
+    }
+
+    /**
+     * @param profileOverride 非空时使用指定 Profile 版本（用于探测草稿），否则取已发布版
+     */
+    public CachedPolicy resolve(LlmAppDO app, LlmAiTaskDefDO task, LlmAgentProfileDO profileOverride, String traceId) {
         LlmPromptVersionDO prompt = promptVersionRepo.findPublishedByTaskId(task.getId())
                 .orElseThrow(() -> new ZestLlmException(LlmErrorCode.PROMPT_NOT_FOUND, traceId));
         LlmModelRouteDO route = modelRouteRepo.findActiveByTaskId(task.getId())
                 .orElseThrow(() -> new ZestLlmException(LlmErrorCode.INTERNAL_ERROR, traceId, "Model route not configured"));
 
-        Optional<LlmAgentProfileDO> publishedProfile = agentProfileRepo.findPublishedByTaskId(task.getId());
+        Optional<LlmAgentProfileDO> publishedProfile = profileOverride != null
+                ? Optional.of(profileOverride)
+                : agentProfileRepo.findPublishedByTaskId(task.getId());
         AgentProfileDocument document = publishedProfile
                 .map(p -> parseProfile(p.getProfileJson(), traceId))
                 .orElse(buildLegacyDocument(route));

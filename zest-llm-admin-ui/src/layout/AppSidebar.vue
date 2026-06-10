@@ -70,6 +70,10 @@
         <el-icon><Notebook /></el-icon>
         <span>审计日志</span>
       </el-menu-item>
+      <el-menu-item index="/ops">
+        <el-icon><Bell /></el-icon>
+        <span>运维中心</span>
+      </el-menu-item>
       <el-menu-item index="/adapters">
         <el-icon><Connection /></el-icon>
         <span>适配器健康</span>
@@ -89,6 +93,7 @@ import {
   Grid,
   List,
   Notebook,
+  Bell,
   OfficeBuilding,
   Odometer,
   Setting,

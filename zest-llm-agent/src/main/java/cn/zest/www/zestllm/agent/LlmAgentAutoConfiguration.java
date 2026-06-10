@@ -3,8 +3,8 @@ package cn.zest.www.zestllm.agent;
 
 
 import cn.zest.www.zestllm.agent.cache.AgentPolicyCache;
-
 import cn.zest.www.zestllm.agent.config.LlmAgentProperties;
+import cn.zest.www.zestllm.agent.report.AgentReportRetryQueue;
 
 import cn.zest.www.zestllm.infra.tool.FunctionCallLoop;
 
@@ -27,6 +27,8 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 import org.springframework.context.annotation.Bean;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 import org.springframework.http.MediaType;
 
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -40,6 +42,8 @@ import java.time.Duration;
 
 
 @AutoConfiguration
+
+@EnableScheduling
 
 @ConditionalOnProperty(name = "zest.llm.agent.enabled", havingValue = "true")
 
@@ -101,6 +105,18 @@ public class LlmAgentAutoConfiguration {
 
     @ConditionalOnMissingBean
 
+    public AgentReportRetryQueue agentReportRetryQueue(RestClient llmAgentControlPlaneRestClient) {
+
+        return new AgentReportRetryQueue(llmAgentControlPlaneRestClient);
+
+    }
+
+
+
+    @Bean
+
+    @ConditionalOnMissingBean
+
     public LlmAgentClient llmAgentClient(LlmAgentProperties properties,
 
                                          RestClient llmAgentControlPlaneRestClient,
@@ -119,13 +135,17 @@ public class LlmAgentAutoConfiguration {
 
                                          AgentPolicyCache agentPolicyCache,
 
-                                         ContentModerationAdapter contentModerationAdapter) {
+                                         ContentModerationAdapter contentModerationAdapter,
+
+                                         AgentReportRetryQueue agentReportRetryQueue) {
 
         return new LlmAgentClient(properties, llmAgentControlPlaneRestClient,
 
                 llmAgentLiteLlmRestClient, objectMapper, outputSchemaValidator, toolOrchestrator,
 
-                functionCallLoop, sseStreamHandler, agentPolicyCache, contentModerationAdapter);
+                functionCallLoop, sseStreamHandler, agentPolicyCache, contentModerationAdapter,
+
+                agentReportRetryQueue);
 
     }
 

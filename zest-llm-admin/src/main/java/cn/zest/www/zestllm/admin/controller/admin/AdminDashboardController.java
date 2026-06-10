@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.controller.admin;
 
+import cn.zest.www.zestllm.admin.model.vo.AgentHealthDashboardVO;
 import cn.zest.www.zestllm.admin.model.vo.DailyCostVO;
 import cn.zest.www.zestllm.admin.model.vo.DashboardStatsVO;
 import cn.zest.www.zestllm.admin.service.DashboardService;
@@ -28,5 +29,10 @@ public class AdminDashboardController {
     @GetMapping("/cost")
     public Result<List<DailyCostVO>> cost(@RequestParam(defaultValue = "7") int days) {
         return Result.success(dashboardService.costLastDays(days));
+    }
+
+    @GetMapping("/agent-health")
+    public Result<AgentHealthDashboardVO> agentHealth() {
+        return Result.success(dashboardService.agentHealth());
     }
 }

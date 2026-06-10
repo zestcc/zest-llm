@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZestLLM 生产验收 E2E（AC1–AC10 + Agent 模式）
+# ZestLLM 生产验收 E2E（AC1–AC32 + Agent 模式）
 set -euo pipefail
 
 ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
@@ -206,5 +206,38 @@ ARCHIVE=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/execut
 echo "$ARCHIVE" | grep -q "hotExecutions" \
   && echo "$ARCHIVE" | grep -q "archiveEnabled" \
   && echo "PASS AC28" || { echo "FAIL AC28: $ARCHIVE"; exit 1; }
+
+echo "== AC29: Agent profile probe (published aiChat) =="
+PROBE=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profiles/aiChat/probe" \
+  -d '{"smokeTest":false}')
+echo "$PROBE" | grep -q "overallStatus" \
+  && echo "$PROBE" | grep -q "checks" \
+  && echo "$PROBE" | grep -q "probeId" \
+  && echo "PASS AC29" || { echo "FAIL AC29: $PROBE"; exit 1; }
+
+echo "== AC30: Dashboard agent health =="
+AGENT_HEALTH=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/dashboard/agent-health")
+echo "$AGENT_HEALTH" | grep -q "monitored" \
+  && echo "$AGENT_HEALTH" | grep -q "ready" \
+  && echo "$AGENT_HEALTH" | grep -q "alerts" \
+  && echo "PASS AC30" || { echo "FAIL AC30: $AGENT_HEALTH"; exit 1; }
+
+echo "== AC31: Agent probe history persisted =="
+PROBE_HIST=$(curl -s -H "Authorization: Bearer $TOKEN" \
+  "$ADMIN_URL/api/admin/agent-profiles/aiChat/probe/history?page=1&size=5")
+echo "$PROBE_HIST" | grep -q "records" \
+  && echo "$PROBE_HIST" | grep -q "aiChat" \
+  && echo "PASS AC31" || { echo "FAIL AC31: $PROBE_HIST"; exit 1; }
+
+echo "== AC32: Ops center APIs (cost alerts + probe alerts + dashboard stats) =="
+COST_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/cost-alerts")
+echo "$COST_ALERTS" | grep -q "\[" && echo "PASS AC32 cost-alerts" || { echo "FAIL AC32 cost-alerts: $COST_ALERTS"; exit 1; }
+PROBE_ALERTS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-probe-alerts")
+echo "$PROBE_ALERTS" | grep -q "\[" && echo "PASS AC32 probe-alerts" || { echo "FAIL AC32 probe-alerts: $PROBE_ALERTS"; exit 1; }
+DASH_STATS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/dashboard/stats")
+echo "$DASH_STATS" | grep -q "agentsMonitored" \
+  && echo "$DASH_STATS" | grep -q "agentsReady" \
+  && echo "PASS AC32 dashboard-stats" || { echo "FAIL AC32 dashboard-stats: $DASH_STATS"; exit 1; }
 
 echo "== All automated E2E checks passed =="
