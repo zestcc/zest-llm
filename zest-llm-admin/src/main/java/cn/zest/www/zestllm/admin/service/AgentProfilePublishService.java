@@ -3,12 +3,17 @@ package cn.zest.www.zestllm.admin.service;
 import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
+import cn.zest.www.zestllm.admin.model.entity.LlmAppDO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfilePublishResultVO;
 import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
+import cn.zest.www.zestllm.spi.learning.LearningCycleResult;
+import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
+import cn.zest.www.zestllm.spi.profile.LearningLoopConfig;
+import cn.zest.www.zestllm.spi.profile.ProfileExtensions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,9 @@ public class AgentProfilePublishService {
     private final PolicyCacheAdapter policyCacheAdapter;
     private final ResponseCacheAdapter responseCacheAdapter;
     private final AuditService auditService;
+    private final AgentProfileResolver agentProfileResolver;
+    private final ProfileExtensionsValidator profileExtensionsValidator;
+    private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
 
     @Transactional(rollbackFor = Exception.class)
     public AgentProfilePublishResultVO publish(String taskCode, String version, String operator) {
@@ -35,14 +43,28 @@ public class AgentProfilePublishService {
                 .orElseThrow(() -> new BusinessException("PROFILE_NOT_FOUND",
                         "Profile 版本不存在: " + taskCode + "@" + version));
 
+        AgentProfileDocument document = agentProfileResolver.parseProfile(profile.getProfileJson(), null);
+        profileExtensionsValidator.validate(document);
+
+        LearningLoopConfig loop = ProfileExtensions.learningLoop(document).orElse(null);
+        if (loop != null && loop.isEnabled()) {
+            LearningCycleResult cycle = learningPipelineAdapter.validateForPublish(taskCode, version, document);
+            if (loop.isProbeBeforePublish() && !cycle.isProbePassed()) {
+                throw new BusinessException("PROBE_FAILED",
+                        "发布门禁：探测未通过 · " + cycle.getMessage(), 409);
+            }
+            if (cycle.getPassRate() < loop.getMinPassRate()) {
+                throw new BusinessException("EVAL_BELOW_THRESHOLD",
+                        "发布门禁：Eval 通过率 " + String.format("%.2f", cycle.getPassRate() * 100)
+                                + "% 低于阈值 " + String.format("%.0f", loop.getMinPassRate() * 100) + "%", 409);
+            }
+        }
+
         String op = operator != null ? operator : "admin";
         agentProfileRepo.unpublishOthers(task.getId(), version);
         agentProfileRepo.publish(task.getId(), version, op);
         auditService.log("PUBLISH", "AGENT_PROFILE", taskCode, Map.of("version", version, "operator", op));
-        appRepo.findById(task.getAppId()).ifPresent(app -> {
-            policyCacheAdapter.invalidate(app.getAppKey(), task.getCode());
-            responseCacheAdapter.invalidate(app.getAppKey(), task.getCode());
-        });
+        appRepo.findById(task.getAppId()).ifPresent(app -> invalidateCache(app, task.getCode()));
 
         return AgentProfilePublishResultVO.builder()
                 .taskCode(taskCode)
@@ -51,5 +73,10 @@ public class AgentProfilePublishService {
                 .publishedAt(LocalDateTime.now())
                 .operator(op)
                 .build();
+    }
+
+    private void invalidateCache(LlmAppDO app, String taskCode) {
+        policyCacheAdapter.invalidate(app.getAppKey(), taskCode);
+        responseCacheAdapter.invalidate(app.getAppKey(), taskCode);
     }
 }

@@ -255,7 +255,40 @@ export interface AdminFeatures {
   appVersion?: string
   flywayLatestScript?: string
   agentProbeApi?: boolean
+  learningApi?: boolean
+  integrationAdaptersEnabled?: boolean
   schemaReady?: Record<string, boolean>
+}
+
+export interface LearningCycleRunVO {
+  runCode?: string
+  taskCode?: string
+  profileVersion?: string
+  passRate?: number
+  probePassed?: boolean
+  publishAllowed?: boolean
+  status?: string
+  message?: string
+  startedAt?: string
+  finishedAt?: string
+}
+
+export interface EvalCaseSuggestion {
+  traceId?: string
+  suggestedInput?: string
+  suggestedExpected?: string
+  reason?: string
+  source?: string
+}
+
+export interface LearningCycleResult {
+  passRate?: number
+  totalCases?: number
+  passedCases?: number
+  probePassed?: boolean
+  publishAllowed?: boolean
+  message?: string
+  failedCaseCodes?: string[]
 }
 
 export interface ExecutionArchiveRunVO {
@@ -786,6 +819,20 @@ export const adminApi = {
 
   listAgentProbeAlerts(taskCode?: string, page = 1, size = 20) {
     return http.get<PageResult<AgentProbeAlertVO>>('/api/admin/agent-probe-alerts', { params: { taskCode, page, size } })
+  },
+
+  suggestLearningCases(body: { taskCode: string; limit?: number }) {
+    return http.post<EvalCaseSuggestion[]>('/api/admin/learning/suggest-cases', body)
+  },
+
+  runLearningCycle(body: { taskCode: string; profileVersion: string; dryRun?: boolean }) {
+    return http.post<LearningCycleResult>('/api/admin/learning/run-cycle', body)
+  },
+
+  listLearningCycles(taskCode?: string, page = 1, size = 20) {
+    return http.get<PageResult<LearningCycleRunVO>>('/api/admin/learning/cycles', {
+      params: { taskCode, page, size }
+    })
   },
 
   resendAgentProbeAlert(id: number) {

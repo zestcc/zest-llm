@@ -6,10 +6,13 @@ import cn.zest.www.zestllm.spi.audit.AuditAdapter;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import cn.zest.www.zestllm.spi.gateway.ModelGatewayAdapter;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.spi.learning.LearningPipelineAdapter;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.spi.observability.ObservabilityAdapter;
 import cn.zest.www.zestllm.spi.prompt.PromptRenderer;
 import cn.zest.www.zestllm.spi.quota.QuotaAdapter;
+import cn.zest.www.zestllm.spi.runtime.AgentRuntimeAdapter;
 import cn.zest.www.zestllm.spi.schema.OutputSchemaValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -30,6 +33,9 @@ public class AdapterHealthService {
     private final AuditAdapter auditAdapter;
     private final PromptRenderer promptRenderer;
     private final OutputSchemaValidator outputSchemaValidator;
+    private final AgentRuntimeAdapter agentRuntimeAdapter;
+    private final KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;
+    private final LearningPipelineAdapter learningPipelineAdapter;
 
     public List<AdapterHealthVO> listAll() {
         List<AdapterHealthVO> items = new ArrayList<>();
@@ -48,6 +54,12 @@ public class AdapterHealthService {
                 promptRenderer.rendererId(), HealthStatus.builder().up(true).message("ok").build()));
         items.add(fromHealth("output-schema-validator", adapterProperties.getOutputSchemaValidator(),
                 outputSchemaValidator.adapterId(), HealthStatus.builder().up(true).message("ok").build()));
+        items.add(fromHealth("agent-runtime", adapterProperties.getAgentRuntime(),
+                agentRuntimeAdapter.adapterId(), agentRuntimeAdapter.health()));
+        items.add(fromHealth("knowledge-retrieval", adapterProperties.getKnowledgeRetrieval(),
+                knowledgeRetrievalAdapter.adapterId(), knowledgeRetrievalAdapter.health()));
+        items.add(fromHealth("learning-pipeline", adapterProperties.getLearningPipeline(),
+                learningPipelineAdapter.adapterId(), learningPipelineAdapter.health()));
         return items;
     }
 

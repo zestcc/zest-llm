@@ -69,11 +69,17 @@ const SPI_META: Record<string, { title: string; icon: typeof Connection }> = {
   audit: { title: 'Audit', icon: Document },
   'prompt-renderer': { title: 'Prompt Renderer', icon: Monitor },
   'output-schema-validator': { title: 'Schema Validator', icon: DataAnalysis },
-  schema: { title: 'Schema Validator', icon: DataAnalysis }
+  schema: { title: 'Schema Validator', icon: DataAnalysis },
+  'agent-runtime': { title: 'Agent Runtime', icon: Connection },
+  'knowledge-retrieval': { title: 'Knowledge RAG', icon: Files },
+  'learning-pipeline': { title: 'Learning Pipeline', icon: DataAnalysis }
 }
 
 const SPI_ORDER = [
   'model-gateway',
+  'agent-runtime',
+  'knowledge-retrieval',
+  'learning-pipeline',
   'observability',
   'quota',
   'policy-cache',

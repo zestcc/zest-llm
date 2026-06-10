@@ -44,6 +44,23 @@ public class LlmExecutionRepo {
         return mapper.selectPage(new Page<>(pageNum, pageSize), wrapper);
     }
 
+    public List<LlmExecutionDO> findRecentByTaskAndStatus(String taskCode, String status,
+                                                          java.time.LocalDateTime since, int limit) {
+        LambdaQueryWrapper<LlmExecutionDO> wrapper = new LambdaQueryWrapper<LlmExecutionDO>()
+                .orderByDesc(LlmExecutionDO::getCreatedAt)
+                .last("LIMIT " + Math.max(1, limit));
+        if (taskCode != null && !taskCode.isBlank()) {
+            wrapper.eq(LlmExecutionDO::getTaskCode, taskCode);
+        }
+        if (status != null && !status.isBlank()) {
+            wrapper.eq(LlmExecutionDO::getStatus, status);
+        }
+        if (since != null) {
+            wrapper.ge(LlmExecutionDO::getCreatedAt, since);
+        }
+        return mapper.selectList(wrapper);
+    }
+
     public long countAll() {
         return mapper.countAll();
     }

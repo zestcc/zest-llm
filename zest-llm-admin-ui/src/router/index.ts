@@ -18,6 +18,7 @@ const router = createRouter({
         { path: 'prompts', component: () => import('../views/PromptsView.vue'), meta: { title: 'Prompt 管理' } },
         { path: 'playground', component: () => import('../views/PlaygroundView.vue'), meta: { title: 'Playground' } },
         { path: 'eval', component: () => import('../views/EvalView.vue'), meta: { title: 'Eval 评测' } },
+        { path: 'learning', component: () => import('../views/LearningView.vue'), meta: { title: '自我改进' } },
         { path: 'flow-chains', component: () => import('../views/FlowChainsView.vue'), meta: { title: 'Flow 链' } },
         { path: 'model-routes', component: () => import('../views/ModelRoutesView.vue'), meta: { title: '模型路由' } },
         { path: 'agent-config', component: () => import('../views/AgentConfigView.vue'), meta: { title: '智能体配置' } },

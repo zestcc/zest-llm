@@ -1,0 +1,57 @@
+{
+  "apiVersion": "zestllm/v1",
+  "runtimeMode": "hybrid",
+  "providerRef": "litellm-default",
+  "model": {
+    "primary": "gpt-4o-mini",
+    "fallback": ["deepseek-chat"]
+  },
+  "generation": {
+    "maxTokens": 2048,
+    "temperature": 0.3,
+    "timeoutMs": 45000
+  },
+  "tools": [],
+  "guardrails": {
+    "piiRedact": true,
+    "blockOnSchemaMismatch": true
+  },
+  "providers": {
+    "litellm-default": {
+      "type": "litellm",
+      "baseUrl": "http://litellm:4000",
+      "protocol": "openai"
+    }
+  },
+  "inboundAuth": { "mode": "STATIC_TOKEN" },
+  "outboundAuth": { "mode": "API_KEY_REF", "secretRef": "env:LITELLM_API_KEY" },
+  "extensions": {
+    "runtimeBackend": {
+      "type": "native",
+      "baseUrl": "http://litellm:4000",
+      "protocol": "openai-compatible"
+    },
+    "knowledge": {
+      "enabled": true,
+      "provider": "ragflow",
+      "datasetIds": ["order-faq-v2", "product-manual"],
+      "topK": 5,
+      "scoreThreshold": 0.65,
+      "injectMode": "system_prefix",
+      "baseUrl": "http://ragflow:9380",
+      "secretRef": "env:RAGFLOW_API_KEY"
+    },
+    "learningLoop": {
+      "enabled": true,
+      "evalDatasetRef": "order-chat-regression@v3",
+      "minPassRate": 0.88,
+      "probeBeforePublish": true,
+      "autoDraftFromFailures": false,
+      "distillationSources": [
+        "langfuse:scores<3",
+        "execution:guardrail_fail"
+      ],
+      "reviewRequired": true
+    }
+  }
+}

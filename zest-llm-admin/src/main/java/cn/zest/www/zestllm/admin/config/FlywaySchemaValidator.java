@@ -14,7 +14,8 @@ public class FlywaySchemaValidator implements ApplicationRunner {
 
     private static final String[] REQUIRED_TABLES = {
             "llm_agent_profile_probe",
-            "llm_agent_probe_alert"
+            "llm_agent_probe_alert",
+            "llm_learning_cycle_run"
     };
 
     private final JdbcTemplate jdbcTemplate;

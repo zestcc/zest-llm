@@ -17,7 +17,11 @@ import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveResult;
+import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.spi.profile.InboundAuthConfig;
+import cn.zest.www.zestllm.spi.runtime.AgentRuntimeAdapter;
 import cn.zest.www.zestllm.spi.secret.SecretResolver;
 import cn.zest.www.zestllm.spi.tool.McpToolAdapter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -67,6 +71,10 @@ class AgentProfileProbeServiceTest {
     private AgentProfileProbeRecordService probeRecordService;
     @Mock
     private AgentProfileProbeProperties probeProperties;
+    @Mock
+    private AgentRuntimeAdapter agentRuntimeAdapter;
+    @Mock
+    private KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;
 
     private AgentProfileProbeService probeService;
 
@@ -74,6 +82,9 @@ class AgentProfileProbeServiceTest {
     void setUp() {
         when(probeProperties.getMaxParallel()).thenReturn(4);
         when(probeProperties.getBatchTimeoutSeconds()).thenReturn(120);
+        when(agentRuntimeAdapter.health()).thenReturn(HealthStatus.builder().up(true).message("ok").build());
+        when(knowledgeRetrievalAdapter.health()).thenReturn(HealthStatus.builder().up(true).message("ok").build());
+        when(knowledgeRetrievalAdapter.retrieve(any())).thenReturn(KnowledgeRetrieveResult.builder().build());
         probeService = new AgentProfileProbeService(
                 taskDefRepo,
                 appRepo,
@@ -87,7 +98,9 @@ class AgentProfileProbeServiceTest {
                 mcpToolAdapter,
                 new ObjectMapper(),
                 probeRecordService,
-                probeProperties);
+                probeProperties,
+                agentRuntimeAdapter,
+                knowledgeRetrievalAdapter);
     }
 
     @Test

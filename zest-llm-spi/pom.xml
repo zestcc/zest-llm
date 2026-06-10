@@ -11,4 +11,16 @@
     <artifactId>zest-llm-spi</artifactId>
     <packaging>jar</packaging>
     <description>ZestLLM 可插拔 SPI 接口</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 </project>

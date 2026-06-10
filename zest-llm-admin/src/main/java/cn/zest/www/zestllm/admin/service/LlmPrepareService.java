@@ -13,6 +13,8 @@ import cn.zest.www.zestllm.spi.guardrails.ContentModerationAdapter;
 import cn.zest.www.zestllm.spi.profile.GuardrailsConfig;
 import cn.zest.www.zestllm.spi.observability.ObservabilityAdapter;
 import cn.zest.www.zestllm.spi.quota.QuotaAdapter;
+import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
+import cn.zest.www.zestllm.spi.profile.ProfileExtensions;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,7 @@ public class LlmPrepareService {
     private final ObjectMapper objectMapper;
     private final ObservabilityAdapter observabilityAdapter;
     private final ContentModerationAdapter contentModerationAdapter;
+    private final ProfileIntegrationHelper profileIntegrationHelper;
 
     @Transactional(rollbackFor = Exception.class)
     public PrepareResponse prepare(String bearerToken, PrepareRequest request) {
@@ -54,6 +57,15 @@ public class LlmPrepareService {
         GuardrailsConfig guardrails = policy.getGuardrails();
         String renderedPrompt = GuardrailsEnforcer.enforcePrompt(
                 resolved.getRenderedPrompt(), guardrails, traceId, contentModerationAdapter);
+
+        AgentProfileDocument profileDoc = policy.getProfileDocument();
+        String runtimeMode = policy.getRuntimeMode();
+        cn.zest.www.zestllm.common.api.KnowledgePrefetchSummary knowledgePrefetch = null;
+        if (profileDoc != null) {
+            knowledgePrefetch = profileIntegrationHelper.prefetchKnowledge(
+                    profileDoc, runtimeMode, resolved.getTask().getCode(), app.getAppKey(), traceId, request.getInputs());
+            renderedPrompt = profileIntegrationHelper.injectKnowledgePrefix(renderedPrompt, knowledgePrefetch);
+        }
 
         savePendingExecution(traceId, app, resolved, request);
 
@@ -81,6 +93,15 @@ public class LlmPrepareService {
         response.setMaxToolSteps(policy.getMaxToolSteps());
         response.setGuardrails(policy.getGuardrails());
         response.setProviders(policy.getProviders());
+        if (profileDoc != null) {
+            ProfileExtensions.runtimeBackend(profileDoc)
+                    .map(profileIntegrationHelper::toRuntimeBackendSummary)
+                    .ifPresent(response::setRuntimeBackend);
+            ProfileExtensions.learningLoop(profileDoc)
+                    .map(profileIntegrationHelper::toLearningLoopSummary)
+                    .ifPresent(response::setLearningLoop);
+        }
+        response.setKnowledgePrefetch(knowledgePrefetch);
         return response;
     }
 

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zest.cn/schemas/zestllm/profile-extensions/v1.1",
+  "title": "ZestLLM Profile Extensions v1.1",
+  "description": "extensions 命名空间下的整合型字段，挂载于 AgentProfileDocument.extensions",
+  "type": "object",
+  "properties": {
+    "runtimeBackend": {
+      "type": "object",
+      "required": ["type", "baseUrl"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["native", "dify", "fastgpt", "custom"]
+        },
+        "baseUrl": { "type": "string", "format": "uri" },
+        "externalAppId": { "type": "string" },
+        "protocol": {
+          "type": "string",
+          "enum": ["dify-chat", "dify-workflow", "openai-compatible", "custom"]
+        },
+        "secretRef": { "type": "string" },
+        "timeoutMs": { "type": "integer", "minimum": 1000, "default": 60000 }
+      }
+    },
+    "knowledge": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "provider": {
+          "type": "string",
+          "enum": ["ragflow", "dify-kb", "custom", "noop"]
+        },
+        "datasetIds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "topK": { "type": "integer", "minimum": 1, "maximum": 50, "default": 5 },
+        "scoreThreshold": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.6 },
+        "injectMode": {
+          "type": "string",
+          "enum": ["system_prefix", "external", "none"],
+          "default": "system_prefix"
+        },
+        "baseUrl": { "type": "string", "format": "uri" },
+        "secretRef": { "type": "string" }
+      }
+    },
+    "learningLoop": {
+      "type": "object",
+      "properties": {
+        "enabled": { "type": "boolean", "default": false },
+        "evalDatasetRef": {
+          "type": "string",
+          "pattern": "^[a-zA-Z0-9_-]+@v[0-9]+$"
+        },
+        "minPassRate": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.85 },
+        "probeBeforePublish": { "type": "boolean", "default": true },
+        "autoDraftFromFailures": { "type": "boolean", "default": false },
+        "distillationSources": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "reviewRequired": { "type": "boolean", "default": true }
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -35,6 +35,7 @@ public class AgentProfileManageService {
     private final AuditService auditService;
     private final PolicyCacheAdapter policyCacheAdapter;
     private final ResponseCacheAdapter responseCacheAdapter;
+    private final ProfileExtensionsValidator profileExtensionsValidator;
 
     public List<AgentProfileVO> listVersions(String taskCode) {
         LlmAiTaskDefDO task = requireTask(taskCode);
@@ -146,7 +147,8 @@ public class AgentProfileManageService {
     }
 
     private void validateProfileJson(String profileJson) {
-        agentProfileResolver.parseProfile(profileJson, null);
+        AgentProfileDocument doc = agentProfileResolver.parseProfile(profileJson, null);
+        profileExtensionsValidator.validate(doc);
     }
 
     private String normalizeJson(String profileJson) {

@@ -1,6 +1,7 @@
 # ZestLLM 智能体配置模型
 
-> 版本 1.0.0 · 对标 CC Switch / LiteLLM Router / OpenAI Assistants 的配置分层思路
+> 版本 1.0.0 · 对标 CC Switch / LiteLLM Router / OpenAI Assistants 的配置分层思路  
+> **整合型扩展（Runtime / Knowledge / LearningLoop）** → [AI整合与自我改进标准-完整版](./AI整合与自我改进标准-完整版.md)
 
 ## 1. 设计目标
 

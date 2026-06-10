@@ -21,8 +21,18 @@ import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
+import cn.zest.www.zestllm.spi.profile.KnowledgeRefConfig;
 import cn.zest.www.zestllm.spi.profile.OutboundAuthConfig;
+import cn.zest.www.zestllm.spi.profile.ProfileExtensions;
+import cn.zest.www.zestllm.spi.profile.RuntimeBackendConfig;
 import cn.zest.www.zestllm.spi.profile.ToolDefinition;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
+import cn.zest.www.zestllm.spi.model.HealthStatus;
+import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.infra.runtime.DifyAgentRuntimeAdapter;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.spi.runtime.AgentRuntimeAdapter;
+import cn.zest.www.zestllm.spi.runtime.AgentRuntimeInvokeRequest;
 import cn.zest.www.zestllm.spi.secret.SecretResolver;
 import cn.zest.www.zestllm.spi.tool.McpToolAdapter;
 import cn.zest.www.zestllm.spi.tool.McpToolListRequest;
@@ -68,6 +78,8 @@ public class AgentProfileProbeService {
     private final ObjectMapper objectMapper;
     private final AgentProfileProbeRecordService probeRecordService;
     private final AgentProfileProbeProperties probeProperties;
+    private final AgentRuntimeAdapter agentRuntimeAdapter;
+    private final KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;
 
     public AgentProfileProbeResultVO probePublished(String taskCode, AgentProfileProbeRequest request) {
         return probePublished(taskCode, request, AgentProfileProbeRecordService.SOURCE_MANUAL);
@@ -189,6 +201,8 @@ public class AgentProfileProbeService {
                 checks.add(critical("gateway-health", "CONNECTIVITY", false, "未解析到 gatewayBaseUrl"));
             }
             checks.addAll(probeMcpTools(document));
+            checks.addAll(probeExternalRuntime(document, task, req));
+            checks.addAll(probeKnowledge(document, task));
             if (req.isSmokeTest() && policy != null && StringUtils.hasText(policy.getPrimaryModel())) {
                 checks.add(smokeInvoke(policy));
             }
@@ -299,6 +313,70 @@ public class AgentProfileProbeService {
                 checks.add(configCheck(checkName, false, serverRef + " 不可达: " + ex.getMessage()));
             }
         }
+        return checks;
+    }
+
+    private List<AgentProfileProbeCheckVO> probeExternalRuntime(AgentProfileDocument document,
+                                                                LlmAiTaskDefDO task,
+                                                                AgentProfileProbeRequest request) {
+        List<AgentProfileProbeCheckVO> checks = new ArrayList<>();
+        Optional<RuntimeBackendConfig> backendOpt = ProfileExtensions.runtimeBackend(document);
+        if (backendOpt.isEmpty()) {
+            if ("external".equalsIgnoreCase(document.getRuntimeMode())) {
+                checks.add(critical("external-runtime", "CONNECTIVITY", false, "external 模式缺少 runtimeBackend"));
+            }
+            return checks;
+        }
+        RuntimeBackendConfig backend = backendOpt.get();
+        if ("native".equalsIgnoreCase(backend.getType())) {
+            return checks;
+        }
+        HealthStatus health;
+        if (agentRuntimeAdapter instanceof DifyAgentRuntimeAdapter dify) {
+            health = dify.health(backend);
+        } else {
+            health = agentRuntimeAdapter.health();
+        }
+        checks.add(critical("external-runtime", "CONNECTIVITY", health.isUp(), health.getMessage()));
+        if (request.isSmokeTest() && health.isUp() && "dify".equalsIgnoreCase(backend.getType())) {
+            try {
+                agentRuntimeAdapter.invoke(AgentRuntimeInvokeRequest.builder()
+                        .traceId("probe_" + task.getCode())
+                        .taskCode(task.getCode())
+                        .runtimeBackend(backend)
+                        .userMessage("ping")
+                        .build());
+                checks.add(configCheck("external-runtime-smoke", true, "外部 Runtime 样例对话已调用"));
+            } catch (Exception ex) {
+                checks.add(configCheck("external-runtime-smoke", false, "外部 Runtime 样例对话失败: " + ex.getMessage()));
+            }
+        }
+        return checks;
+    }
+
+    private List<AgentProfileProbeCheckVO> probeKnowledge(AgentProfileDocument document, LlmAiTaskDefDO task) {
+        List<AgentProfileProbeCheckVO> checks = new ArrayList<>();
+        Optional<KnowledgeRefConfig> knowledgeOpt = ProfileExtensions.knowledge(document);
+        if (knowledgeOpt.isEmpty() || !knowledgeOpt.get().isEnabled()) {
+            checks.add(configCheck("knowledge-retrieval", true, "未启用知识检索"));
+            return checks;
+        }
+        KnowledgeRefConfig knowledge = knowledgeOpt.get();
+        HealthStatus health;
+        if (knowledgeRetrievalAdapter instanceof RagflowKnowledgeRetrievalAdapter ragflow) {
+            health = ragflow.health(knowledge);
+        } else {
+            health = knowledgeRetrievalAdapter.health();
+        }
+        checks.add(configCheck("knowledge-health", health.isUp(), health.getMessage()));
+        var result = knowledgeRetrievalAdapter.retrieve(KnowledgeRetrieveRequest.builder()
+                .traceId("probe_" + task.getCode())
+                .taskCode(task.getCode())
+                .query("health check")
+                .knowledge(knowledge)
+                .build());
+        checks.add(configCheck("knowledge-sample", true,
+                "样例 retrieve · chunks=" + result.getChunks().size()));
         return checks;
     }
 

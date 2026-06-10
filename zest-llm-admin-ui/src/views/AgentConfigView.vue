@@ -167,7 +167,38 @@
           <el-radio-group v-model="profileForm.runtimeMode">
             <el-radio value="invoke">invoke</el-radio>
             <el-radio value="agent">agent</el-radio>
+            <el-radio value="external">external</el-radio>
+            <el-radio value="hybrid">hybrid</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-divider content-position="left">整合扩展 (extensions)</el-divider>
+        <el-form-item label="Runtime 类型">
+          <el-select v-model="extensionsForm.runtimeType" style="width: 100%">
+            <el-option label="native" value="native" />
+            <el-option label="dify" value="dify" />
+            <el-option label="fastgpt" value="fastgpt" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Runtime URL">
+          <el-input v-model="extensionsForm.runtimeBaseUrl" placeholder="http://dify:5001" />
+        </el-form-item>
+        <el-form-item label="外部 App ID">
+          <el-input v-model="extensionsForm.externalAppId" placeholder="Dify app id" />
+        </el-form-item>
+        <el-form-item label="知识库">
+          <el-switch v-model="extensionsForm.knowledgeEnabled" />
+        </el-form-item>
+        <el-form-item v-if="extensionsForm.knowledgeEnabled" label="Dataset IDs">
+          <el-input v-model="extensionsForm.datasetIds" placeholder="kb-faq,product-manual" />
+        </el-form-item>
+        <el-form-item label="Learning Loop">
+          <el-switch v-model="extensionsForm.learningEnabled" />
+        </el-form-item>
+        <el-form-item v-if="extensionsForm.learningEnabled" label="Eval 数据集">
+          <el-input v-model="extensionsForm.evalDatasetRef" placeholder="order-chat-regression@v1" />
+        </el-form-item>
+        <el-form-item v-if="extensionsForm.learningEnabled" label="最低通过率">
+          <el-input-number v-model="extensionsForm.minPassRate" :min="0" :max="1" :step="0.05" />
         </el-form-item>
         <el-form-item label="Profile JSON">
           <el-input v-model="profileForm.profileJson" type="textarea" :rows="16" />
@@ -435,23 +466,102 @@ const mcpForm = ref({
   configJson: '{}'
 })
 
+const extensionsForm = ref({
+  runtimeType: 'native',
+  runtimeBaseUrl: 'http://litellm:4000',
+  externalAppId: '',
+  knowledgeEnabled: false,
+  datasetIds: '',
+  learningEnabled: false,
+  evalDatasetRef: '',
+  minPassRate: 0.85
+})
+
 function defaultProfileJson() {
-  return JSON.stringify(
-    {
-      apiVersion: 'zestllm/v1',
-      runtimeMode: 'agent',
-      providerRef: 'litellm-default',
-      model: { primary: 'gpt-4o-mini', fallback: ['gpt-3.5-turbo'] },
-      toolCallMode: 'loop',
-      generation: { maxTokens: 1024, temperature: 0.7, timeoutMs: 30000, maxToolSteps: 3 },
-      tools: [],
-      guardrails: { piiRedact: false, blockOnSchemaMismatch: true },
-      inboundAuth: { mode: 'STATIC_TOKEN' },
-      outboundAuth: { mode: 'API_KEY_REF', secretRef: 'env:LITELLM_API_KEY' }
-    },
-    null,
-    2
-  )
+  return JSON.stringify(buildProfileDocument('agent'), null, 2)
+}
+
+function buildProfileDocument(runtimeMode: string) {
+  const doc: Record<string, unknown> = {
+    apiVersion: 'zestllm/v1',
+    runtimeMode,
+    providerRef: 'litellm-default',
+    model: { primary: 'gpt-4o-mini', fallback: ['gpt-3.5-turbo'] },
+    toolCallMode: 'loop',
+    generation: { maxTokens: 1024, temperature: 0.7, timeoutMs: 30000, maxToolSteps: 3 },
+    tools: [],
+    guardrails: { piiRedact: false, blockOnSchemaMismatch: true },
+    inboundAuth: { mode: 'STATIC_TOKEN' },
+    outboundAuth: { mode: 'API_KEY_REF', secretRef: 'env:LITELLM_API_KEY' },
+    extensions: buildExtensions()
+  }
+  return doc
+}
+
+function buildExtensions() {
+  const ext: Record<string, unknown> = {
+    runtimeBackend: {
+      type: extensionsForm.value.runtimeType,
+      baseUrl: extensionsForm.value.runtimeBaseUrl,
+      externalAppId: extensionsForm.value.externalAppId || undefined,
+      protocol: extensionsForm.value.runtimeType === 'dify' ? 'dify-chat' : 'openai-compatible'
+    }
+  }
+  if (extensionsForm.value.knowledgeEnabled) {
+    ext.knowledge = {
+      enabled: true,
+      provider: 'ragflow',
+      datasetIds: extensionsForm.value.datasetIds.split(',').map((s) => s.trim()).filter(Boolean),
+      topK: 5,
+      scoreThreshold: 0.6,
+      injectMode: 'system_prefix',
+      baseUrl: 'http://ragflow:9380',
+      secretRef: 'env:RAGFLOW_API_KEY'
+    }
+  }
+  if (extensionsForm.value.learningEnabled) {
+    ext.learningLoop = {
+      enabled: true,
+      evalDatasetRef: extensionsForm.value.evalDatasetRef,
+      minPassRate: extensionsForm.value.minPassRate,
+      probeBeforePublish: true,
+      reviewRequired: true
+    }
+  }
+  return ext
+}
+
+function syncExtensionsFromJson(json: string) {
+  try {
+    const doc = JSON.parse(json)
+    const ext = doc.extensions || {}
+    const rb = ext.runtimeBackend || {}
+    const kb = ext.knowledge || {}
+    const loop = ext.learningLoop || {}
+    extensionsForm.value = {
+      runtimeType: rb.type || 'native',
+      runtimeBaseUrl: rb.baseUrl || 'http://litellm:4000',
+      externalAppId: rb.externalAppId || '',
+      knowledgeEnabled: !!kb.enabled,
+      datasetIds: (kb.datasetIds || []).join(','),
+      learningEnabled: !!loop.enabled,
+      evalDatasetRef: loop.evalDatasetRef || '',
+      minPassRate: loop.minPassRate ?? 0.85
+    }
+  } catch {
+    /* ignore invalid json while typing */
+  }
+}
+
+function mergeExtensionsIntoProfileJson() {
+  try {
+    const doc = JSON.parse(profileForm.value.profileJson)
+    doc.runtimeMode = profileForm.value.runtimeMode
+    doc.extensions = buildExtensions()
+    profileForm.value.profileJson = JSON.stringify(doc, null, 2)
+  } catch {
+    ElMessage.error('Profile JSON 无效，无法合并 extensions')
+  }
 }
 
 async function loadTasks() {
@@ -514,6 +624,7 @@ function openCreateProfile() {
     runtimeMode: 'agent',
     profileJson: defaultProfileJson()
   }
+  syncExtensionsFromJson(profileForm.value.profileJson)
   profileDialogVisible.value = true
 }
 
@@ -526,11 +637,13 @@ function openEditProfile(row: AgentProfileVO) {
     runtimeMode: row.runtimeMode || 'agent',
     profileJson: row.profileJson || defaultProfileJson()
   }
+  syncExtensionsFromJson(profileForm.value.profileJson)
   profileDialogVisible.value = true
 }
 
 async function submitProfile() {
   if (!selectedTask.value) return
+  mergeExtensionsIntoProfileJson()
   profileSaving.value = true
   try {
     if (profileDialogMode.value === 'create') {
@@ -556,9 +669,20 @@ async function submitProfile() {
 }
 
 async function publishProfile(row: AgentProfileVO) {
-  await adminApi.publishAgentProfile(selectedTask.value, row.version)
-  ElMessage.success('已发布')
-  await loadProfiles()
+  try {
+    await adminApi.publishAgentProfile(selectedTask.value, row.version)
+    ElMessage.success('已发布')
+    await loadProfiles()
+  } catch (e: unknown) {
+    const err = e as { response?: { data?: { errorCode?: string; message?: string } } }
+    const code = err.response?.data?.errorCode
+    const msg = err.response?.data?.message || '发布失败'
+    if (code === 'EVAL_BELOW_THRESHOLD' || code === 'PROBE_FAILED') {
+      ElMessage.error(`发布门禁: ${msg}`)
+    } else {
+      ElMessage.error(msg)
+    }
+  }
 }
 
 async function rollbackProfile(row: AgentProfileVO) {

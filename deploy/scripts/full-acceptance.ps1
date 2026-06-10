@@ -221,6 +221,93 @@ foreach ($route in $spaRoutes) {
     }
 }
 
+# --- INTEGRATION AC39-44 ---
+Write-Report "--- INTEGRATION ---"
+try {
+    $extProfile = @'
+{
+  "taskCode": "aiChat",
+  "version": "v-ac39",
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\",\"baseUrl\":\"http://localhost:4000\"},\"knowledge\":{\"enabled\":false},\"learningLoop\":{\"enabled\":false}}}",
+  "publish": false
+}
+'@
+    $imp = Invoke-AdminPost "/api/admin/agent-profiles/import" $extProfile
+    $ij = $imp | ConvertTo-Json -Compress
+    Assert-Pass "AC39" ($ij.Contains("v-ac39") -or $ij.Contains("data")) "extensions import"
+} catch {
+    Assert-Pass "AC39" $false "extensions import: $($_.Exception.Message)"
+}
+
+try {
+    $hybridProfile = @'
+{
+  "taskCode": "aiChat",
+  "version": "v-ac40",
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"hybrid\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"knowledge\":{\"enabled\":true,\"provider\":\"noop\",\"datasetIds\":[\"demo\"],\"topK\":3,\"scoreThreshold\":0.5,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":false}}}",
+  "publish": true
+}
+'@
+    Invoke-AdminPost "/api/admin/agent-profiles/import" $hybridProfile | Out-Null
+    $prep2 = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/prepare" -Method POST -Body '{"appKey":"order-service","code":"aiChat","inputs":{"question":"hybrid-test"}}' -ContentType "application/json" -Headers @{ Authorization = "Bearer demo-token-123" } -TimeoutSec 30
+    $pj2 = $prep2 | ConvertTo-Json -Depth 8 -Compress
+    if ($prep2.data) { $pj2 = ($prep2.data | ConvertTo-Json -Depth 8 -Compress) }
+    Assert-Pass "AC40" ($pj2.Contains("knowledgePrefetch")) "hybrid prepare knowledgePrefetch"
+} catch {
+    Assert-Pass "AC40" $false "hybrid prepare: $($_.Exception.Message)"
+}
+
+try {
+    $adapters = Invoke-AdminGet "/api/admin/adapters/health/all"
+    $aj = $adapters | ConvertTo-Json -Depth 6 -Compress
+    if ($adapters.data) { $aj = ($adapters.data | ConvertTo-Json -Depth 6 -Compress) }
+    $hasRuntime = $aj.Contains("agent-runtime")
+    $hasKnowledge = $aj.Contains("knowledge-retrieval")
+    $hasLearning = $aj.Contains("learning-pipeline")
+    Assert-Pass "AC41" ($hasRuntime -and $hasKnowledge -and $hasLearning) "integration SPI health"
+} catch {
+    Assert-Pass "AC41" $false "adapters health: $($_.Exception.Message)"
+}
+
+try {
+    $pr = Invoke-AdminPost "/api/admin/agent-profile-probes/aiChat/run" '{"smokeTest":false}'
+    $prj = $pr | ConvertTo-Json -Depth 8 -Compress
+    Assert-Pass "AC42" ($prj.Contains("external-runtime") -or $prj.Contains("knowledge")) "external/knowledge probe checks"
+} catch {
+    Assert-Pass "AC42" $false "probe external: $($_.Exception.Message)"
+}
+
+try {
+    $gateProfile = @'
+{
+  "taskCode": "aiChat",
+  "version": "v-ac43",
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":512,\"temperature\":0.3,\"timeoutMs\":30000},\"extensions\":{\"learningLoop\":{\"enabled\":true,\"evalDatasetRef\":\"demo-aichat@v1\",\"minPassRate\":0.99,\"probeBeforePublish\":false}}}",
+  "publish": false
+}
+'@
+    Invoke-AdminPost "/api/admin/agent-profiles/import" $gateProfile | Out-Null
+    $failCase = '{"caseCode":"ac43-fail","inputs":{"question":"gate-test-xyz"},"expected":{"answerContains":"__IMPOSSIBLE__"}}'
+    try { Invoke-AdminPost "/api/admin/eval/datasets/demo-aichat/cases" $failCase | Out-Null } catch { }
+    try {
+        Invoke-AdminPost "/api/admin/agent-profiles/aiChat/publish" '{"version":"v-ac43"}' | Out-Null
+        Assert-Pass "AC43" $false "publish should be blocked"
+    } catch {
+        $code = [int]$_.Exception.Response.StatusCode
+        Assert-Pass "AC43" ($code -eq 409) "publish gate HTTP 409"
+    }
+} catch {
+    Assert-Pass "AC43" $false "publish gate setup: $($_.Exception.Message)"
+}
+
+try {
+    $suggest = Invoke-AdminPost "/api/admin/learning/suggest-cases" '{"taskCode":"aiChat","limit":5}'
+    $sj = $suggest | ConvertTo-Json -Compress
+    Assert-Pass "AC44" ($sj.Contains("data") -or $sj.StartsWith("[")) "learning suggest-cases"
+} catch {
+    Assert-Pass "AC44" $false "suggest-cases: $($_.Exception.Message)"
+}
+
 # --- Summary ---
 Write-Report "--- SUMMARY ---"
 Write-Report "PASSED=$script:Passed FAILED=$script:Failed SKIPPED=$script:Skipped"

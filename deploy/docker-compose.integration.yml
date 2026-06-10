@@ -1,0 +1,37 @@
+# 整合型侧车（可选 profile: integration）
+# 用法: docker compose -f docker-compose.yml -f docker-compose.integration.yml --profile integration up -d
+#
+# 标准见 docs/AI整合与自我改进标准-完整版.md §11
+
+services:
+  dify-api:
+    profiles: [integration]
+    image: langgenius/dify-api:latest
+    environment:
+      MODE: api
+      SECRET_KEY: ${DIFY_SECRET_KEY:-change-me-in-production}
+    ports:
+      - "5001:5001"
+    networks:
+      - zest-net
+
+  ragflow:
+    profiles: [integration]
+    image: infiniflow/ragflow:latest
+    ports:
+      - "9380:9380"
+    networks:
+      - zest-net
+
+  zest-llm-admin:
+    profiles: [integration]
+    environment:
+      ZEST_LLM_ADAPTERS_AGENT_RUNTIME: ${ZEST_LLM_ADAPTERS_AGENT_RUNTIME:-dify}
+      ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL: ${ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL:-ragflow}
+      ZEST_LLM_ADAPTERS_LEARNING_PIPELINE: ${ZEST_LLM_ADAPTERS_LEARNING_PIPELINE:-zest-eval}
+      DIFY_API_BASE: http://dify-api:5001
+      RAGFLOW_API_BASE: http://ragflow:9380
+
+networks:
+  zest-net:
+    external: true

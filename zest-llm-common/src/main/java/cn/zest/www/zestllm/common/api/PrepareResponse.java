@@ -38,4 +38,10 @@ public class PrepareResponse {
     private GuardrailsConfig guardrails;
     /** Provider definitions without secrets, for agent-side routing */
     private Map<String, ProviderDefinition> providers = new LinkedHashMap<>();
+    /** 脱敏 external runtime（Dify 等） */
+    private RuntimeBackendSummary runtimeBackend;
+    /** hybrid 模式下 CP 侧 RAG 预取摘要 */
+    private KnowledgePrefetchSummary knowledgePrefetch;
+    /** 当前 learning loop 配置摘要 */
+    private LearningLoopSummary learningLoop;
 }

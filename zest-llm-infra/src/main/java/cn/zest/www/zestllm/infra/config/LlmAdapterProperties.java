@@ -17,4 +17,10 @@ public class LlmAdapterProperties {
     private String contentModeration = "keyword-blocklist";
     private String responseCache = "noop";
     private String alertWebhook = "http";
+    /** native | dify | noop — 见 docs/AI整合与自我改进标准-完整版.md */
+    private String agentRuntime = "native";
+    /** ragflow | dify-kb | noop */
+    private String knowledgeRetrieval = "noop";
+    /** zest-eval | noop */
+    private String learningPipeline = "noop";
 }

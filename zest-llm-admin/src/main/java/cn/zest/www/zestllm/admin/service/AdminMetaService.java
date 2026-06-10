@@ -15,7 +15,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class AdminMetaService {
 
-    private static final String FLYWAY_LATEST = "V17";
+    private static final String FLYWAY_LATEST = "V18";
 
     private final JdbcTemplate jdbcTemplate;
 
@@ -27,11 +27,15 @@ public class AdminMetaService {
         schemaReady.put("llm_agent_profile_probe", tableExists("llm_agent_profile_probe"));
         schemaReady.put("llm_agent_probe_alert", tableExists("llm_agent_probe_alert"));
         schemaReady.put("llm_execution_archive_run", tableExists("llm_execution_archive_run"));
+        schemaReady.put("llm_learning_cycle_run", tableExists("llm_learning_cycle_run"));
         boolean agentProbeApi = Boolean.TRUE.equals(schemaReady.get("llm_agent_profile_probe"));
+        boolean learningApi = Boolean.TRUE.equals(schemaReady.get("llm_learning_cycle_run"));
         return AdminFeaturesVO.builder()
                 .appVersion(applicationName)
                 .flywayLatestScript(FLYWAY_LATEST)
                 .agentProbeApi(agentProbeApi)
+                .learningApi(learningApi)
+                .integrationAdaptersEnabled(true)
                 .schemaReady(schemaReady)
                 .build();
     }

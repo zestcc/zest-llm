@@ -9,11 +9,19 @@ import cn.zest.www.zestllm.infra.cache.ValkeyPolicyCacheAdapter;
 import cn.zest.www.zestllm.infra.cache.ValkeyResponseCacheAdapter;
 import cn.zest.www.zestllm.infra.config.LangfuseProperties;
 import cn.zest.www.zestllm.infra.config.VaultProperties;
+import cn.zest.www.zestllm.infra.config.DifyProperties;
 import cn.zest.www.zestllm.infra.config.KafkaReportProperties;
 import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
 import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
+import cn.zest.www.zestllm.infra.config.RagflowProperties;
 import cn.zest.www.zestllm.infra.gateway.LiteLLMGatewayAdapter;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
+import cn.zest.www.zestllm.infra.knowledge.NoopKnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.infra.learning.NoopLearningPipelineAdapter;
+import cn.zest.www.zestllm.infra.runtime.DifyAgentRuntimeAdapter;
+import cn.zest.www.zestllm.infra.runtime.NativeAgentRuntimeAdapter;
+import cn.zest.www.zestllm.infra.runtime.NoopAgentRuntimeAdapter;
 import cn.zest.www.zestllm.infra.secret.CompositeSecretResolver;
 import cn.zest.www.zestllm.infra.secret.EnvSecretResolver;
 import cn.zest.www.zestllm.infra.secret.VaultSecretResolver;
@@ -35,7 +43,10 @@ import cn.zest.www.zestllm.spi.audit.AuditAdapter;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import cn.zest.www.zestllm.spi.gateway.ModelGatewayAdapter;
+import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.spi.learning.LearningPipelineAdapter;
 import cn.zest.www.zestllm.spi.observability.ObservabilityAdapter;
+import cn.zest.www.zestllm.spi.runtime.AgentRuntimeAdapter;
 import cn.zest.www.zestllm.spi.prompt.PromptRenderer;
 import cn.zest.www.zestllm.spi.quota.QuotaAdapter;
 import cn.zest.www.zestllm.spi.schema.OutputSchemaValidator;
@@ -56,7 +67,8 @@ import org.springframework.http.MediaType;
 import java.util.List;
 
 @Configuration
-@EnableConfigurationProperties({LiteLLMProperties.class, LlmAdapterProperties.class, LangfuseProperties.class, VaultProperties.class, KafkaReportProperties.class})
+@EnableConfigurationProperties({LiteLLMProperties.class, LlmAdapterProperties.class, LangfuseProperties.class,
+        VaultProperties.class, KafkaReportProperties.class, DifyProperties.class, RagflowProperties.class})
 public class LlmInfraAutoConfiguration {
 
     @Bean
@@ -89,6 +101,52 @@ public class LlmInfraAutoConfiguration {
     @ConditionalOnMissingBean(ObservabilityAdapter.class)
     public ObservabilityAdapter noopObservabilityAdapter() {
         return new NoopObservabilityAdapter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.agent-runtime", havingValue = "native", matchIfMissing = true)
+    @ConditionalOnMissingBean(AgentRuntimeAdapter.class)
+    public AgentRuntimeAdapter nativeAgentRuntimeAdapter(ModelGatewayAdapter modelGatewayAdapter) {
+        return new NativeAgentRuntimeAdapter(modelGatewayAdapter);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.agent-runtime", havingValue = "noop")
+    @ConditionalOnMissingBean(AgentRuntimeAdapter.class)
+    public AgentRuntimeAdapter noopAgentRuntimeAdapter() {
+        return new NoopAgentRuntimeAdapter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.agent-runtime", havingValue = "dify")
+    @ConditionalOnMissingBean(AgentRuntimeAdapter.class)
+    public AgentRuntimeAdapter difyAgentRuntimeAdapter(DifyProperties properties,
+                                                       SecretResolver secretResolver,
+                                                       ObjectMapper objectMapper) {
+        return new DifyAgentRuntimeAdapter(properties, secretResolver, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.knowledge-retrieval", havingValue = "noop", matchIfMissing = true)
+    @ConditionalOnMissingBean(KnowledgeRetrievalAdapter.class)
+    public KnowledgeRetrievalAdapter noopKnowledgeRetrievalAdapter() {
+        return new NoopKnowledgeRetrievalAdapter();
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.knowledge-retrieval", havingValue = "ragflow")
+    @ConditionalOnMissingBean(KnowledgeRetrievalAdapter.class)
+    public KnowledgeRetrievalAdapter ragflowKnowledgeRetrievalAdapter(RagflowProperties properties,
+                                                                     SecretResolver secretResolver,
+                                                                     ObjectMapper objectMapper) {
+        return new RagflowKnowledgeRetrievalAdapter(properties, secretResolver, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.learning-pipeline", havingValue = "noop")
+    @ConditionalOnMissingBean(LearningPipelineAdapter.class)
+    public LearningPipelineAdapter noopLearningPipelineAdapter() {
+        return new NoopLearningPipelineAdapter();
     }
 
     @Bean

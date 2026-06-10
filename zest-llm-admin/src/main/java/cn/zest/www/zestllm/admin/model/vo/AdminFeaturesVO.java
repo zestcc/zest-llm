@@ -11,5 +11,7 @@ public class AdminFeaturesVO {
     private String appVersion;
     private String flywayLatestScript;
     private boolean agentProbeApi;
+    private boolean learningApi;
+    private boolean integrationAdaptersEnabled;
     private Map<String, Boolean> schemaReady;
 }

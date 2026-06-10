@@ -4,6 +4,7 @@ import cn.zest.www.zestllm.common.error.ZestLlmException;
 import com.zestflow.common.model.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -26,10 +27,14 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(BusinessException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public Result<Void> handleBusinessException(BusinessException ex) {
+    public ResponseEntity<Result<Void>> handleBusinessException(BusinessException ex) {
         log.warn("BusinessException: code={} msg={}", ex.getErrorCode(), ex.getMessage());
-        return Result.fail(ex.getHttpCode(), ex.getMessage(), ex.getErrorCode());
+        HttpStatus status = HttpStatus.resolve(ex.getHttpCode());
+        if (status == null) {
+            status = HttpStatus.BAD_REQUEST;
+        }
+        return ResponseEntity.status(status)
+                .body(Result.fail(ex.getHttpCode(), ex.getMessage(), ex.getErrorCode()));
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, BindException.class, MissingServletRequestParameterException.class})
