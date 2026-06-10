@@ -35,6 +35,8 @@ public class AdminMetaService {
                 .flywayLatestScript(FLYWAY_LATEST)
                 .agentProbeApi(agentProbeApi)
                 .learningApi(learningApi)
+                .capabilityStackApi(true)
+                .scenarioTemplateApi(true)
                 .integrationAdaptersEnabled(true)
                 .schemaReady(schemaReady)
                 .build();
