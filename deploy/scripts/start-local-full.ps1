@@ -86,11 +86,15 @@ if (-not $mysqlUp) {
 
 if ($WithLiteLLM) {
     $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if (-not $docker) { throw "-WithLiteLLM requires Docker" }
-    Write-Host "== Starting LiteLLM + openai-mock ==" -ForegroundColor Cyan
-    Push-Location $Deploy
-    docker compose up -d openai-mock litellm
-    Pop-Location
+    if ($docker) {
+        Write-Host "== Starting LiteLLM + openai-mock (Docker) ==" -ForegroundColor Cyan
+        Push-Location $Deploy
+        docker compose up -d openai-mock litellm
+        Pop-Location
+    } else {
+        Write-Host "== Docker not found — starting LiteLLM via pip ==" -ForegroundColor Cyan
+        & (Join-Path $PSScriptRoot "start-litellm-local.ps1")
+    }
 }
 
 if (-not $SkipBuild) {

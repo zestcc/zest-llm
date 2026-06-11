@@ -6,7 +6,8 @@ AI 作业调度与治理平台（LLM Control Plane）。业务通过 `@ZestLLM` 
 
 **数据库：仅 MySQL 8**（禁止 H2 / PostgreSQL）。
 
-完整方案见 [docs/Zest-Stack完整实现方案.md](docs/Zest-Stack完整实现方案.md)。
+完整方案见 [docs/Zest-Stack完整实现方案.md](docs/Zest-Stack完整实现方案.md)。  
+**完整版功能清单**见 [docs/ZestLLM-完整版功能清单.md](docs/ZestLLM-完整版功能清单.md)。
 
 ## 模块结构
 
