@@ -398,6 +398,18 @@ const profileDialogVisible = ref(false)
 const profileDialogTitle = ref('')
 const profileDialogMode = ref<'create' | 'edit'>('create')
 const profileSaving = ref(false)
+
+const extensionsForm = ref({
+  runtimeType: 'native',
+  runtimeBaseUrl: 'http://litellm:4000',
+  externalAppId: '',
+  knowledgeEnabled: false,
+  datasetIds: '',
+  learningEnabled: false,
+  evalDatasetRef: '',
+  minPassRate: 0.85
+})
+
 const profileForm = ref({
   version: '',
   providerPresetCode: 'litellm-default',
@@ -464,17 +476,6 @@ const mcpForm = ref({
   baseUrl: '',
   authSecretRef: '',
   configJson: '{}'
-})
-
-const extensionsForm = ref({
-  runtimeType: 'native',
-  runtimeBaseUrl: 'http://litellm:4000',
-  externalAppId: '',
-  knowledgeEnabled: false,
-  datasetIds: '',
-  learningEnabled: false,
-  evalDatasetRef: '',
-  minPassRate: 0.85
 })
 
 function defaultProfileJson() {
