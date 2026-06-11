@@ -1,5 +1,6 @@
 import http from './http'
 import axios from 'axios'
+import { postSse } from './sse'
 
 export interface PageResult<T> {
   records: T[]
@@ -493,6 +494,15 @@ export interface EvalDatasetVO {
   status?: string
 }
 
+export interface EvalCaseVO {
+  id?: number
+  caseCode: string
+  inputs?: Record<string, unknown>
+  expected?: Record<string, unknown>
+  status?: string
+  createdAt?: string
+}
+
 export interface EvalRunVO {
   runCode: string
   datasetCode?: string
@@ -849,6 +859,14 @@ export const adminApi = {
     return http.post<PlaygroundRunVO>('/api/admin/playground/run', body)
   },
 
+  playgroundRunStream(
+    body: { appKey: string; code: string; inputs?: Record<string, unknown>; bizId?: string },
+    onEvent: (event: string, data: string) => void,
+    signal?: AbortSignal
+  ) {
+    return postSse('/api/admin/playground/run/stream', body, onEvent, signal)
+  },
+
   listEvalDatasets() {
     return http.get<EvalDatasetVO[]>('/api/admin/eval/datasets')
   },
@@ -872,6 +890,29 @@ export const adminApi = {
     taskCode: string
   }) {
     return http.post<EvalDatasetVO>('/api/admin/eval/datasets', body)
+  },
+
+  listEvalCases(datasetCode: string) {
+    return http.get<EvalCaseVO[]>(`/api/admin/eval/datasets/${datasetCode}/cases`)
+  },
+
+  createEvalCase(
+    datasetCode: string,
+    body: { caseCode: string; inputs: Record<string, unknown>; expected?: Record<string, unknown> }
+  ) {
+    return http.post<void>(`/api/admin/eval/datasets/${datasetCode}/cases`, body)
+  },
+
+  updateEvalCase(
+    datasetCode: string,
+    caseCode: string,
+    body: { inputs?: Record<string, unknown>; expected?: Record<string, unknown> }
+  ) {
+    return http.put<EvalCaseVO>(`/api/admin/eval/datasets/${datasetCode}/cases/${caseCode}`, body)
+  },
+
+  deleteEvalCase(datasetCode: string, caseCode: string) {
+    return http.delete<void>(`/api/admin/eval/datasets/${datasetCode}/cases/${caseCode}`)
   },
 
   listFlowChains() {

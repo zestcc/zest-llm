@@ -157,7 +157,7 @@
   "baseUrl": "http://dify:5001",
   "externalAppId": "app-uuid-from-dify",
   "protocol": "dify-chat",
-  "secretRef": "env:DIFY_API_KEY",
+  "secretRef": ".env:DIFY_API_KEY",
   "timeoutMs": 60000
 }
 ```
@@ -179,7 +179,7 @@
   "topK": 5,
   "scoreThreshold": 0.6,
   "injectMode": "system_prefix",
-  "secretRef": "env:RAGFLOW_API_KEY",
+  "secretRef": ".env:RAGFLOW_API_KEY",
   "baseUrl": "http://ragflow:9380"
 }
 ```

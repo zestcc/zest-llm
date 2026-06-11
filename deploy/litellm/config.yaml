@@ -1,13 +1,33 @@
+# LiteLLM model_list
+# model_name: client-facing name (OpenAI + Anthropic protocols share the same names)
+# litellm_params.model: upstream id, e.g. deepseek/deepseek-v4-flash, anthropic/claude-sonnet-...
+# External Anthropic-compatible gateway (Aliyun MaaS): anthropic/<model> + api_base + ALI_API_KEY
+
 model_list:
-  - model_name: deepseek-chat
+  - model_name: deepseek-v4-flash
     litellm_params:
-      model: deepseek/deepseek-chat
+      model: deepseek/deepseek-v4-flash
+      api_key: os.environ/DEEPSEEK_API_KEY
+  - model_name: deepseek-v4-pro
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
       api_key: os.environ/DEEPSEEK_API_KEY
 
-  - model_name: gpt-4o-mini
+  - model_name: ali-deepseek-v4-pro
     litellm_params:
-      model: openai/gpt-4o-mini
-      api_key: os.environ/OPENAI_API_KEY
+      model: anthropic/deepseek-v4-pro
+      api_base: https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic
+      api_key: os.environ/ALI_API_KEY
+  - model_name: ali-deepseek-v4-flash
+    litellm_params:
+      model: anthropic/deepseek-v4-flash
+      api_base: https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic
+      api_key: os.environ/ALI_API_KEY
+  - model_name: ali-qwen3.7-max
+    litellm_params:
+      model: anthropic/qwen3.7-max
+      api_base: https://token-plan.cn-beijing.maas.aliyuncs.com/apps/anthropic
+      api_key: os.environ/ALI_API_KEY
 
 general_settings:
   master_key: sk-zest-llm-demo

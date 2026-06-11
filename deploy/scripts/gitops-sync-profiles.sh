@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # GitOps：将 deploy/examples/agent-profile-*.yaml 导入 Admin
 set -euo pipefail
 

@@ -27,6 +27,8 @@ public class CachedPolicy {
     private String providerRef;
     private String gatewayBaseUrl;
     private String gatewayProtocol;
+    /** 模型级协议覆盖（Profile.model.apiProtocol） */
+    private String modelApiProtocol;
     private String inboundAuthMode;
     private String outboundAuthMode;
     private String outboundSecretRef;

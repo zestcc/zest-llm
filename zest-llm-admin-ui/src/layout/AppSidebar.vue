@@ -39,6 +39,7 @@
         <el-menu-item index="/prompts">Prompt 管理</el-menu-item>
         <el-menu-item index="/model-routes">模型路由</el-menu-item>
         <el-menu-item index="/agent-config">智能体配置</el-menu-item>
+        <el-menu-item index="/playground">Playground</el-menu-item>
         <el-menu-item index="/eval">Eval 评测</el-menu-item>
         <el-menu-item index="/executions">执行记录</el-menu-item>
         <el-menu-item index="/registry">方法注册</el-menu-item>
@@ -51,10 +52,6 @@
       <el-menu-item index="/tenants">
         <el-icon><OfficeBuilding /></el-icon>
         <span>租户管理</span>
-      </el-menu-item>
-      <el-menu-item index="/playground">
-        <el-icon><Cpu /></el-icon>
-        <span>Playground</span>
       </el-menu-item>
       <el-menu-item index="/flow-chains">
         <el-icon><Share /></el-icon>
@@ -81,7 +78,6 @@ import { useRoute } from 'vue-router'
 import {
   Bell,
   Connection,
-  Cpu,
   Grid,
   List,
   Notebook,

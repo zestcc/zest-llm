@@ -99,6 +99,7 @@ public class AgentProfileResolver {
                 .providerRef(document.getProviderRef())
                 .gatewayBaseUrl(activeProvider != null ? activeProvider.getBaseUrl() : null)
                 .gatewayProtocol(activeProvider != null ? activeProvider.getProtocol() : "openai")
+                .modelApiProtocol(document.getModel() != null ? document.getModel().getApiProtocol() : null)
                 .inboundAuthMode(inboundAuth.getMode())
                 .outboundAuthMode(document.getOutboundAuth() != null ? document.getOutboundAuth().getMode() : null)
                 .outboundSecretRef(document.getOutboundAuth() != null ? document.getOutboundAuth().getSecretRef() : null)

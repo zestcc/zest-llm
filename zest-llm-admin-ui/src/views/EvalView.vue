@@ -18,12 +18,48 @@
         <el-table-column prop="datasetName" label="名称" min-width="180" />
         <el-table-column prop="appKey" label="App" width="140" />
         <el-table-column prop="taskCode" label="Task" width="120" />
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
+            <el-button
+              link
+              :type="casesDataset === row.datasetCode ? 'warning' : 'primary'"
+              @click="openCases(row.datasetCode)"
+            >
+              {{ casesDataset === row.datasetCode ? '收起用例' : '管理用例' }}
+            </el-button>
             <el-button link type="primary" :loading="runningCode === row.datasetCode" @click="runEval(row.datasetCode)">
               运行 Eval
             </el-button>
             <el-button link type="info" @click="loadRuns(row.datasetCode)">历史</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
+    <div v-if="casesDataset" v-loading="casesLoading" class="table-panel" style="margin-top: 16px">
+      <div class="table-panel-header">
+        <div>
+          <h3 class="table-panel-title">用例管理 · {{ casesDataset }}</h3>
+          <p class="table-panel-subtitle">编辑 inputs / expected 后运行 Eval 验证</p>
+        </div>
+        <div class="table-panel-actions">
+          <el-button type="primary" @click="openCreateCase">新建用例</el-button>
+          <el-button @click="closeCases">收起</el-button>
+        </div>
+      </div>
+      <el-table :data="cases" stripe empty-text="暂无用例，请先新建">
+        <el-table-column prop="caseCode" label="Case Code" width="160" />
+        <el-table-column label="Inputs" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatJson(row.inputs) }}</template>
+        </el-table-column>
+        <el-table-column label="Expected" min-width="200" show-overflow-tooltip>
+          <template #default="{ row }">{{ formatJson(row.expected) }}</template>
+        </el-table-column>
+        <el-table-column prop="createdAt" label="创建时间" width="170" />
+        <el-table-column label="操作" width="160" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openEditCase(row)">编辑</el-button>
+            <el-button link type="danger" @click="removeCase(row.caseCode)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -39,7 +75,7 @@
       <el-progress
         v-if="lastRun.totalCases"
         :percentage="Math.round(lastRun.passRate || 0)"
-        :status="lastRun.status === 'COMPLETED' ? 'success' : 'warning'"
+        :status="lastRun.status === 'PASSED' ? 'success' : 'warning'"
         style="margin-bottom: 12px"
       />
       <el-table :data="failedCases" stripe empty-text="全部通过">
@@ -63,6 +99,7 @@
     <div v-if="runs.length" class="table-panel" style="margin-top: 16px">
       <div class="table-panel-header">
         <h3 class="table-panel-title">历史运行 · {{ selectedDataset }}</h3>
+        <el-button @click="closeRuns">收起</el-button>
       </div>
       <el-table :data="runs" stripe>
         <el-table-column prop="runCode" label="Run" width="160" />
@@ -73,13 +110,41 @@
         <el-table-column prop="startedAt" label="开始时间" min-width="170" />
       </el-table>
     </div>
+
+    <el-dialog v-model="caseDialogVisible" :title="caseDialogTitle" width="640px" destroy-on-close>
+      <el-form ref="caseFormRef" :model="caseForm" :rules="caseRules" label-width="110px">
+        <el-form-item v-if="!editingCaseCode" label="Case Code" prop="caseCode">
+          <el-input v-model="caseForm.caseCode" placeholder="如 case-hello" />
+        </el-form-item>
+        <el-form-item label="Inputs JSON" prop="inputsText">
+          <el-input
+            v-model="caseForm.inputsText"
+            type="textarea"
+            :rows="6"
+            placeholder='{"question":"hello"}'
+          />
+        </el-form-item>
+        <el-form-item label="Expected JSON" prop="expectedText">
+          <el-input
+            v-model="caseForm.expectedText"
+            type="textarea"
+            :rows="4"
+            placeholder='{"status":"SUCCESS"} 或 {"answerContains":"关键词"}'
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="caseDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="caseSaving" @click="saveCase">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import { adminApi, type EvalDatasetVO, type EvalRunVO } from '../api/admin'
+import { computed, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { adminApi, type EvalCaseVO, type EvalDatasetVO, type EvalRunVO } from '../api/admin'
 
 const loading = ref(false)
 const runningCode = ref('')
@@ -88,7 +153,59 @@ const runs = ref<EvalRunVO[]>([])
 const lastRun = ref<EvalRunVO | null>(null)
 const selectedDataset = ref('')
 
+const casesDataset = ref('')
+const casesLoading = ref(false)
+const cases = ref<EvalCaseVO[]>([])
+
+const caseDialogVisible = ref(false)
+const caseDialogTitle = ref('新建用例')
+const editingCaseCode = ref('')
+const caseSaving = ref(false)
+const caseFormRef = ref<FormInstance>()
+const caseForm = reactive({
+  caseCode: '',
+  inputsText: '{"question":""}',
+  expectedText: '{"status":"SUCCESS"}'
+})
+
+const caseRules: FormRules = {
+  caseCode: [{ required: true, message: '请输入 Case Code', trigger: 'blur' }],
+  inputsText: [{ required: true, validator: validateJsonField, trigger: 'blur' }],
+  expectedText: [{ validator: validateOptionalJsonField, trigger: 'blur' }]
+}
+
 const failedCases = computed(() => (lastRun.value?.caseResults || []).filter((c) => !c.passed))
+
+function validateJsonField(_rule: unknown, value: string, callback: (err?: Error) => void) {
+  if (!value?.trim()) {
+    callback(new Error('请输入 JSON'))
+    return
+  }
+  try {
+    JSON.parse(value)
+    callback()
+  } catch {
+    callback(new Error('JSON 格式无效'))
+  }
+}
+
+function validateOptionalJsonField(_rule: unknown, value: string, callback: (err?: Error) => void) {
+  if (!value?.trim()) {
+    callback()
+    return
+  }
+  try {
+    JSON.parse(value)
+    callback()
+  } catch {
+    callback(new Error('JSON 格式无效'))
+  }
+}
+
+function formatJson(value: Record<string, unknown> | undefined) {
+  if (!value || !Object.keys(value).length) return '—'
+  return JSON.stringify(value)
+}
 
 async function loadDatasets() {
   loading.value = true
@@ -97,6 +214,87 @@ async function loadDatasets() {
   } finally {
     loading.value = false
   }
+}
+
+async function openCases(datasetCode: string) {
+  if (casesDataset.value === datasetCode) {
+    closeCases()
+    return
+  }
+  casesDataset.value = datasetCode
+  await loadCases()
+}
+
+function closeCases() {
+  casesDataset.value = ''
+  cases.value = []
+}
+
+async function loadCases() {
+  if (!casesDataset.value) return
+  casesLoading.value = true
+  try {
+    cases.value = await adminApi.listEvalCases(casesDataset.value)
+  } finally {
+    casesLoading.value = false
+  }
+}
+
+function openCreateCase() {
+  editingCaseCode.value = ''
+  caseDialogTitle.value = '新建用例'
+  caseForm.caseCode = ''
+  caseForm.inputsText = '{"question":""}'
+  caseForm.expectedText = '{"status":"SUCCESS"}'
+  caseDialogVisible.value = true
+}
+
+function openEditCase(row: EvalCaseVO) {
+  editingCaseCode.value = row.caseCode
+  caseDialogTitle.value = `编辑用例 · ${row.caseCode}`
+  caseForm.caseCode = row.caseCode
+  caseForm.inputsText = JSON.stringify(row.inputs || {}, null, 2)
+  caseForm.expectedText = row.expected && Object.keys(row.expected).length
+    ? JSON.stringify(row.expected, null, 2)
+    : ''
+  caseDialogVisible.value = true
+}
+
+async function saveCase() {
+  const valid = await caseFormRef.value?.validate().catch(() => false)
+  if (!valid || !casesDataset.value) return
+
+  const inputs = JSON.parse(caseForm.inputsText) as Record<string, unknown>
+  const expected = caseForm.expectedText.trim()
+    ? (JSON.parse(caseForm.expectedText) as Record<string, unknown>)
+    : undefined
+
+  caseSaving.value = true
+  try {
+    if (editingCaseCode.value) {
+      await adminApi.updateEvalCase(casesDataset.value, editingCaseCode.value, { inputs, expected })
+      ElMessage.success('用例已更新')
+    } else {
+      await adminApi.createEvalCase(casesDataset.value, {
+        caseCode: caseForm.caseCode.trim(),
+        inputs,
+        expected
+      })
+      ElMessage.success('用例已创建')
+    }
+    caseDialogVisible.value = false
+    await loadCases()
+  } finally {
+    caseSaving.value = false
+  }
+}
+
+async function removeCase(caseCode: string) {
+  if (!casesDataset.value) return
+  await ElMessageBox.confirm(`确定删除用例 ${caseCode}？`, '删除确认', { type: 'warning' })
+  await adminApi.deleteEvalCase(casesDataset.value, caseCode)
+  ElMessage.success('用例已删除')
+  await loadCases()
 }
 
 async function runEval(datasetCode: string) {
@@ -111,8 +309,17 @@ async function runEval(datasetCode: string) {
 }
 
 async function loadRuns(datasetCode: string) {
+  if (selectedDataset.value === datasetCode && runs.value.length) {
+    closeRuns()
+    return
+  }
   selectedDataset.value = datasetCode
   runs.value = await adminApi.listEvalRuns(datasetCode)
+}
+
+function closeRuns() {
+  selectedDataset.value = ''
+  runs.value = []
 }
 
 async function createDemoDataset() {
@@ -129,3 +336,11 @@ async function createDemoDataset() {
 
 loadDatasets()
 </script>
+
+<style scoped>
+.table-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+</style>

@@ -15,6 +15,8 @@ import cn.zest.www.zestllm.admin.repo.LlmMcpServerRepo;
 import cn.zest.www.zestllm.admin.repo.LlmModelRouteRepo;
 import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
+import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.infra.tool.ToolOrchestrator;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
@@ -75,6 +77,10 @@ class AgentProfileProbeServiceTest {
     private AgentRuntimeAdapter agentRuntimeAdapter;
     @Mock
     private KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;
+    @Mock
+    private ToolOrchestrator toolOrchestrator;
+    @Mock
+    private LiteLLMProperties liteLLMProperties;
 
     private AgentProfileProbeService probeService;
 
@@ -85,6 +91,9 @@ class AgentProfileProbeServiceTest {
         when(agentRuntimeAdapter.health()).thenReturn(HealthStatus.builder().up(true).message("ok").build());
         when(knowledgeRetrievalAdapter.health()).thenReturn(HealthStatus.builder().up(true).message("ok").build());
         when(knowledgeRetrievalAdapter.retrieve(any())).thenReturn(KnowledgeRetrieveResult.builder().build());
+        when(liteLLMProperties.getApiKey()).thenReturn("sk-test");
+        when(toolOrchestrator.resolveGatewayApiKey(any(), any())).thenAnswer(inv ->
+                inv.getArgument(1) != null ? inv.getArgument(1) : null);
         probeService = new AgentProfileProbeService(
                 taskDefRepo,
                 appRepo,
@@ -100,7 +109,9 @@ class AgentProfileProbeServiceTest {
                 probeRecordService,
                 probeProperties,
                 agentRuntimeAdapter,
-                knowledgeRetrievalAdapter);
+                knowledgeRetrievalAdapter,
+                toolOrchestrator,
+                liteLLMProperties);
     }
 
     @Test
@@ -115,7 +126,9 @@ class AgentProfileProbeServiceTest {
         when(agentProfileResolver.resolve(any(), any(), any(), any())).thenReturn(CachedPolicy.builder()
                 .primaryModel("gpt-4o-mini")
                 .gatewayBaseUrl("http://127.0.0.1:59999")
+                .gatewayProtocol("openai")
                 .build());
+        when(liteLLMProperties.getDefaultApiProtocol()).thenReturn("openai");
         when(probeRecordService.save(any(), any(), any(Boolean.class), any())).thenAnswer(inv -> inv.getArgument(1));
 
         AgentProfileProbeResultVO result = probeService.probePublished("aiChat", new AgentProfileProbeRequest());

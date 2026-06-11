@@ -27,6 +27,8 @@ import cn.zest.www.zestllm.common.error.ZestLlmException;
 
 import cn.zest.www.zestllm.infra.cache.ValkeyResponseCacheAdapter;
 
+import cn.zest.www.zestllm.infra.gateway.GatewayAuthApplier;
+import cn.zest.www.zestllm.infra.gateway.GatewayApiProtocol;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
 
 import cn.zest.www.zestllm.infra.guardrails.GuardrailsEnforcer;
@@ -414,6 +416,36 @@ public class LlmInvokeService {
 
     public SseEmitter invokeStream(String bearerToken, InvokeRequest request) {
 
+        InvokeCommand command = new InvokeCommand();
+
+        command.setBearerToken(bearerToken);
+
+        command.setRequest(request);
+
+        return invokeStream(command);
+
+    }
+
+
+
+    public SseEmitter invokeStreamForAdmin(InvokeRequest request) {
+
+        InvokeCommand command = new InvokeCommand();
+
+        command.setRequest(request);
+
+        command.setAdminBypass(true);
+
+        return invokeStream(command);
+
+    }
+
+
+
+    public SseEmitter invokeStream(InvokeCommand command) {
+
+        InvokeRequest request = command.getRequest();
+
         SseEmitter emitter = new SseEmitter(liteLLMProperties.getReadTimeoutMs());
 
         streamExecutor.submit(() -> {
@@ -422,13 +454,25 @@ public class LlmInvokeService {
 
             long start = System.currentTimeMillis();
 
+            LlmAppDO app = null;
+
+            ResolvedPolicy resolved = null;
+
             try {
 
-                LlmAppDO app = runtimePolicyService.authenticate(request.getAppKey(), bearerToken);
+                app = command.isAdminBypass()
+
+                        ? appRepo.findByAppKey(request.getAppKey())
+
+                            .filter(a -> "ACTIVE".equals(a.getStatus()))
+
+                            .orElseThrow(() -> new ZestLlmException(LlmErrorCode.AUTH_FAILED, traceId))
+
+                        : runtimePolicyService.authenticate(request.getAppKey(), command.getBearerToken());
 
                 quotaAdapter.checkAndConsume(app.getId(), DEFAULT_ESTIMATED_TOKENS);
 
-                ResolvedPolicy resolved = runtimePolicyService.resolvePolicy(
+                resolved = runtimePolicyService.resolvePolicy(
 
                         app, request.getCode(), request.getInputs(), traceId);
 
@@ -459,15 +503,17 @@ public class LlmInvokeService {
 
 
 
-                emitter.send(SseEmitter.event().name("meta").data(Map.of(
+                Map<String, Object> meta = new HashMap<>();
 
-                        "traceId", traceId,
+                meta.put("traceId", traceId);
 
-                        "code", resolved.getTask().getCode(),
+                meta.put("code", resolved.getTask().getCode());
 
-                        "promptVersion", policy.getPromptVersion() != null ? policy.getPromptVersion() : ""
+                meta.put("promptVersion", policy.getPromptVersion() != null ? policy.getPromptVersion() : "");
 
-                )));
+                meta.put("model", policy.getPrimaryModel() != null ? policy.getPrimaryModel() : "");
+
+                emitter.send(SseEmitter.event().name("meta").data(meta));
 
 
 
@@ -519,29 +565,101 @@ public class LlmInvokeService {
 
                 observabilityAdapter.traceEnd(buildTraceEnd(traceId, true, null, metrics));
 
+                costAlertService.checkAfterInvoke(app);
 
 
-                emitter.send(SseEmitter.event().name("done").data(Map.of(
 
-                        "traceId", traceId,
+                Map<String, Object> done = new HashMap<>();
 
-                        "status", "SUCCESS"
+                done.put("traceId", traceId);
 
-                )));
+                done.put("status", "SUCCESS");
+
+                done.put("code", resolved.getTask().getCode());
+
+                done.put("promptVersion", policy.getPromptVersion());
+
+                done.put("model", chatResponse.getModel());
+
+                done.put("output", output);
+
+                done.put("metrics", metrics);
+
+                emitter.send(SseEmitter.event().name("done").data(done));
 
                 emitter.complete();
+
+            } catch (ZestLlmException ex) {
+
+                handleStreamFailure(traceId, app, resolved, request, ex, start, emitter);
 
             } catch (Exception ex) {
 
                 log.warn("LLM stream invoke failed traceId={}", traceId, ex);
 
-                emitter.completeWithError(ex);
+                ZestLlmException zestEx = new ZestLlmException(LlmErrorCode.MODEL_TIMEOUT, traceId, ex.getMessage());
+
+                handleStreamFailure(traceId, app, resolved, request, zestEx, start, emitter);
 
             }
 
         });
 
         return emitter;
+
+    }
+
+
+
+    private void handleStreamFailure(String traceId,
+
+                                     LlmAppDO app,
+
+                                     ResolvedPolicy resolved,
+
+                                     InvokeRequest request,
+
+                                     ZestLlmException ex,
+
+                                     long start,
+
+                                     SseEmitter emitter) {
+
+        log.warn("LLM stream invoke failed traceId={} code={}", traceId,
+
+                resolved != null ? resolved.getTask().getCode() : request.getCode(), ex);
+
+        if (app != null && resolved != null) {
+
+            InvokeResponse response = new InvokeResponse();
+
+            response.setTraceId(traceId);
+
+            handleFailure(traceId, app, resolved, request, response, ex, start);
+
+        }
+
+        try {
+
+            Map<String, Object> error = new HashMap<>();
+
+            error.put("traceId", traceId);
+
+            error.put("status", "FAILED");
+
+            error.put("errorCode", ex.getErrorCode() != null ? ex.getErrorCode().name() : null);
+
+            error.put("errorMessage", ex.getMessage());
+
+            emitter.send(SseEmitter.event().name("error").data(error));
+
+            emitter.complete();
+
+        } catch (Exception sendEx) {
+
+            emitter.completeWithError(sendEx);
+
+        }
 
     }
 
@@ -565,13 +683,23 @@ public class LlmInvokeService {
 
         }
 
-        return modelGatewayAdapter.chat(ChatRequest.builder()
+        return modelGatewayAdapter.chat(buildGatewayChatRequest(policy, traceId, renderedPrompt));
+
+    }
+
+
+
+    private ChatRequest buildGatewayChatRequest(CachedPolicy policy, String traceId, String userMessage) {
+
+        GatewayEndpoint endpoint = resolveGatewayEndpoint(policy);
+
+        return ChatRequest.builder()
 
                 .traceId(traceId)
 
                 .model(policy.getPrimaryModel())
 
-                .userMessage(renderedPrompt)
+                .userMessage(userMessage)
 
                 .maxTokens(policy.getMaxTokens())
 
@@ -579,7 +707,19 @@ public class LlmInvokeService {
 
                 .fallbackModels(policy.getFallbackModels())
 
-                .build());
+                .apiProtocol(GatewayApiProtocol.resolveEffective(
+
+                        policy.getModelApiProtocol(),
+
+                        policy.getGatewayProtocol(),
+
+                        liteLLMProperties.getDefaultApiProtocol()))
+
+                .baseUrl(endpoint.baseUrl())
+
+                .apiKey(endpoint.apiKey())
+
+                .build();
 
     }
 
@@ -658,6 +798,14 @@ public class LlmInvokeService {
                 StringBuilder content = new StringBuilder();
 
                 sseStreamHandler.streamPost(endpoint.baseUrl(), endpoint.apiKey(), body.toString(),
+
+                        GatewayApiProtocol.resolveEffective(
+
+                                policy.getModelApiProtocol(),
+
+                                policy.getGatewayProtocol(),
+
+                                liteLLMProperties.getDefaultApiProtocol()),
 
                         delta -> {
 
@@ -828,11 +976,13 @@ public class LlmInvokeService {
 
                 policy.getOutboundSecretRef(), liteLLMProperties.getApiKey());
 
-        if (apiKey != null && !apiKey.isBlank()) {
-
-            builder.defaultHeader("Authorization", "Bearer " + apiKey);
-
-        }
+        GatewayAuthApplier.applyToRestClient(
+                builder,
+                GatewayApiProtocol.resolveEffective(
+                        policy.getModelApiProtocol(),
+                        policy.getGatewayProtocol(),
+                        liteLLMProperties.getDefaultApiProtocol()),
+                apiKey);
 
         return builder.build();
 
@@ -861,6 +1011,44 @@ public class LlmInvokeService {
 
 
     private ObjectNode buildStreamBody(CachedPolicy policy, String model, String prompt) {
+
+        String protocol = GatewayApiProtocol.resolveEffective(
+
+                policy.getModelApiProtocol(),
+
+                policy.getGatewayProtocol(),
+
+                liteLLMProperties.getDefaultApiProtocol());
+
+        if (GatewayApiProtocol.isAnthropic(protocol)) {
+
+            ObjectNode body = objectMapper.createObjectNode();
+
+            body.put("model", model);
+
+            body.put("stream", true);
+
+            if (policy.getMaxTokens() != null) {
+
+                body.put("max_tokens", policy.getMaxTokens());
+
+            }
+
+            if (policy.getTemperature() != null) {
+
+                body.put("temperature", policy.getTemperature());
+
+            }
+
+            ArrayNode messages = objectMapper.createArrayNode();
+
+            messages.add(objectMapper.createObjectNode().put("role", "user").put("content", prompt));
+
+            body.set("messages", messages);
+
+            return body;
+
+        }
 
         ObjectNode body = objectMapper.createObjectNode();
 

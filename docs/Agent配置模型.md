@@ -31,8 +31,9 @@ Global Provider Preset  →  Tenant（可选）→  App Auth Binding  →  Task 
   "runtimeMode": "agent",
   "providerRef": "litellm-default",
   "model": {
-    "primary": "gpt-4o-mini",
-    "fallback": ["gpt-3.5-turbo"]
+    "primary": "deepseek-v4-flash",
+    "fallback": ["deepseek-v4-pro"],
+    "apiProtocol": null
   },
   "generation": {
     "maxTokens": 1024,
@@ -54,7 +55,7 @@ Global Provider Preset  →  Tenant（可选）→  App Auth Binding  →  Task 
     }
   },
   "inboundAuth": { "mode": "STATIC_TOKEN" },
-  "outboundAuth": { "mode": "API_KEY_REF", "secretRef": "env:LITELLM_API_KEY" }
+  "outboundAuth": { "mode": "API_KEY_REF", "secretRef": ".env:LITELLM_API_KEY" }
 }
 ```
 
@@ -102,13 +103,62 @@ zest:
       providers.litellm-default.baseUrl: http://localhost:4000
 ```
 
-## 8. 参考方案
+## 8. 多协议与多模型接入
+
+ZestLLM 通过 **LiteLLM 网关** 统一接入各类大模型，同时支持 **OpenAI** 与 **Anthropic** 两种对外协议，并可 **多 Provider 并存**。
+
+```text
+业务 Invoke / Playground / Eval
+        │
+        ▼
+  ZestLLM（按 Provider.protocol 选 API）
+        ├── openai     → POST /v1/chat/completions
+        └── anthropic  → POST /v1/messages
+        │
+        ▼
+  LiteLLM model_list（同一套 model_name）
+        ├── deepseek/deepseek-v4-flash
+        ├── anthropic/claude-sonnet-…
+        ├── openai/gpt-4o-mini
+        └── ollama/…
+```
+
+| 配置层 | 作用 | 示例 |
+|--------|------|------|
+| `deploy/litellm/config.yaml` | 注册**上游模型**（厂商 + 模型 ID） | `deepseek-v4-pro` → `deepseek/deepseek-v4-pro` |
+| Provider 预设 `protocol` | 决定 ZestLLM **如何调网关** | `openai` / `anthropic` |
+| Profile `model.primary` | 调用哪个 **对外 model_name** | `deepseek-v4-flash` |
+| Profile `model.apiProtocol` | **可选**，覆盖 Provider 协议 | 同一 Profile 临时切 Anthropic |
+| 一键切换 Provider | 不同网关 URL / 协议并存 | `litellm-local` ↔ `litellm-anthropic-local` |
+
+**Provider 预设示例（并存）：**
+
+```json
+{
+  "litellm-openai": {
+    "type": "litellm",
+    "baseUrl": "http://localhost:4000",
+    "protocol": "openai"
+  },
+  "litellm-anthropic": {
+    "type": "litellm",
+    "baseUrl": "http://localhost:4000",
+    "protocol": "anthropic"
+  }
+}
+```
+
+协议优先级：`model.apiProtocol` > Provider `protocol` > `zest.llm.litellm.default-api-protocol`。
+
+> MCP Tool Loop 当前仍使用 OpenAI 格式；`protocol=anthropic` 且开启工具循环时建议先用 `openai` 或关闭 tools。
+
+## 9. 参考方案
 
 - [CC Switch](https://github.com/farion1231/cc-switch)：多 Provider 预设、JSON 导入导出、OAuth MCP
 - [LiteLLM Router](https://docs.litellm.ai/)：模型 fallback 与网关抽象
 - [OpenAI Assistants API](https://platform.openai.com/docs/assistants/overview)：tools + guardrails 分离
 
-## 9. SecretRef 解析（Agent 侧）
+## 10. SecretRef 解析（Agent 侧）
 
 | 前缀 | 示例 | 说明 |
 |------|------|------|
@@ -128,7 +178,7 @@ zest:
 
 `PrepareResponse.outboundSecretRef` 仅下发引用，**密钥不在 CP 明文传输**。
 
-## 10. MCP Tools 执行链
+## 11. MCP Tools 执行链
 
 1. Profile 声明 `tools: [{type:mcp, serverRef:internal-docs, config:{toolName:search}}]`
 2. CP 从 `llm_mcp_server` 解析 `serverUrl` / `authSecretRef`

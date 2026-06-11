@@ -24,4 +24,4 @@ inboundAuth:
   mode: STATIC_TOKEN
 outboundAuth:
   mode: API_KEY_REF
-  secretRef: env:LITELLM_API_KEY
+  secretRef: .env:LITELLM_API_KEY

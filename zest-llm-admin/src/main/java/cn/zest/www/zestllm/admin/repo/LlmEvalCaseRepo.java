@@ -29,4 +29,19 @@ public class LlmEvalCaseRepo {
                 .eq(LlmEvalCaseDO::getDatasetId, datasetId)
                 .eq(LlmEvalCaseDO::getCaseCode, caseCode)));
     }
+
+    public List<LlmEvalCaseDO> findByDatasetId(Long datasetId) {
+        return mapper.selectList(new LambdaQueryWrapper<LlmEvalCaseDO>()
+                .eq(LlmEvalCaseDO::getDatasetId, datasetId)
+                .eq(LlmEvalCaseDO::getStatus, "ACTIVE")
+                .orderByAsc(LlmEvalCaseDO::getCaseCode));
+    }
+
+    public void updateById(LlmEvalCaseDO entity) {
+        mapper.updateById(entity);
+    }
+
+    public void deleteById(Long id) {
+        mapper.deleteById(id);
+    }
 }

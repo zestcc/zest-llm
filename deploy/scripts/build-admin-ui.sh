@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # 构建 Admin UI 并复制到 Spring Boot static 目录
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"

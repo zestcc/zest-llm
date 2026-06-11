@@ -3,9 +3,11 @@ package cn.zest.www.zestllm.admin.service;
 import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.dto.CreateEvalCaseCommand;
 import cn.zest.www.zestllm.admin.model.dto.CreateEvalDatasetCommand;
+import cn.zest.www.zestllm.admin.model.dto.UpdateEvalCaseCommand;
 import cn.zest.www.zestllm.admin.model.entity.LlmEvalCaseDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmEvalDatasetDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmEvalRunDO;
+import cn.zest.www.zestllm.admin.model.vo.EvalCaseVO;
 import cn.zest.www.zestllm.admin.model.vo.EvalDatasetVO;
 import cn.zest.www.zestllm.admin.model.vo.EvalRunVO;
 import cn.zest.www.zestllm.admin.repo.LlmEvalCaseRepo;
@@ -65,20 +67,51 @@ public class EvalRunService {
         return toDatasetVo(row);
     }
 
+    public List<EvalCaseVO> listCases(String datasetCode) {
+        LlmEvalDatasetDO dataset = loadDataset(datasetCode);
+        return caseRepo.findByDatasetId(dataset.getId()).stream()
+                .map(this::toCaseVo)
+                .toList();
+    }
+
     @Transactional(rollbackFor = Exception.class)
     public void createCase(String datasetCode, CreateEvalCaseCommand command) {
         LlmEvalDatasetDO dataset = loadDataset(datasetCode);
+        if (command.getCaseCode() == null || command.getCaseCode().isBlank()) {
+            throw new BusinessException("EVAL_CASE_INVALID", "用例 code 不能为空");
+        }
         if (caseRepo.findByDatasetAndCode(dataset.getId(), command.getCaseCode()).isPresent()) {
             throw new BusinessException("EVAL_CASE_EXISTS", "用例已存在: " + command.getCaseCode());
         }
         LlmEvalCaseDO row = new LlmEvalCaseDO();
         row.setDatasetId(dataset.getId());
-        row.setCaseCode(command.getCaseCode());
+        row.setCaseCode(command.getCaseCode().trim());
         row.setInputsJson(toJson(command.getInputs()));
         row.setExpectedJson(toJson(command.getExpected()));
         row.setStatus("ACTIVE");
         row.setCreatedAt(LocalDateTime.now());
         caseRepo.insert(row);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public EvalCaseVO updateCase(String datasetCode, String caseCode, UpdateEvalCaseCommand command) {
+        LlmEvalDatasetDO dataset = loadDataset(datasetCode);
+        LlmEvalCaseDO row = loadCase(dataset.getId(), caseCode);
+        if (command.getInputs() != null) {
+            row.setInputsJson(toJson(command.getInputs()));
+        }
+        if (command.getExpected() != null) {
+            row.setExpectedJson(toJson(command.getExpected()));
+        }
+        caseRepo.updateById(row);
+        return toCaseVo(row);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void deleteCase(String datasetCode, String caseCode) {
+        LlmEvalDatasetDO dataset = loadDataset(datasetCode);
+        LlmEvalCaseDO row = loadCase(dataset.getId(), caseCode);
+        caseRepo.deleteById(row.getId());
     }
 
     public List<EvalRunVO> listRuns(String datasetCode) {
@@ -205,6 +238,34 @@ public class EvalRunService {
     private LlmEvalDatasetDO loadDataset(String datasetCode) {
         return datasetRepo.findByCode(datasetCode)
                 .orElseThrow(() -> new BusinessException("EVAL_DATASET_NOT_FOUND", "Eval 数据集不存在: " + datasetCode));
+    }
+
+    private LlmEvalCaseDO loadCase(Long datasetId, String caseCode) {
+        return caseRepo.findByDatasetAndCode(datasetId, caseCode)
+                .filter(row -> "ACTIVE".equals(row.getStatus()))
+                .orElseThrow(() -> new BusinessException("EVAL_CASE_NOT_FOUND", "Eval 用例不存在: " + caseCode));
+    }
+
+    private EvalCaseVO toCaseVo(LlmEvalCaseDO row) {
+        return EvalCaseVO.builder()
+                .id(row.getId())
+                .caseCode(row.getCaseCode())
+                .inputs(parseJsonMap(row.getInputsJson()))
+                .expected(parseJsonMap(row.getExpectedJson()))
+                .status(row.getStatus())
+                .createdAt(row.getCreatedAt())
+                .build();
+    }
+
+    private Map<String, Object> parseJsonMap(String json) {
+        if (json == null || json.isBlank()) {
+            return Map.of();
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<>() {});
+        } catch (Exception ex) {
+            return Map.of();
+        }
     }
 
     private EvalDatasetVO toDatasetVo(LlmEvalDatasetDO row) {

@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # 执行 .zestflow/acceptance/journeys.yml 中定义的 Admin API 旅程
 set -euo pipefail
 

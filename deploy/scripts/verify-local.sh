@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # 本地完整版验证：mvn test + Admin API 验收（Linux / macOS）
 set -euo pipefail
 

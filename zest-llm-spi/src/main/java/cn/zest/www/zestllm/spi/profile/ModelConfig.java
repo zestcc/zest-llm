@@ -9,4 +9,6 @@ import java.util.List;
 public class ModelConfig {
     private String primary;
     private List<String> fallback = new ArrayList<>();
+    /** 可选：覆盖 Provider 的 protocol（openai | anthropic） */
+    private String apiProtocol;
 }

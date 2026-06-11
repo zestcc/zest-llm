@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # 方案 A 推荐启动：全栈 + openai-mock + Langfuse 可观测
 set -euo pipefail
 

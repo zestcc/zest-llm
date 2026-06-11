@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # ZestLLM 生产验收 E2E（AC1–AC38 + Agent 模式）
 set -euo pipefail
 
@@ -77,12 +77,12 @@ AFTER_URL=$(echo "$AFTER" | sed -n 's/.*"gatewayBaseUrl"[[:space:]]*:[[:space:]]
 echo "== AC10: auth binding OIDC upsert + read + restore =="
 curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   "$ADMIN_URL/api/admin/auth-bindings" \
-  -d '{"scopeType":"APP","appKey":"order-service","inboundMode":"OIDC_JWT","inboundConfigJson":"{\"mode\":\"OIDC_JWT\",\"issuer\":\"https://idp.example.com\",\"audience\":\"zest-llm\",\"jwksUri\":\"https://idp.example.com/jwks.json\"}","outboundMode":"API_KEY_REF","outboundConfigJson":"{\"mode\":\"API_KEY_REF\",\"secretRef\":\"env:LITELLM_API_KEY\"}"}' >/dev/null
+  -d '{"scopeType":"APP","appKey":"order-service","inboundMode":"OIDC_JWT","inboundConfigJson":"{\"mode\":\"OIDC_JWT\",\"issuer\":\"https://idp.example.com\",\"audience\":\"zest-llm\",\"jwksUri\":\"https://idp.example.com/jwks.json\"}","outboundMode":"API_KEY_REF","outboundConfigJson":"{\"mode\":\"API_KEY_REF\",\"secretRef\":\".env:LITELLM_API_KEY\"}"}' >/dev/null
 AUTH_OIDC=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/auth-bindings/apps/order-service")
 echo "$AUTH_OIDC" | grep -q "OIDC_JWT" && echo "$AUTH_OIDC" | grep -q "jwksUri" && echo "PASS AC10" || { echo "FAIL AC10: $AUTH_OIDC"; exit 1; }
 curl -s -X PUT -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   "$ADMIN_URL/api/admin/auth-bindings" \
-  -d '{"scopeType":"APP","appKey":"order-service","inboundMode":"STATIC_TOKEN","inboundConfigJson":"{\"mode\":\"STATIC_TOKEN\"}","outboundMode":"API_KEY_REF","outboundConfigJson":"{\"mode\":\"API_KEY_REF\",\"secretRef\":\"env:LITELLM_API_KEY\"}"}' >/dev/null
+  -d '{"scopeType":"APP","appKey":"order-service","inboundMode":"STATIC_TOKEN","inboundConfigJson":"{\"mode\":\"STATIC_TOKEN\"}","outboundMode":"API_KEY_REF","outboundConfigJson":"{\"mode\":\"API_KEY_REF\",\"secretRef\":\".env:LITELLM_API_KEY\"}"}' >/dev/null
 
 echo "== AC11: MCP server CRUD =="
 curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
@@ -102,6 +102,14 @@ STREAM_HEAD=$(curl -s -N -X POST "$ADMIN_URL/v1/llm/invoke/stream" \
   -H "Accept: text/event-stream" \
   -d '{"appKey":"order-service","code":"aiChat","inputs":{"question":"stream-test"}}' | head -n 5)
 echo "$STREAM_HEAD" | grep -q "meta" && echo "$STREAM_HEAD" | grep -q "traceId" && echo "PASS AC15" || { echo "FAIL AC15: $STREAM_HEAD"; exit 1; }
+
+echo "== AC20: Playground run/stream SSE =="
+PG_STREAM=$(curl -s -N -X POST "$ADMIN_URL/api/admin/playground/run/stream" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  -d '{"appKey":"order-service","code":"aiChat","inputs":{"question":"stream-pg-test"},"bizId":"playground"}' | head -n 8)
+echo "$PG_STREAM" | grep -q "meta" && echo "$PG_STREAM" | grep -q "traceId" && echo "PASS AC20" || { echo "FAIL AC20: $PG_STREAM"; exit 1; }
 
 echo "== AC12: agent profile diff API =="
 DIFF=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-profiles/aiChat/diff?from=v1&to=v1")

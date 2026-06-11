@@ -19,6 +19,9 @@ import cn.zest.www.zestllm.admin.repo.LlmMcpServerRepo;
 import cn.zest.www.zestllm.admin.repo.LlmModelRouteRepo;
 import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
+import cn.zest.www.zestllm.infra.gateway.GatewayAuthApplier;
+import cn.zest.www.zestllm.infra.gateway.GatewayApiProtocol;
+import cn.zest.www.zestllm.spi.profile.ProviderDefinition;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.profile.KnowledgeRefConfig;
@@ -28,8 +31,10 @@ import cn.zest.www.zestllm.spi.profile.RuntimeBackendConfig;
 import cn.zest.www.zestllm.spi.profile.ToolDefinition;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
+import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
 import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.runtime.DifyAgentRuntimeAdapter;
+import cn.zest.www.zestllm.infra.tool.ToolOrchestrator;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.runtime.AgentRuntimeAdapter;
 import cn.zest.www.zestllm.spi.runtime.AgentRuntimeInvokeRequest;
@@ -50,6 +55,7 @@ import org.springframework.web.client.RestClient;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -80,6 +86,8 @@ public class AgentProfileProbeService {
     private final AgentProfileProbeProperties probeProperties;
     private final AgentRuntimeAdapter agentRuntimeAdapter;
     private final KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;
+    private final ToolOrchestrator toolOrchestrator;
+    private final LiteLLMProperties liteLLMProperties;
 
     public AgentProfileProbeResultVO probePublished(String taskCode, AgentProfileProbeRequest request) {
         return probePublished(taskCode, request, AgentProfileProbeRecordService.SOURCE_MANUAL);
@@ -196,7 +204,7 @@ public class AgentProfileProbeService {
                 checks.add(critical("policy-resolve", "CONFIG", false, ex.getMessage()));
             }
             if (policy != null && StringUtils.hasText(policy.getGatewayBaseUrl())) {
-                checks.add(probeGatewayHealth(policy.getGatewayBaseUrl(), resolveGatewayApiKey(policy)));
+                checks.add(probeGatewayHealth(policy));
             } else {
                 checks.add(critical("gateway-health", "CONNECTIVITY", false, "未解析到 gatewayBaseUrl"));
             }
@@ -272,9 +280,21 @@ public class AgentProfileProbeService {
             checks.add(configCheck("outbound-secret", true, "未配置出站 SecretRef（可选）"));
             return checks;
         }
-        boolean resolved = secretResolver.resolve(outbound.getSecretRef()).filter(StringUtils::hasText).isPresent();
-        checks.add(configCheck("outbound-secret", resolved,
-                resolved ? "SecretRef 可解析: " + outbound.getSecretRef() : "SecretRef 无法解析: " + outbound.getSecretRef()));
+        String secretRef = outbound.getSecretRef();
+        boolean directResolve = secretResolver.resolve(secretRef).filter(StringUtils::hasText).isPresent();
+        String effectiveKey = toolOrchestrator.resolveGatewayApiKey(secretRef, liteLLMProperties.getApiKey());
+        boolean resolved = StringUtils.hasText(effectiveKey);
+        String message;
+        if (!resolved) {
+            message = "SecretRef 无法解析: " + secretRef;
+        } else if (directResolve) {
+            message = "SecretRef 可解析: " + secretRef;
+        } else {
+            message = "SecretRef 未命中环境变量，已回退 LiteLLM 默认 Key（连接 MaaS/外部网关请配置 env:MAAS_API_KEY 等专用密钥）";
+        }
+        boolean externalGateway = isExternalGateway(document);
+        boolean ok = resolved && (directResolve || !externalGateway);
+        checks.add(configCheck("outbound-secret", ok, message));
         return checks;
     }
 
@@ -380,65 +400,173 @@ public class AgentProfileProbeService {
         return checks;
     }
 
-    private AgentProfileProbeCheckVO probeGatewayHealth(String baseUrl, String apiKey) {
+    private AgentProfileProbeCheckVO probeGatewayHealth(CachedPolicy policy) {
+        String baseUrl = policy.getGatewayBaseUrl();
+        String apiKey = resolveGatewayApiKey(policy);
+        boolean anthropic = GatewayApiProtocol.isAnthropic(resolveGatewayProtocol(policy));
+        if (anthropic) {
+            return probeAnthropicGateway(policy);
+        }
         try {
-            RestClient client = buildGatewayClient(baseUrl, apiKey);
+            RestClient client = buildGatewayClient(policy);
             client.get().uri("/health/liveliness").retrieve().toBodilessEntity();
             return critical("gateway-health", "CONNECTIVITY", true, baseUrl + " 健康检查通过");
         } catch (Exception first) {
             try {
-                RestClient client = buildGatewayClient(baseUrl, apiKey);
+                RestClient client = buildGatewayClient(policy);
                 client.get().uri("/health").retrieve().toBodilessEntity();
                 return critical("gateway-health", "CONNECTIVITY", true, baseUrl + " /health 可达");
             } catch (Exception second) {
+                AgentProfileProbeCheckVO openAiPing = probeOpenAiGatewayPing(policy);
+                if (openAiPing.isUp()) {
+                    return openAiPing;
+                }
                 return critical("gateway-health", "CONNECTIVITY", false,
                         baseUrl + " 不可达: " + first.getMessage());
             }
         }
     }
 
+    private AgentProfileProbeCheckVO probeAnthropicGateway(CachedPolicy policy) {
+        String baseUrl = policy.getGatewayBaseUrl();
+        try {
+            postAnthropicPing(policy);
+            return critical("gateway-health", "CONNECTIVITY", true,
+                    baseUrl + " · Anthropic /v1/messages 可达");
+        } catch (Exception ex) {
+            return critical("gateway-health", "CONNECTIVITY", false,
+                    baseUrl + " · Anthropic 网关不可达: " + ex.getMessage());
+        }
+    }
+
+    private AgentProfileProbeCheckVO probeOpenAiGatewayPing(CachedPolicy policy) {
+        String baseUrl = policy.getGatewayBaseUrl();
+        try {
+            postOpenAiPing(policy);
+            return critical("gateway-health", "CONNECTIVITY", true,
+                    baseUrl + " · OpenAI /v1/chat/completions 可达");
+        } catch (Exception ex) {
+            return critical("gateway-health", "CONNECTIVITY", false,
+                    baseUrl + " · OpenAI 网关不可达: " + ex.getMessage());
+        }
+    }
+
+    private void postAnthropicPing(CachedPolicy policy) {
+        RestClient client = buildGatewayClient(policy);
+        ObjectNode body = objectMapper.createObjectNode();
+        String model = policy.getPrimaryModel();
+        body.put("model", StringUtils.hasText(model) ? model : "deepseek-v4-flash");
+        body.put("max_tokens", 1);
+        ArrayNode messages = objectMapper.createArrayNode();
+        messages.add(objectMapper.createObjectNode().put("role", "user").put("content", "ping"));
+        body.set("messages", messages);
+        client.post()
+                .uri("/v1/messages")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body.toString())
+                .retrieve()
+                .body(String.class);
+    }
+
+    private void postOpenAiPing(CachedPolicy policy) {
+        RestClient client = buildGatewayClient(policy);
+        ObjectNode body = objectMapper.createObjectNode();
+        String model = policy.getPrimaryModel();
+        body.put("model", StringUtils.hasText(model) ? model : "gpt-4o-mini");
+        body.put("max_tokens", 1);
+        ArrayNode messages = objectMapper.createArrayNode();
+        messages.add(objectMapper.createObjectNode().put("role", "user").put("content", "ping"));
+        body.set("messages", messages);
+        client.post()
+                .uri("/v1/chat/completions")
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body.toString())
+                .retrieve()
+                .body(String.class);
+    }
+
     private AgentProfileProbeCheckVO smokeInvoke(CachedPolicy policy) {
         String baseUrl = policy.getGatewayBaseUrl();
         String model = policy.getPrimaryModel();
-        String apiKey = resolveGatewayApiKey(policy);
+        boolean anthropic = GatewayApiProtocol.isAnthropic(resolveGatewayProtocol(policy));
         try {
-            RestClient client = buildGatewayClient(baseUrl, apiKey);
+            RestClient client = buildGatewayClient(policy);
             ObjectNode body = objectMapper.createObjectNode();
             body.put("model", model);
             body.put("max_tokens", 8);
             ArrayNode messages = objectMapper.createArrayNode();
             messages.add(objectMapper.createObjectNode().put("role", "user").put("content", "ping"));
             body.set("messages", messages);
+            String uri = anthropic ? "/v1/messages" : "/v1/chat/completions";
             String raw = client.post()
-                    .uri("/v1/chat/completions")
+                    .uri(uri)
                     .contentType(MediaType.APPLICATION_JSON)
                     .body(body.toString())
                     .retrieve()
                     .body(String.class);
-            boolean ok = raw != null && raw.contains("choices");
+            boolean ok = raw != null && (anthropic
+                    ? raw.contains("content")
+                    : raw.contains("choices"));
             return critical("smoke-invoke", "CONNECTIVITY", ok,
-                    ok ? "冒烟调用成功 · model=" + model : "网关响应异常");
+                    ok ? "冒烟调用成功 · model=" + model + " · protocol="
+                            + resolveGatewayProtocol(policy)
+                            : "网关响应异常");
         } catch (Exception ex) {
             return critical("smoke-invoke", "CONNECTIVITY", false, "冒烟调用失败: " + ex.getMessage());
         }
     }
 
     private String resolveGatewayApiKey(CachedPolicy policy) {
-        if (StringUtils.hasText(policy.getOutboundSecretRef())) {
-            return secretResolver.resolve(policy.getOutboundSecretRef()).orElse(null);
-        }
-        return null;
+        return toolOrchestrator.resolveGatewayApiKey(
+                policy.getOutboundSecretRef(), liteLLMProperties.getApiKey());
     }
 
-    private RestClient buildGatewayClient(String baseUrl, String apiKey) {
+    private RestClient buildGatewayClient(CachedPolicy policy) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofMillis(PROBE_CONNECT_MS));
         factory.setReadTimeout(Duration.ofMillis(PROBE_READ_MS));
-        RestClient.Builder builder = RestClient.builder().baseUrl(baseUrl).requestFactory(factory);
-        if (StringUtils.hasText(apiKey)) {
-            builder.defaultHeader("Authorization", "Bearer " + apiKey);
-        }
+        RestClient.Builder builder = RestClient.builder()
+                .baseUrl(policy.getGatewayBaseUrl())
+                .requestFactory(factory);
+        GatewayAuthApplier.applyToRestClient(
+                builder,
+                resolveGatewayProtocol(policy),
+                resolveGatewayApiKey(policy),
+                providerHeaders(policy));
         return builder.build();
+    }
+
+    private String resolveGatewayProtocol(CachedPolicy policy) {
+        return GatewayApiProtocol.resolveEffective(
+                policy.getModelApiProtocol(),
+                policy.getGatewayProtocol(),
+                liteLLMProperties.getDefaultApiProtocol());
+    }
+
+    private Map<String, Object> providerHeaders(CachedPolicy policy) {
+        if (policy.getProviders() == null || !StringUtils.hasText(policy.getProviderRef())) {
+            return Map.of();
+        }
+        ProviderDefinition def = policy.getProviders().get(policy.getProviderRef());
+        if (def == null || def.getHeaders() == null) {
+            return Map.of();
+        }
+        return def.getHeaders();
+    }
+
+    private boolean isExternalGateway(AgentProfileDocument document) {
+        if (document.getProviders() == null || document.getProviders().isEmpty()) {
+            return false;
+        }
+        String ref = document.getProviderRef();
+        ProviderDefinition def = StringUtils.hasText(ref)
+                ? document.getProviders().get(ref)
+                : document.getProviders().values().iterator().next();
+        if (def == null || !StringUtils.hasText(def.getBaseUrl())) {
+            return false;
+        }
+        String url = def.getBaseUrl().toLowerCase();
+        return !(url.contains("localhost") || url.contains("127.0.0.1") || url.contains("litellm:"));
     }
 
     private LlmAppDO resolveApp(LlmAiTaskDefDO task, String appKey) {

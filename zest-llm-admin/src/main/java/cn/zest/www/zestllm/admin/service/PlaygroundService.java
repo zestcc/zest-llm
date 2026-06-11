@@ -18,6 +18,7 @@ import cn.zest.www.zestllm.spi.guardrails.ContentModerationAdapter;
 import cn.zest.www.zestllm.spi.profile.GuardrailsConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @Service
 @RequiredArgsConstructor
@@ -50,6 +51,15 @@ public class PlaygroundService {
                 .outputSchema(policy.getOutputSchema())
                 .guardrails(guardrails)
                 .build();
+    }
+
+    public SseEmitter runStream(PlaygroundRunCommand command) {
+        InvokeRequest request = new InvokeRequest();
+        request.setAppKey(command.getAppKey());
+        request.setCode(command.getCode());
+        request.setInputs(command.getInputs());
+        request.setBizId(command.getBizId());
+        return llmInvokeService.invokeStreamForAdmin(request);
     }
 
     public PlaygroundRunVO run(PlaygroundRunCommand command) {

@@ -92,6 +92,11 @@
           <el-table-column prop="presetCode" label="编码" min-width="140" />
           <el-table-column prop="presetName" label="名称" min-width="160" />
           <el-table-column prop="providerType" label="类型" width="100" />
+          <el-table-column label="协议" width="110">
+            <template #default="{ row }">
+              <el-tag size="small" effect="plain">{{ presetProtocolLabel(row) }}</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="authMode" label="Auth" width="110" />
           <el-table-column label="操作" width="120">
             <template #default="{ row }">
@@ -230,8 +235,18 @@
         <el-form-item label="Auth">
           <el-input v-model="presetForm.authMode" />
         </el-form-item>
+        <el-form-item label="网关 URL">
+          <el-input v-model="presetGateway.baseUrl" placeholder="http://localhost:4000" />
+        </el-form-item>
+        <el-form-item label="API 协议">
+          <el-select v-model="presetGateway.protocol" style="width: 100%">
+            <el-option label="OpenAI Compatible (/v1/chat/completions)" value="openai" />
+            <el-option label="Anthropic Messages (/v1/messages)" value="anthropic" />
+          </el-select>
+          <div class="field-hint">同一 LiteLLM 可注册多上游模型；协议决定 ZestLLM 如何调用网关。</div>
+        </el-form-item>
         <el-form-item label="config JSON">
-          <el-input v-model="presetForm.configJson" type="textarea" :rows="10" />
+          <el-input v-model="presetForm.configJson" type="textarea" :rows="6" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -433,6 +448,10 @@ const presetForm = ref({
   providerType: 'litellm',
   authMode: 'API_KEY',
   configJson: '{"type":"litellm","baseUrl":"http://localhost:4000","protocol":"openai"}'
+})
+const presetGateway = ref({
+  baseUrl: 'http://localhost:4000',
+  protocol: 'openai' as 'openai' | 'anthropic'
 })
 
 const authAppKey = ref('')
@@ -736,6 +755,37 @@ async function activateProvider(code: string) {
   await loadProfiles()
 }
 
+function presetProtocolLabel(row: ProviderPresetVO) {
+  try {
+    const cfg = JSON.parse(row.configJson || '{}') as { protocol?: string }
+    return cfg.protocol === 'anthropic' ? 'Anthropic' : 'OpenAI'
+  } catch {
+    return 'OpenAI'
+  }
+}
+
+function parsePresetGatewayFromJson() {
+  try {
+    const cfg = JSON.parse(presetForm.value.configJson || '{}') as { baseUrl?: string; protocol?: string }
+    presetGateway.value.baseUrl = cfg.baseUrl || 'http://localhost:4000'
+    presetGateway.value.protocol = cfg.protocol === 'anthropic' ? 'anthropic' : 'openai'
+  } catch {
+    presetGateway.value = { baseUrl: 'http://localhost:4000', protocol: 'openai' }
+  }
+}
+
+function syncPresetConfigJson() {
+  presetForm.value.configJson = JSON.stringify(
+    {
+      type: presetForm.value.providerType || 'litellm',
+      baseUrl: presetGateway.value.baseUrl,
+      protocol: presetGateway.value.protocol
+    },
+    null,
+    2
+  )
+}
+
 function openCreatePreset() {
   presetDialogMode.value = 'create'
   presetDialogTitle.value = '新建 Provider 预设'
@@ -746,6 +796,7 @@ function openCreatePreset() {
     authMode: 'API_KEY',
     configJson: '{"type":"litellm","baseUrl":"http://localhost:4000","protocol":"openai"}'
   }
+  parsePresetGatewayFromJson()
   presetDialogVisible.value = true
 }
 
@@ -759,10 +810,12 @@ function openEditPreset(row: ProviderPresetVO) {
     authMode: row.authMode || 'API_KEY',
     configJson: row.configJson || '{}'
   }
+  parsePresetGatewayFromJson()
   presetDialogVisible.value = true
 }
 
 async function submitPreset() {
+  syncPresetConfigJson()
   presetSaving.value = true
   try {
     if (presetDialogMode.value === 'create') {

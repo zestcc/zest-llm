@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # ZestLLM 本地完整版一键启动（macOS / Linux）
 # 用法: bash deploy/scripts/start-local-full.sh [--with-litellm] [--embed-ui] [--skip-build] [--stop-only]
 set -euo pipefail

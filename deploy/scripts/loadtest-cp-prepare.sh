@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/.env bash
 # 方案 A Phase2：CP prepare 压测 + P50/P95/P99 报告
 set -euo pipefail
 

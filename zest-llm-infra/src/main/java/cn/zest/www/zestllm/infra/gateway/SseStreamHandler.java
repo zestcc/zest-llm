@@ -14,7 +14,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 
 /**
- * LiteLLM/OpenAI SSE 流式解析。
+ * LiteLLM 流式解析：OpenAI SSE 与 Anthropic Messages SSE。
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -27,21 +27,32 @@ public class SseStreamHandler {
                            String bodyJson,
                            Consumer<String> onDelta,
                            Runnable onComplete) {
+        streamPost(baseUrl, apiKey, bodyJson, GatewayApiProtocol.OPENAI, onDelta, onComplete);
+    }
+
+    public void streamPost(String baseUrl,
+                           String apiKey,
+                           String bodyJson,
+                           String apiProtocol,
+                           Consumer<String> onDelta,
+                           Runnable onComplete) {
+        if (GatewayApiProtocol.isAnthropic(apiProtocol)) {
+            streamAnthropic(baseUrl, apiKey, bodyJson, apiProtocol, onDelta, onComplete);
+        } else {
+            streamOpenAi(baseUrl, apiKey, bodyJson, onDelta, onComplete);
+        }
+    }
+
+    private void streamOpenAi(String baseUrl,
+                              String apiKey,
+                              String bodyJson,
+                              Consumer<String> onDelta,
+                              Runnable onComplete) {
         HttpURLConnection connection = null;
         try {
             URI uri = URI.create(baseUrl.replaceAll("/$", "") + "/v1/chat/completions");
-            connection = (HttpURLConnection) uri.toURL().openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/json");
-            connection.setRequestProperty("Accept", "text/event-stream");
-            if (apiKey != null && !apiKey.isBlank()) {
-                connection.setRequestProperty("Authorization", "Bearer " + apiKey);
-            }
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(bodyJson.getBytes(StandardCharsets.UTF_8));
-            }
-
+            connection = openStreamConnection(uri, apiKey, GatewayApiProtocol.OPENAI);
+            writeBody(connection, bodyJson);
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
                 String line;
@@ -72,6 +83,69 @@ public class SseStreamHandler {
             if (connection != null) {
                 connection.disconnect();
             }
+        }
+    }
+
+    private void streamAnthropic(String baseUrl,
+                                 String apiKey,
+                                 String bodyJson,
+                                 String apiProtocol,
+                                 Consumer<String> onDelta,
+                                 Runnable onComplete) {
+        HttpURLConnection connection = null;
+        try {
+            URI uri = URI.create(baseUrl.replaceAll("/$", "") + "/v1/messages");
+            connection = openStreamConnection(uri, apiKey, apiProtocol);
+            writeBody(connection, bodyJson);
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (!line.startsWith("data:")) {
+                        continue;
+                    }
+                    String data = line.substring(5).trim();
+                    if (data.isEmpty() || "[DONE]".equals(data)) {
+                        continue;
+                    }
+                    JsonNode node = objectMapper.readTree(data);
+                    String type = node.path("type").asText("");
+                    if ("content_block_delta".equals(type)) {
+                        String delta = node.path("delta").path("text").asText("");
+                        if (delta.isEmpty()) {
+                            delta = node.path("delta").path("partial_json").asText("");
+                        }
+                        if (!delta.isEmpty()) {
+                            onDelta.accept(delta);
+                        }
+                    }
+                }
+            }
+            if (onComplete != null) {
+                onComplete.run();
+            }
+        } catch (Exception ex) {
+            throw new IllegalStateException("Anthropic stream request failed: " + ex.getMessage(), ex);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    private HttpURLConnection openStreamConnection(URI uri, String apiKey, String protocol) throws Exception {
+        HttpURLConnection connection = (HttpURLConnection) uri.toURL().openConnection();
+        connection.setRequestMethod("POST");
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Accept", "text/event-stream");
+        GatewayAuthApplier.applyToHttpConnection(connection, protocol, apiKey);
+        return connection;
+    }
+
+    private void writeBody(HttpURLConnection connection, String bodyJson) throws Exception {
+        try (OutputStream os = connection.getOutputStream()) {
+            os.write(bodyJson.getBytes(StandardCharsets.UTF_8));
         }
     }
 
