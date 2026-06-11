@@ -308,6 +308,11 @@ echo "== AC47: ai jobs overview =="
 JO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/ai-jobs/overview")
 echo "$JO" | grep -q "aiChat" && echo "PASS AC47" || { echo "FAIL AC47: $JO"; exit 1; }
 
+echo "== AC48: meta features zest-stack =="
+FEAT=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/meta/features")
+echo "$FEAT" | grep -q "capabilityStackApi" && echo "$FEAT" | grep -q "scenarioTemplateApi" \
+  && echo "PASS AC48" || { echo "FAIL AC48: $FEAT"; exit 1; }
+
 echo "== AC49: publish preview =="
 PV=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-profiles/aiChat/versions/v1/publish-preview")
 echo "$PV" | grep -q "publishAllowed" && echo "PASS AC49" || { echo "FAIL AC49: $PV"; exit 1; }

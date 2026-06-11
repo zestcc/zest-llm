@@ -4,6 +4,8 @@ import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAppDO;
+import cn.zest.www.zestllm.admin.model.request.AgentProfileProbeRequest;
+import cn.zest.www.zestllm.admin.model.vo.AgentProfileProbeResultVO;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfilePublishResultVO;
 import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
@@ -34,6 +36,7 @@ public class AgentProfilePublishService {
     private final AgentProfileResolver agentProfileResolver;
     private final ProfileExtensionsValidator profileExtensionsValidator;
     private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
+    private final AgentProfileProbeService agentProfileProbeService;
 
     @Transactional(rollbackFor = Exception.class)
     public AgentProfilePublishResultVO publish(String taskCode, String version, String operator) {
@@ -57,6 +60,13 @@ public class AgentProfilePublishService {
                 throw new BusinessException("EVAL_BELOW_THRESHOLD",
                         "发布门禁：Eval 通过率 " + String.format("%.2f", cycle.getPassRate() * 100)
                                 + "% 低于阈值 " + String.format("%.0f", loop.getMinPassRate() * 100) + "%", 409);
+            }
+        } else {
+            AgentProfileProbeResultVO probe = agentProfileProbeService.probeVersion(
+                    taskCode, version, new AgentProfileProbeRequest());
+            if (!probe.isReady()) {
+                throw new BusinessException("PROBE_FAILED",
+                        "发布门禁：探测未通过 · " + probe.getOverallStatus(), 409);
             }
         }
 

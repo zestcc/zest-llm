@@ -183,8 +183,8 @@ zest-llm-admin-ui/.../ScenarioTemplatesView.vue
 | M1 | Prepare 扩展 + adapters health | ✅ |
 | M2 | Dify/RAGFlow + Publish 门禁 | ✅ |
 | M3 | Learning Pipeline + Admin UI | ✅ |
-| M4 | Zest Stack 分层部署 + 能力栈/场景模板/作业看板 | 本文档 + 代码 |
-| M5 | Langfuse→Eval 自动导入 + Chat UI（可选） | 规划中 |
+| M4 | Zest Stack 分层部署 + 能力栈/场景模板/作业看板 | ✅ |
+| M5 | 作业向导 + Publish 预览 + Langfuse 样本 + 应用概览 | ✅（Eval 一键入库 / Chat UI 仍可选） |
 
 ---
 

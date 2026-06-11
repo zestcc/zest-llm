@@ -53,9 +53,12 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { adminApi, type ScenarioTemplateVO } from '../api/admin'
+import { adminApi, type AiJobWizardResult, type ScenarioTemplateVO } from '../api/admin'
+
+const router = useRouter()
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -102,9 +105,21 @@ async function submitApply() {
       publish: applyForm.value.publish,
       runProbe: applyForm.value.runProbe
     })
-    const data = res.data ?? res
+    const data = (res.data ?? res) as AiJobWizardResult
     ElMessage.success(`向导完成：${data.taskCode} / ${data.profileVersion} Probe=${data.probeStatus}`)
     applyVisible.value = false
+    if (data.nextUrl) {
+      try {
+        await ElMessageBox.confirm('是否前往智能体配置继续编辑？', '向导完成', {
+          confirmButtonText: '前往配置',
+          cancelButtonText: '留在此页',
+          type: 'success'
+        })
+        await router.push(data.nextUrl)
+      } catch {
+        /* 用户取消 */
+      }
+    }
   } finally {
     submitting.value = false
   }
