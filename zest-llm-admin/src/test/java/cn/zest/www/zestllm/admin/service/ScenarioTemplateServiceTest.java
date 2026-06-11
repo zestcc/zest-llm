@@ -2,6 +2,7 @@ package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.exception.BusinessException;
 import cn.zest.www.zestllm.admin.model.request.ApplyScenarioTemplateRequest;
+import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileVO;
 import cn.zest.www.zestllm.admin.model.vo.ApplyScenarioTemplateResultVO;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class ScenarioTemplateServiceTest {
@@ -68,7 +70,10 @@ class ScenarioTemplateServiceTest {
 
         ApplyScenarioTemplateResultVO result = service.apply(req);
         assertEquals("aiChat", result.getTaskCode());
+        ArgumentCaptor<ImportAgentProfileRequest> captor = ArgumentCaptor.forClass(ImportAgentProfileRequest.class);
         verify(taskManageService).create(any());
-        verify(agentProfileManageService).importProfile(any());
+        verify(agentProfileManageService).importProfile(captor.capture());
+        assertTrue(captor.getValue().getVersion().length() <= 32);
+        assertTrue(captor.getValue().getVersion().startsWith("v-tpl-chatbasic-"));
     }
 }

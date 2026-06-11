@@ -1,5 +1,5 @@
 # Local dev — copy to application-local.yml
-# 前置：cd deploy && docker compose up -d mysql
+# 一键启动: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM]
 # 禁止 H2：仅使用 MySQL 8
 spring:
   datasource:
@@ -17,6 +17,8 @@ zest:
       base-url: http://localhost:4000
     adapters:
       quota: db
+      policy-cache: caffeine
+      response-cache: noop
 
 zest-llm:
   admin:
@@ -29,11 +31,10 @@ zest-llm:
       langfuse-ui-base-url: http://localhost:3000
       trace-path-template: /trace/{traceId}
     agent-probe:
-      schedule-enabled: true
-      cron: "0 */30 * * * ?"
+      schedule-enabled: false
       smoke-test-on-schedule: false
-      alert-webhook-url:
       alert-on-degraded: false
-      alert-cooldown-minutes: 60
-      max-parallel: 4
-      batch-timeout-seconds: 120
+
+logging:
+  level:
+    com.zestflow.executor.registry: WARN

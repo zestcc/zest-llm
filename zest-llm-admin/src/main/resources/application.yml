@@ -51,6 +51,8 @@ zest:
 
 zest-llm:
   admin:
+    meta:
+      app-version: 1.0.0
     jwt:
       secret: change-me-in-production-zest-llm-admin-jwt-secret-key
       expiration-ms: 86400000

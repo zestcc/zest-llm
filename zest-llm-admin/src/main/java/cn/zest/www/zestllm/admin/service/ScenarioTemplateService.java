@@ -89,7 +89,7 @@ public class ScenarioTemplateService {
                 : node.path("taskCodeSuggestion").asText("aiJob");
         ensureTask(taskCode, request.getAppKey(), node);
 
-        String version = "v-template-" + request.getTemplateId() + "-" + System.currentTimeMillis();
+        String version = buildTemplateProfileVersion(request.getTemplateId());
         ImportAgentProfileRequest importReq = new ImportAgentProfileRequest();
         importReq.setTaskCode(taskCode);
         importReq.setVersion(version);
@@ -116,6 +116,15 @@ public class ScenarioTemplateService {
         create.setName(node.path("taskName").asText(taskCode));
         create.setDescription(node.path("description").asText(""));
         taskManageService.create(create);
+    }
+
+    private String buildTemplateProfileVersion(String templateId) {
+        String slug = templateId.replace("-", "");
+        if (slug.length() > 12) {
+            slug = slug.substring(0, 12);
+        }
+        // llm_agent_profile.version is VARCHAR(32)
+        return "v-tpl-" + slug + "-" + Long.toString(System.currentTimeMillis(), 36);
     }
 
     private JsonNode requireTemplate(String templateId) {

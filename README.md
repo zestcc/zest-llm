@@ -74,19 +74,38 @@ powershell -File deploy/scripts/stress-test-prepare.ps1 -Concurrency 50 -Total 2
 
 完整标准见 [docs/产品验收标准.md](docs/产品验收标准.md)。
 
-## 本地开发
+## 本地开发（完整版）
 
-```bash
-cd deploy && docker compose up -d mysql
+```powershell
+# 1. 复制本地配置（首次）
+Copy-Item zest-llm-admin/src/main/resources/application-local.example.yml `
+          zest-llm-admin/src/main/resources/application-local.yml
+# 编辑 application-local.yml 中的 MySQL 密码
 
-cp zest-llm-admin/src/main/resources/application-local.example.yml \
-   zest-llm-admin/src/main/resources/application-local.yml
+# 2. 一键启动 Admin + UI dev（可选 -WithLiteLLM 拉起 Model Gateway）
+powershell -File deploy/scripts/start-local-full.ps1
+# 嵌入 UI 到 :8088：加 -EmbedUi
 
-mvn -pl zest-llm-admin -am spring-boot:run -Dspring-boot.run.profiles=local
-cd zest-llm-admin-ui && npm run dev   # http://localhost:5174
+# 3. 全量验证（mvn test + Admin API 验收）
+powershell -File deploy/scripts/verify-local.ps1
+
+# 4. 停止
+powershell -File deploy/scripts/start-local-full.ps1 -StopOnly
 ```
 
-JDBC 连接串见 `application-local.yml`（由 example 复制后按本机 MySQL 密码修改，**勿**在 `application.yml` 写死账号密码）。
+| 入口 | 地址 |
+|------|------|
+| Admin UI dev | http://localhost:5174 |
+| Admin API + 内嵌 UI | http://localhost:8088 |
+| 登录 | admin / admin123 |
+
+手动启动（等价）：
+
+```bash
+mvn -pl zest-llm-admin -am package -DskipTests
+java -jar zest-llm-admin/target/zest-llm-admin-1.0.0.jar --spring.profiles.active=local
+cd zest-llm-admin-ui && npm run dev
+```
 
 ## 业务接入
 

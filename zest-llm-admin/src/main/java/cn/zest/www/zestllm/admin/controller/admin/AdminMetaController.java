@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.controller.admin;
 
+import cn.zest.www.zestllm.admin.model.vo.AdminBuildInfoVO;
 import cn.zest.www.zestllm.admin.model.vo.AdminFeaturesVO;
 import cn.zest.www.zestllm.admin.service.AdminMetaService;
 import com.zestflow.common.model.Result;
@@ -18,5 +19,10 @@ public class AdminMetaController {
     @GetMapping("/features")
     public Result<AdminFeaturesVO> features() {
         return Result.success(adminMetaService.features());
+    }
+
+    @GetMapping("/build")
+    public Result<AdminBuildInfoVO> build() {
+        return Result.success(adminMetaService.buildInfo());
     }
 }

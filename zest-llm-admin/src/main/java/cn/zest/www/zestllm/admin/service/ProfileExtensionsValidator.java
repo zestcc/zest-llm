@@ -50,7 +50,7 @@ public class ProfileExtensionsValidator {
         if (!StringUtils.hasText(config.getType()) || !RUNTIME_TYPES.contains(config.getType())) {
             throw new BusinessException("INVALID_PROFILE", "Invalid runtimeBackend.type: " + config.getType());
         }
-        if (!StringUtils.hasText(config.getBaseUrl())) {
+        if (!"native".equalsIgnoreCase(config.getType()) && !StringUtils.hasText(config.getBaseUrl())) {
             throw new BusinessException("INVALID_PROFILE", "runtimeBackend.baseUrl is required");
         }
         if (!"native".equalsIgnoreCase(config.getType()) && !StringUtils.hasText(config.getExternalAppId())) {

@@ -1,14 +1,18 @@
 package cn.zest.www.zestllm.admin.service;
 
+import cn.zest.www.zestllm.admin.model.vo.AdminBuildInfoVO;
 import cn.zest.www.zestllm.admin.model.vo.AdminFeaturesVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -18,9 +22,13 @@ public class AdminMetaService {
     private static final String FLYWAY_LATEST = "V18";
 
     private final JdbcTemplate jdbcTemplate;
+    private final Environment environment;
 
     @Value("${spring.application.name:zest-llm-admin}")
     private String applicationName;
+
+    @Value("${zest-llm.admin.meta.app-version:1.0.0}")
+    private String appVersion;
 
     public AdminFeaturesVO features() {
         Map<String, Boolean> schemaReady = new LinkedHashMap<>();
@@ -31,7 +39,7 @@ public class AdminMetaService {
         boolean agentProbeApi = Boolean.TRUE.equals(schemaReady.get("llm_agent_profile_probe"));
         boolean learningApi = Boolean.TRUE.equals(schemaReady.get("llm_learning_cycle_run"));
         return AdminFeaturesVO.builder()
-                .appVersion(applicationName)
+                .appVersion(appVersion)
                 .flywayLatestScript(FLYWAY_LATEST)
                 .agentProbeApi(agentProbeApi)
                 .learningApi(learningApi)
@@ -39,6 +47,22 @@ public class AdminMetaService {
                 .scenarioTemplateApi(true)
                 .integrationAdaptersEnabled(true)
                 .schemaReady(schemaReady)
+                .build();
+    }
+
+    public AdminBuildInfoVO buildInfo() {
+        String profiles = Arrays.stream(environment.getActiveProfiles())
+                .filter(p -> !p.isBlank())
+                .collect(Collectors.joining(","));
+        if (profiles.isBlank()) {
+            profiles = "default";
+        }
+        return AdminBuildInfoVO.builder()
+                .appVersion(appVersion)
+                .artifactId(applicationName)
+                .flywayLatestScript(FLYWAY_LATEST)
+                .activeProfiles(profiles)
+                .javaVersion(System.getProperty("java.version"))
                 .build();
     }
 

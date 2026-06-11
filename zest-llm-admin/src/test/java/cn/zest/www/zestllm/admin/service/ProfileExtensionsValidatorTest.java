@@ -30,6 +30,13 @@ class ProfileExtensionsValidatorTest {
     }
 
     @Test
+    void acceptsNativeRuntimeBackendWithoutBaseUrl() {
+        AgentProfileDocument doc = baseDoc("agent");
+        doc.setExtensions(Map.of("runtimeBackend", Map.of("type", "native")));
+        assertDoesNotThrow(() -> validator.validate(doc));
+    }
+
+    @Test
     void rejectsExternalWithoutBackend() {
         AgentProfileDocument doc = new AgentProfileDocument();
         doc.setRuntimeMode("external");

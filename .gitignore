@@ -31,3 +31,7 @@ replay_pid*.log
 # ZestFlow Dev Copilot（可选：学习事件为本地原始信号，通常不提交）
 .zestflow/learning/
 .zestflow/mcp-audit.jsonl
+
+# Local deploy runtime artifacts
+deploy/logs/
+deploy/test-reports/
