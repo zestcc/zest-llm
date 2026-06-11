@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: {{ include "zest-llm.name" . }}
     app.kubernetes.io/component: admin
 spec:
-  type: ClusterIP
+  type: {{ .Values.service.admin.type }}
   ports:
     - port: {{ .Values.service.admin.port }}
       targetPort: 8088

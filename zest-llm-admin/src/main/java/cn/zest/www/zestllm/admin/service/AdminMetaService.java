@@ -5,13 +5,17 @@ import cn.zest.www.zestllm.admin.model.vo.AdminFeaturesVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.info.BuildProperties;
+import org.springframework.boot.info.GitProperties;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -19,10 +23,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminMetaService {
 
-    private static final String FLYWAY_LATEST = "V18";
+    private static final String FLYWAY_LATEST = "V19";
 
     private final JdbcTemplate jdbcTemplate;
     private final Environment environment;
+    private final Optional<BuildProperties> buildProperties;
+    private final Optional<GitProperties> gitProperties;
 
     @Value("${spring.application.name:zest-llm-admin}")
     private String applicationName;
@@ -63,7 +69,27 @@ public class AdminMetaService {
                 .flywayLatestScript(FLYWAY_LATEST)
                 .activeProfiles(profiles)
                 .javaVersion(System.getProperty("java.version"))
+                .gitCommit(resolveGitCommit())
+                .buildTime(resolveBuildTime())
                 .build();
+    }
+
+    private String resolveGitCommit() {
+        return gitProperties.map(GitProperties::getShortCommitId)
+                .or(() -> buildProperties.map(BuildProperties::getVersion))
+                .orElse("unknown");
+    }
+
+    private String resolveBuildTime() {
+        if (buildProperties.isPresent()) {
+            Instant time = buildProperties.get().getTime();
+            if (time != null) {
+                return time.toString();
+            }
+        }
+        return gitProperties.map(GitProperties::getCommitTime)
+                .map(Instant::toString)
+                .orElse("unknown");
     }
 
     private boolean tableExists(String tableName) {

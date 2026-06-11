@@ -308,10 +308,20 @@ echo "== AC50: app overview =="
 AO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/apps/overview")
 echo "$AO" | grep -q "order-service" && echo "PASS AC50" || { echo "FAIL AC50: $AO"; exit 1; }
 
-echo "== AC51: ai job wizard =="
+echo "== AC51: capability stack export =="
+EX=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capability-stack/export?tier=medium")
+echo "$EX" | grep -q "ZEST_STACK_TIER" && echo "PASS AC51" || { echo "FAIL AC51: $EX"; exit 1; }
+
+echo "== AC52: ai job wizard =="
 WZ=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
   "$ADMIN_URL/api/admin/ai-jobs/wizard" \
   -d "{\"templateId\":\"chat-basic\",\"appKey\":\"order-service\",\"taskCode\":\"aiChat\",\"publish\":false,\"runProbe\":false}")
-echo "$WZ" | grep -q "aiChat" && echo "PASS AC51" || { echo "FAIL AC51: $WZ"; exit 1; }
+echo "$WZ" | grep -q "aiChat" && echo "PASS AC52" || { echo "FAIL AC52: $WZ"; exit 1; }
+
+echo "== AC53: learning multi-source suggest =="
+SG=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/learning/suggest-cases" \
+  -d '{"taskCode":"aiChat","limit":5,"distillationSources":["execution","langfuse"]}')
+echo "$SG" | grep -q '"code":200' && echo "PASS AC53" || { echo "FAIL AC53: $SG"; exit 1; }
 
 echo "== All automated E2E checks passed =="

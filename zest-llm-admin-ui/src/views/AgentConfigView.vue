@@ -180,7 +180,13 @@
           </el-select>
         </el-form-item>
         <el-form-item label="Runtime URL">
-          <el-input v-model="extensionsForm.runtimeBaseUrl" placeholder="http://dify:5001" />
+          <el-input
+            v-model="extensionsForm.runtimeBaseUrl"
+            :placeholder="extensionsForm.runtimeType === 'native' ? 'native 可留空' : 'http://dify:5001'"
+          />
+          <div v-if="extensionsForm.runtimeType === 'native'" class="field-hint">
+            native 运行时走平台内置链路，无需填写外部 URL。
+          </div>
         </el-form-item>
         <el-form-item label="外部 App ID">
           <el-input v-model="extensionsForm.externalAppId" placeholder="Dify app id" />
@@ -500,14 +506,15 @@ function buildProfileDocument(runtimeMode: string) {
 }
 
 function buildExtensions() {
-  const ext: Record<string, unknown> = {
-    runtimeBackend: {
-      type: extensionsForm.value.runtimeType,
-      baseUrl: extensionsForm.value.runtimeBaseUrl,
-      externalAppId: extensionsForm.value.externalAppId || undefined,
-      protocol: extensionsForm.value.runtimeType === 'dify' ? 'dify-chat' : 'openai-compatible'
-    }
+  const backend: Record<string, unknown> = {
+    type: extensionsForm.value.runtimeType,
+    externalAppId: extensionsForm.value.externalAppId || undefined,
+    protocol: extensionsForm.value.runtimeType === 'dify' ? 'dify-chat' : 'openai-compatible'
   }
+  if (extensionsForm.value.runtimeType !== 'native' || extensionsForm.value.runtimeBaseUrl?.trim()) {
+    backend.baseUrl = extensionsForm.value.runtimeBaseUrl
+  }
+  const ext: Record<string, unknown> = { runtimeBackend: backend }
   if (extensionsForm.value.knowledgeEnabled) {
     ext.knowledge = {
       enabled: true,
@@ -1107,6 +1114,11 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.field-hint {
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
 .probe-history-toolbar {
   display: flex;
   gap: 8px;

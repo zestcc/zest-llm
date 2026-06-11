@@ -11,4 +11,6 @@ public class AdminBuildInfoVO {
     private String flywayLatestScript;
     private String activeProfiles;
     private String javaVersion;
+    private String gitCommit;
+    private String buildTime;
 }

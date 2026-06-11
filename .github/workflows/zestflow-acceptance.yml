@@ -23,11 +23,12 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: zest-llm-admin-ui/package-lock.json
-      - name: Admin UI build
+      - name: Admin UI build and embed into static
+        run: bash deploy/scripts/build-admin-ui.sh
+      - name: Verify embedded static matches UI build
         run: |
-          cd zest-llm-admin-ui
-          npm ci
-          npm run build
+          git diff --exit-code zest-llm-admin/src/main/resources/static/ \
+            || (echo "UI static/ out of date — run deploy/scripts/build-admin-ui.sh and commit" && exit 1)
 
   docker-e2e:
     runs-on: ubuntu-latest

@@ -76,36 +76,36 @@ powershell -File deploy/scripts/stress-test-prepare.ps1 -Concurrency 50 -Total 2
 
 ## 本地开发（完整版）
 
+**推荐单端口（演示/联调）**：`-EmbedUi` 将 UI 嵌入 `:8088`，无需 Vite dev server。
+
+**LiteLLM**：未加 `-WithLiteLLM` / `--with-litellm` 时 Dashboard 显示 Gateway DOWN 属预期；有 Docker 时可一键拉起 mock 网关。
+
 ```powershell
-# 1. 复制本地配置（首次）
+# Windows
 Copy-Item zest-llm-admin/src/main/resources/application-local.example.yml `
           zest-llm-admin/src/main/resources/application-local.yml
-# 编辑 application-local.yml 中的 MySQL 密码
-
-# 2. 一键启动 Admin + UI dev（可选 -WithLiteLLM 拉起 Model Gateway）
-powershell -File deploy/scripts/start-local-full.ps1
-# 嵌入 UI 到 :8088：加 -EmbedUi
-
-# 3. 全量验证（mvn test + Admin API 验收）
+powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi    # 或 -WithLiteLLM
 powershell -File deploy/scripts/verify-local.ps1
-
-# 4. 停止
 powershell -File deploy/scripts/start-local-full.ps1 -StopOnly
+```
+
+```bash
+# macOS / Linux
+cp zest-llm-admin/src/main/resources/application-local.example.yml \
+   zest-llm-admin/src/main/resources/application-local.yml
+bash deploy/scripts/start-local-full.sh --embed-ui   # 或 --with-litellm
+bash deploy/scripts/verify-local.sh
+bash deploy/scripts/start-local-full.sh --stop-only
 ```
 
 | 入口 | 地址 |
 |------|------|
-| Admin UI dev | http://localhost:5174 |
-| Admin API + 内嵌 UI | http://localhost:8088 |
+| Admin（嵌入 UI，推荐） | http://127.0.0.1:8088 |
+| Admin UI dev（热更新） | http://localhost:5174 |
+| 构建信息 API | `GET /api/admin/meta/build`（含 gitCommit / buildTime） |
 | 登录 | admin / admin123 |
 
-手动启动（等价）：
-
-```bash
-mvn -pl zest-llm-admin -am package -DskipTests
-java -jar zest-llm-admin/target/zest-llm-admin-1.0.0.jar --spring.profiles.active=local
-cd zest-llm-admin-ui && npm run dev
-```
+进程通过 `deploy/logs/pids/*.pid` 管理，停止脚本不会误杀同端口其他服务。
 
 ## 业务接入
 
@@ -122,7 +122,7 @@ zest:
       litellm-url: http://127.0.0.1:4000
 ```
 
-## 产品验收标准（AC1–AC38）
+## 产品验收标准（AC1–AC53）
 
 | # | 用例 | 验证方式 |
 |---|------|----------|
@@ -133,28 +133,9 @@ zest:
 | AC5 | MCP/CI 验收旅程 | `deploy/scripts/run-journeys.sh` |
 | AC6 | 错误 appToken → AUTH_FAILED | Runtime 返回 FAILED |
 | AC7–AC10 | Profile / Provider / OIDC 配置 | `e2e-acceptance.sh` |
-| AC11–AC15 | MCP CRUD / stream SSE | `e2e-acceptance.sh` |
-| AC16–AC17 | ZestFlow 真实 DAG | `:20552/api/execute` |
-| AC18–AC19 | Tool Loop Profile / Flow Gateway | `e2e-acceptance.sh` |
-| AC20 | Demo 双 Executor flowChat | `GET /demo/order/flowChat` |
-| AC21 | Tool Loop 真调用链 | invoke `aiChatTools` 含 `tool-loop-ok` |
-| AC22 | Prompt Playground 预览 | Admin `/api/admin/playground/preview` |
-| AC23 | Eval 批量评测 | Admin `/api/admin/eval/datasets/demo-aichat/run` |
-| AC24 | 语义响应缓存 | 同 prompt 二次 invoke `metrics.cacheHit=true` |
-| AC25 | ZestFlow 链 DB 注册表 | Admin `/api/admin/flow-chains` |
-| AC26 | FinOps 成本告警 Webhook | 配额含 `alertWebhookUrl` |
-| AC27 | Eval 数据集创建 | Admin POST `/api/admin/eval/datasets` |
-| AC28 | Execution 归档统计 | Admin `/api/admin/executions/archive/stats` |
-| AC29 | 智能体 Profile 探测 | Admin `POST .../agent-profiles/aiChat/probe` 含 checks + probeId |
-| AC30 | Dashboard 智能体健康 | Admin `/api/admin/dashboard/agent-health` |
-| AC31 | 探测历史落库 | Admin `GET .../probe/history` 含 records |
-| AC32 | 运维中心 API | cost-alerts / agent-probe-alerts / dashboard stats 含 agentsMonitored |
-| AC33 | FinOps 成本告警落库 | cost-alerts 含 order-service + SENT |
-| AC34 | 观测配置 API | `/api/admin/config/observability` |
-| AC35 | 探测历史版本筛选 | probe/history?profileVersion=v1 |
-| AC36 | Execution 观测字段 | executions/{traceId} 含 observabilityAdapter |
-| AC37 | 批量巡检已发布 Profile | `POST .../agent-profile-probes/run-all` 含 probedCount |
-| AC38 | 探测新 API + meta/features | `GET .../agent-profile-probes/aiChat/latest` + schemaReady |
+| AC11–AC36 | MCP / ZestFlow / Eval / Probe / Ops 等 | `e2e-acceptance.sh` |
+| AC39–AC48 | 整合扩展 / Zest Stack / 场景模板 | `full-acceptance.ps1` |
+| AC49–AC53 | 发布预览 / Wizard / Learning 等 M5 | `e2e-acceptance.sh` |
 
 运维手册：[docs/智能体探测与运维手册.md](docs/智能体探测与运维手册.md)
 

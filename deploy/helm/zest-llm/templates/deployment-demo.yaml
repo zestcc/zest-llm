@@ -1,3 +1,4 @@
+{{- if .Values.demo.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,5 +27,22 @@ spec:
           env:
             - name: SPRING_PROFILES_ACTIVE
               value: docker
+            - name: ZEST_LLM_CONTROL_PLANE_URL
+              value: {{ .Values.demo.controlPlaneUrl | quote }}
+            - name: ZEST_LLM_LITELLM_BASE_URL
+              value: {{ .Values.litellm.baseUrl | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.demo.livenessPath }}
+              port: 8081
+            initialDelaySeconds: 90
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.demo.readinessPath }}
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources.demo | nindent 12 }}
+{{- end }}

@@ -1,14 +1,18 @@
 package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.exception.BusinessException;
+import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
 import cn.zest.www.zestllm.admin.model.request.ApplyScenarioTemplateRequest;
 import cn.zest.www.zestllm.admin.model.request.CreateTaskRequest;
 import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
+import cn.zest.www.zestllm.admin.model.request.UpdateAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.vo.AgentProfileVO;
 import cn.zest.www.zestllm.admin.model.vo.ApplyScenarioTemplateResultVO;
 import cn.zest.www.zestllm.admin.model.vo.ScenarioTemplateVO;
+import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
+import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
@@ -33,8 +37,11 @@ import java.util.Optional;
 public class ScenarioTemplateService {
 
     private final AgentProfileManageService agentProfileManageService;
+    private final AgentProfilePublishService agentProfilePublishService;
+    private final AgentProfileResolver agentProfileResolver;
     private final TaskManageService taskManageService;
     private final LlmAiTaskDefRepo taskDefRepo;
+    private final LlmAgentProfileRepo agentProfileRepo;
     private final ObjectMapper objectMapper;
 
     private final Map<String, JsonNode> templates = new LinkedHashMap<>();
@@ -90,19 +97,50 @@ public class ScenarioTemplateService {
         ensureTask(taskCode, request.getAppKey(), node);
 
         String version = buildTemplateProfileVersion(request.getTemplateId());
-        ImportAgentProfileRequest importReq = new ImportAgentProfileRequest();
-        importReq.setTaskCode(taskCode);
-        importReq.setVersion(version);
-        importReq.setProfileJson(exportProfileJson(request.getTemplateId()));
-        importReq.setPublish(request.isPublish());
+        String profileJson = exportProfileJson(request.getTemplateId());
+        AgentProfileVO profile = upsertTemplateProfile(taskCode, version, profileJson, request.isPublish());
 
-        AgentProfileVO profile = agentProfileManageService.importProfile(importReq);
         return ApplyScenarioTemplateResultVO.builder()
                 .taskCode(taskCode)
                 .profileVersion(profile.getVersion())
                 .published(request.isPublish())
                 .message("Applied template " + request.getTemplateId())
                 .build();
+    }
+
+    private AgentProfileVO upsertTemplateProfile(String taskCode, String version, String profileJson, boolean publish) {
+        LlmAiTaskDefDO task = taskDefRepo.findByCode(taskCode)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "Task not found: " + taskCode));
+        AgentProfileDocument doc = agentProfileResolver.parseProfile(profileJson, null);
+
+        Optional<LlmAgentProfileDO> existing = agentProfileRepo.findByTaskIdAndVersion(task.getId(), version);
+        if (existing.isPresent()) {
+            LlmAgentProfileDO row = existing.get();
+            if ("PUBLISHED".equals(row.getStatus())) {
+                String altVersion = version + "-" + Long.toString(System.currentTimeMillis(), 36);
+                return importNewProfile(taskCode, altVersion, profileJson, doc, publish);
+            }
+            UpdateAgentProfileRequest update = new UpdateAgentProfileRequest();
+            update.setProfileJson(profileJson);
+            update.setProviderPresetCode(doc.getProviderRef());
+            update.setRuntimeMode(doc.getRuntimeMode());
+            AgentProfileVO updated = agentProfileManageService.updateVersion(taskCode, version, update);
+            if (publish) {
+                agentProfilePublishService.publish(taskCode, version, "template");
+            }
+            return updated;
+        }
+        return importNewProfile(taskCode, version, profileJson, doc, publish);
+    }
+
+    private AgentProfileVO importNewProfile(String taskCode, String version, String profileJson,
+                                              AgentProfileDocument doc, boolean publish) {
+        ImportAgentProfileRequest importReq = new ImportAgentProfileRequest();
+        importReq.setTaskCode(taskCode);
+        importReq.setVersion(version);
+        importReq.setProfileJson(profileJson);
+        importReq.setPublish(publish);
+        return agentProfileManageService.importProfile(importReq);
     }
 
     private void ensureTask(String taskCode, String appKey, JsonNode node) {
@@ -118,13 +156,13 @@ public class ScenarioTemplateService {
         taskManageService.create(create);
     }
 
+    /** Stable draft version per template — re-apply updates the same DRAFT row. */
     private String buildTemplateProfileVersion(String templateId) {
         String slug = templateId.replace("-", "");
-        if (slug.length() > 12) {
-            slug = slug.substring(0, 12);
+        if (slug.length() > 20) {
+            slug = slug.substring(0, 20);
         }
-        // llm_agent_profile.version is VARCHAR(32)
-        return "v-tpl-" + slug + "-" + Long.toString(System.currentTimeMillis(), 36);
+        return "v-tpl-" + slug;
     }
 
     private JsonNode requireTemplate(String templateId) {

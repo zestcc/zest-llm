@@ -9,32 +9,72 @@ image:
     repository: zest-llm-demo
     tag: latest
     pullPolicy: IfNotPresent
+  litellm:
+    repository: ghcr.io/berriai/litellm
+    tag: main-latest
+    pullPolicy: IfNotPresent
 
 service:
   admin:
     port: 8088
+    type: ClusterIP
   demo:
     port: 8081
+    type: ClusterIP
+  litellm:
+    port: 4000
+    type: ClusterIP
+
+ingress:
+  enabled: false
+  className: nginx
+  host: zest-llm.local
+  tls: false
+  annotations: {}
 
 mysql:
   host: mysql
   port: 3306
   database: zest_llm
   username: root
+  # prefer existingSecret when set
   password: root
+  existingSecret: ""
+  secretPasswordKey: password
 
 redis:
   host: valkey
   port: 6379
 
 litellm:
+  enabled: false
   baseUrl: http://litellm:4000
+  openaiApiKey: mock-key
+
+demo:
+  enabled: true
+  controlPlaneUrl: http://zest-llm-admin:8088
 
 adapters:
   policyCache: valkey
   responseCache: valkey
   observability: noop
 
+probes:
+  admin:
+    livenessPath: /swagger-ui.html
+    readinessPath: /swagger-ui.html
+  demo:
+    livenessPath: /demo/order/methodA?orderId=1&question=ping
+    readinessPath: /demo/order/methodA?orderId=1&question=ping
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 75
+
 resources:
   admin: {}
   demo: {}
+  litellm: {}

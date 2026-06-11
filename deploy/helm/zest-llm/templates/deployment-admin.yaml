@@ -31,10 +31,25 @@ spec:
             - name: SPRING_DATASOURCE_USERNAME
               value: {{ .Values.mysql.username | quote }}
             - name: SPRING_DATASOURCE_PASSWORD
-              value: {{ .Values.mysql.password | quote }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ default (printf "%s-mysql" (include "zest-llm.fullname" .)) .Values.mysql.existingSecret }}
+                  key: {{ .Values.mysql.secretPasswordKey | default "password" }}
             - name: SPRING_DATA_REDIS_HOST
               value: {{ .Values.redis.host | quote }}
             - name: ZEST_LLM_LITELLM_BASE_URL
               value: {{ .Values.litellm.baseUrl | quote }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.probes.admin.livenessPath }}
+              port: 8088
+            initialDelaySeconds: 60
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.probes.admin.readinessPath }}
+              port: 8088
+            initialDelaySeconds: 30
+            periodSeconds: 10
           resources:
             {{- toYaml .Values.resources.admin | nindent 12 }}
