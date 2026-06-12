@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.admin.config;
 
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,6 +33,8 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // SSE 等异步完成派发不再携带 Authorization，须放行否则 Access Denied + response committed
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/v1/**").permitAll()
                         .requestMatchers("/api/flow/**").permitAll()
                         .requestMatchers("/api/admin/auth/login").permitAll()

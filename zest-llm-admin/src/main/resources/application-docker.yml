@@ -30,6 +30,13 @@ zest:
     langfuse:
       enabled: false
 
+zestflow:
+  executor:
+    admin-addresses: http://zest-llm-admin:8088
+  collector:
+    registry:
+      admin-addresses: http://zest-llm-admin:8088
+
 zest-llm:
   admin:
     execution-archive:

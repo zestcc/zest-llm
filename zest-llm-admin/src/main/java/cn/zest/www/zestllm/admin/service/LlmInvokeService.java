@@ -92,6 +92,8 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 
 
+import java.io.IOException;
+
 import java.math.BigDecimal;
 
 import java.time.LocalDateTime;
@@ -448,6 +450,10 @@ public class LlmInvokeService {
 
         SseEmitter emitter = new SseEmitter(liteLLMProperties.getReadTimeoutMs());
 
+        emitter.onTimeout(emitter::complete);
+
+        emitter.onError(ex -> log.debug("SSE client disconnected traceId pending: {}", ex.getMessage()));
+
         streamExecutor.submit(() -> {
 
             String traceId = TokenHashUtil.newTraceId();
@@ -529,6 +535,14 @@ public class LlmInvokeService {
 
                                 emitter.send(SseEmitter.event().name("delta").data(delta));
 
+                            } catch (IOException ex) {
+
+                                throw new ClientDisconnectedException(ex);
+
+                            } catch (IllegalStateException ex) {
+
+                                throw ex;
+
                             } catch (Exception ex) {
 
                                 throw new IllegalStateException(ex);
@@ -588,6 +602,12 @@ public class LlmInvokeService {
                 emitter.send(SseEmitter.event().name("done").data(done));
 
                 emitter.complete();
+
+            } catch (ClientDisconnectedException ex) {
+
+                log.debug("SSE client disconnected traceId={}", traceId);
+
+                safeCompleteEmitter(emitter);
 
             } catch (ZestLlmException ex) {
 
@@ -653,11 +673,47 @@ public class LlmInvokeService {
 
             emitter.send(SseEmitter.event().name("error").data(error));
 
-            emitter.complete();
+            safeCompleteEmitter(emitter);
+
+        } catch (IOException sendEx) {
+
+            log.debug("SSE client disconnected before error event traceId={}", traceId);
+
+            safeCompleteEmitter(emitter);
 
         } catch (Exception sendEx) {
 
-            emitter.completeWithError(sendEx);
+            log.warn("Failed to send SSE error event traceId={}", traceId, sendEx);
+
+            safeCompleteEmitter(emitter);
+
+        }
+
+    }
+
+
+
+    private void safeCompleteEmitter(SseEmitter emitter) {
+
+        try {
+
+            emitter.complete();
+
+        } catch (Exception ex) {
+
+            log.debug("SSE emitter already closed: {}", ex.getMessage());
+
+        }
+
+    }
+
+
+
+    private static final class ClientDisconnectedException extends RuntimeException {
+
+        private ClientDisconnectedException(IOException cause) {
+
+            super(cause);
 
         }
 

@@ -5,12 +5,14 @@ import com.zestflow.common.model.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -48,6 +50,19 @@ public class GlobalExceptionHandler {
     public Result<Void> handleNotFound(Exception ex) {
         log.debug("Resource not found: {}", ex.getMessage());
         return Result.fail(HttpStatus.NOT_FOUND.value(), "资源不存在", "NOT_FOUND");
+    }
+
+    /** SSE 等已提交响应的场景，避免 ErrorMvc 二次渲染报错 */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleAsyncNotUsable(AsyncRequestNotUsableException ex) {
+        log.debug("Async response no longer usable: {}", ex.getMessage());
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public Result<Void> handleAccessDenied(AccessDeniedException ex) {
+        log.warn("Access denied: {}", ex.getMessage());
+        return Result.fail(HttpStatus.FORBIDDEN.value(), "无访问权限", "ACCESS_DENIED");
     }
 
     @ExceptionHandler(Exception.class)

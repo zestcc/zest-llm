@@ -35,6 +35,13 @@ zest-llm:
       smoke-test-on-schedule: false
       alert-on-degraded: false
 
+zestflow:
+  executor:
+    admin-addresses: http://127.0.0.1:8088
+  collector:
+    registry:
+      admin-addresses: http://127.0.0.1:8088
+
 logging:
   level:
-    com.zestflow.executor.registry: WARN
+    com.zestflow.executor.registry: INFO

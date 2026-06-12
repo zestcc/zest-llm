@@ -3,8 +3,8 @@ zestflow:
   executor:
     port: 20552
     app-name: zest-llm-admin
-    # ZestLLM 合一部署，不向外部 ZestFlow Admin 注册
-    admin-addresses: ""
+    # ZestLLM 合一部署：Executor 向本机 Admin（兼 ZestFlow Hub）自注册
+    admin-addresses: ${ZESTFLOW_EXECUTOR_ADMIN_ADDRESSES:http://127.0.0.1:8088}
     execute-endpoint-enabled: true
     chain-route-enabled: true
     execute-response-mode: BODY
@@ -22,4 +22,4 @@ zestflow:
   collector:
     async-enabled: false
     registry:
-      admin-addresses: ""
+      admin-addresses: ${ZESTFLOW_COLLECTOR_ADMIN_ADDRESSES:http://127.0.0.1:8088}
