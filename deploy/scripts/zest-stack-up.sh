@@ -1,4 +1,4 @@
-#!/usr/bin/.env bash
+#!/usr/bin/env bash
 # Zest Stack 分层一键部署
 # 用法: bash zest-stack-up.sh [small|medium|large]
 set -euo pipefail
