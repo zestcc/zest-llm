@@ -89,6 +89,17 @@ if ($WithMcpMock) {
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1")
 }
 
+# repackage 前释放 JAR 锁（旧 Admin/Demo 进程未停会导致 mvn package 失败）
+if (-not $SkipBuild -or $EmbedUi) {
+    Write-Host "== Stopping Admin/Demo before rebuild ==" -ForegroundColor Cyan
+    Stop-FromPidFile $AdminPidFile "Admin"
+    Stop-FromPidFile $UiPidFile "Admin UI dev"
+    if ($WithDemo) {
+        & (Join-Path $PSScriptRoot "start-demo-local.ps1") -StopOnly
+    }
+    Start-Sleep -Seconds 1
+}
+
 if (-not $SkipBuild) {
     Write-Host "== mvn package (skip tests) ==" -ForegroundColor Cyan
     Push-Location $Root
