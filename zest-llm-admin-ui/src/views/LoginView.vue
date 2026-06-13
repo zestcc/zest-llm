@@ -137,7 +137,7 @@
         </el-form-item>
         <el-form-item v-if="ssoEnabled">
           <el-button class="btn-sso" :loading="ssoLoading" @click="handleSsoLogin">
-            ZestSSO 登录
+            {{ ssoDisplayName }} 登录
           </el-button>
         </el-form-item>
       </el-form>
@@ -168,11 +168,13 @@ const captchaCode = ref('')
 const loading = ref(false)
 const ssoLoading = ref(false)
 const ssoEnabled = ref(false)
+const ssoDisplayName = ref('ZestSSO')
 const form = reactive({ username: 'admin', password: 'admin123', captcha: '' })
 
 onMounted(() => {
   adminApi.getOidcConfig().then((cfg) => {
     ssoEnabled.value = !!cfg?.enabled
+    ssoDisplayName.value = cfg?.displayName || 'ZestSSO'
   }).catch(() => {
     ssoEnabled.value = false
   })

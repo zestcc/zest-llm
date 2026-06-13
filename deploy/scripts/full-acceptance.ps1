@@ -111,6 +111,33 @@ try {
     Assert-Skip "SEC-03" "operator login unavailable"
 }
 
+# --- SSO ---
+Write-Report "--- SSO ---"
+try {
+    $ssoCfg = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/config" -Method Get -TimeoutSec 10
+    $ssoData = $ssoCfg.data
+    if (-not $ssoData) { $ssoData = $ssoCfg }
+    Assert-Pass "SSO-01" ($null -ne $ssoData.provider) "config returns provider=$($ssoData.provider)"
+    if (-not $ssoData.enabled) {
+        Assert-Pass "SSO-02" ($ssoData.enabled -eq $false) "registry disabled returns enabled=false"
+        Assert-Skip "SEC-SSO" "SSO disabled — skip authorize smoke"
+    } else {
+        Assert-Pass "SSO-02" ($ssoData.enabled -eq $true) "SSO enabled"
+        try {
+            $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/authorize" -Method Get -TimeoutSec 10
+            $authData = $auth.data
+            if (-not $authData) { $authData = $auth }
+            Assert-Pass "SEC-SSO" ($null -ne $authData.authorizationUrl) "authorize URL generated"
+        } catch {
+            Assert-Pass "SEC-SSO" $false "authorize failed: $($_.Exception.Message)"
+        }
+    }
+} catch {
+    Assert-Pass "SSO-01" $false "SSO config: $($_.Exception.Message)"
+    Assert-Skip "SSO-02" "SSO config unavailable"
+    Assert-Skip "SEC-SSO" "SSO config unavailable"
+}
+
 # --- FUNC Admin API matrix ---
 Write-Report "--- FUNC-API ---"
 try {

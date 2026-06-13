@@ -25,14 +25,36 @@ zest-llm:
   admin:
     jwt:
       secret: local-dev-jwt-secret-key-at-least-32-chars
-    oidc:
+    sso:
       enabled: false
+      provider: zest-sso
+      display-name: ZestSSO
       issuer: http://localhost:9000
+      discovery-uri: http://localhost:9000/api/public/.well-known/openid-configuration
       audience: zest-llm-admin
       jwks-uri: http://localhost:9000/oauth2/jwks
       client-id: zest-llm-admin
       client-secret: change-me-in-production
       redirect-uri: http://localhost:5174/login/callback
+      post-logout-redirect-uri: http://localhost:5174/login
+      scopes:
+        - openid
+        - profile
+        - email
+        - roles
+        - tenant
+      claims:
+        username-claim: preferred_username
+        roles-claim: roles
+        admin-role: SSO_ADMIN
+        operator-role: SSO_OPERATOR
+        default-role: ADMIN
+      zest-sso:
+        use-logout-url-api: true
+        logout-url-api-path: /api/public/logout-url
+    # legacy — 若未配置 sso.client-id 则自动合并到 sso.*
+    oidc:
+      enabled: false
     execution-archive:
       enabled: true
       retention-days: 90

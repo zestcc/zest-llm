@@ -18,7 +18,6 @@
 
 | 项 | 说明 |
 |----|------|
-| Admin SSO 登录 UI | 后端 OIDC API 已有；前端仍为账号密码 |
 | 生产环境正式签字 | 需真实 K8s/Helm 部署、压测与变更流程 |
 | Large Tier 日常门禁 | Dify + RAGFlow + Kafka 全栈需 `zest-stack-up -Tier large` 单独验证 |
 
@@ -46,7 +45,7 @@
 
 | 路由 | 页面 | 主要能力 |
 |------|------|----------|
-| `/login` | 登录 | JWT 本地账号登录 |
+| `/login` | 登录 | JWT 本地账号 + 可插拔 SSO（ZestSSO/OIDC） |
 | `/dashboard` | 概览 | 调用统计、成本趋势、智能体健康、Gateway/Adapter 状态 |
 | `/capability-stack` | 能力栈 | 当前 Tier、SPI 清单、分层部署说明、导出 compose 片段 |
 | `/scenario-templates` | 场景模板 | 浏览/应用内置模板（chat / report / ops） |
@@ -80,7 +79,8 @@
 | `GET /meta/features` | 特性开关、schema 就绪、Flyway 版本 |
 | `GET /meta/build` | 构建信息（appVersion、gitCommit、buildTime、activeProfiles） |
 | `POST /auth/login` | 本地 JWT 登录 |
-| `GET/POST /auth/oidc/*` | OIDC 配置与换 Token（**无 SSO 登录页**） |
+| `GET/POST /auth/sso/*` | 可插拔 SSO（ZestSSO / OIDC / PKCE） |
+| `GET/POST /auth/oidc/*` | Legacy 别名，与 `/auth/sso/*` 等价 |
 
 ### 4.2 治理基础
 
@@ -381,7 +381,7 @@ bash deploy/scripts/verify-local.sh
 | Helm 最小可部署 | ✅ Chart 已有 | 生产 values、多 AZ、密钥管理 |
 | Wizard / 场景模板 | ✅ 幂等草稿 | 更多行业模板 |
 | Learning 闭环 | ✅ API + UI + 定时 Job（默认关） | 自动 publish |
-| Admin SSO 登录页 | ⚠️ 骨架已有（ZestSSO 按钮 + 回调 + PKCE） | IdP 联调与生产配置 |
+| Admin SSO 登录页 | ✅ 可插拔 SPI（ZestSSO/OIDC）+ PKCE + 本地账号并存 | 生产 IdP 联调见 [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) |
 | 生产签字 / SLO | ❌ 未做 | 压测报告 + 变更流程 |
 
 ---

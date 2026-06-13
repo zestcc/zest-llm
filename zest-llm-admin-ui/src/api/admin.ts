@@ -572,7 +572,9 @@ export const adminApi = {
   },
 
   getOidcConfig() {
-    return http.get<{ enabled: boolean; issuer: string; clientId: string }>('/api/admin/auth/oidc/config')
+    return http.get<{ enabled: boolean; provider?: string; displayName?: string; issuer: string; clientId: string }>(
+      '/api/admin/auth/oidc/config'
+    )
   },
 
   getOidcAuthorize() {
@@ -585,6 +587,25 @@ export const adminApi = {
 
   getOidcLogoutUrl() {
     return http.get<string | null>('/api/admin/auth/oidc/logout-url')
+  },
+
+  /** SSO 路径别名（与 oidc/* 等价） */
+  getSsoConfig() {
+    return http.get<{ enabled: boolean; provider?: string; displayName?: string; issuer: string; clientId: string }>(
+      '/api/admin/auth/sso/config'
+    )
+  },
+
+  getSsoAuthorize() {
+    return http.get<{ authorizationUrl: string; state: string }>('/api/admin/auth/sso/authorize')
+  },
+
+  ssoCallback(code: string, state: string) {
+    return http.post<AdminLoginVO>('/api/admin/auth/sso/callback', { code, state })
+  },
+
+  getSsoLogoutUrl() {
+    return http.get<string | null>('/api/admin/auth/sso/logout-url')
   },
 
   listApps(page = 1, size = 20) {

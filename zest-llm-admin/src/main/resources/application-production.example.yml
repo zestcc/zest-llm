@@ -34,6 +34,25 @@ zest-llm:
   admin:
     jwt:
       secret: ${ZEST_LLM_JWT_SECRET}
+    sso:
+      enabled: ${ZEST_LLM_SSO_ENABLED:false}
+      provider: zest-sso
+      issuer: ${ZEST_SSO_ISSUER:http://zest-sso:9000}
+      discovery-uri: ${ZEST_SSO_DISCOVERY_URI:http://zest-sso:9000/api/public/.well-known/openid-configuration}
+      audience: zest-llm-admin
+      client-id: ${ZEST_LLM_SSO_CLIENT_ID:zest-llm-admin}
+      client-secret: ${ZEST_LLM_SSO_CLIENT_SECRET}
+      redirect-uri: ${ZEST_LLM_SSO_REDIRECT_URI:http://127.0.0.1:8088/login/callback}
+      post-logout-redirect-uri: ${ZEST_LLM_SSO_POST_LOGOUT_URI:http://127.0.0.1:8088/login}
+      scopes:
+        - openid
+        - profile
+        - email
+        - roles
+        - tenant
+      zest-sso:
+        use-logout-url-api: true
+        logout-url-api-path: /api/public/logout-url
     execution-archive:
       enabled: true
       retention-days: 90

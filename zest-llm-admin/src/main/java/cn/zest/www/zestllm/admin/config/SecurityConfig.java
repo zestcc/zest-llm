@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/zestflow/**").permitAll()
                         .requestMatchers("/api/admin/auth/login").permitAll()
                         .requestMatchers("/api/admin/auth/oidc/**").permitAll()
+                        .requestMatchers("/api/admin/auth/sso/**").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyRole("ADMIN", "OPERATOR")

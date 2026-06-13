@@ -14,13 +14,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/**
- * 向后兼容 OIDC 路径 — 委托 {@link AdminSsoAuthService}。
- */
 @RestController
-@RequestMapping("/api/admin/auth/oidc")
+@RequestMapping("/api/admin/auth/sso")
 @RequiredArgsConstructor
-public class AdminOidcAuthController {
+public class AdminSsoAuthController {
 
     private final AdminSsoAuthService adminSsoAuthService;
 
