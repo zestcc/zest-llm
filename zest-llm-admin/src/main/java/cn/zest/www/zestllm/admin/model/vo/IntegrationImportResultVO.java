@@ -8,6 +8,7 @@ import java.util.List;
 @Data
 @Builder
 public class IntegrationImportResultVO {
+    private boolean dryRun;
     private int created;
     private int updated;
     private int skipped;

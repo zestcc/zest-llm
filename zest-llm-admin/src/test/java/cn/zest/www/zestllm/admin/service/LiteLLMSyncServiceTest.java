@@ -61,4 +61,28 @@ class LiteLLMSyncServiceTest {
         assertThat(result.getFailed()).isEqualTo(1);
         assertThat(result.getSynced()).isZero();
     }
+
+    @Test
+    void getSyncStatus_reportsModelCounts() {
+        LiteLLMProperties properties = new LiteLLMProperties();
+        properties.setBaseUrl("http://127.0.0.1:1");
+        properties.setConnectTimeoutMs(500);
+        properties.setReadTimeoutMs(500);
+
+        LlmGatewayModelDO synced = new LlmGatewayModelDO();
+        synced.setModelName("deepseek-v4-flash");
+        synced.setUpstreamModel("deepseek/deepseek-v4-flash");
+        synced.setSyncStatus("SYNCED");
+        when(gatewayModelRepo.findAllActive()).thenReturn(List.of(synced));
+
+        LiteLLMSyncService service = new LiteLLMSyncService(
+                gatewayModelRepo, secretRefManageService, properties, new ObjectMapper());
+        var status = service.getSyncStatus();
+
+        assertThat(status.getTotal()).isEqualTo(1);
+        assertThat(status.getSynced()).isEqualTo(1);
+        assertThat(status.isLiteLLMReachable()).isFalse();
+        assertThat(status.getModels()).hasSize(1);
+        assertThat(status.getModels().get(0).getModelName()).isEqualTo("deepseek-v4-flash");
+    }
 }

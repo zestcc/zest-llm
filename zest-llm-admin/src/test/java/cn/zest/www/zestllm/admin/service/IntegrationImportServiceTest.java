@@ -6,6 +6,8 @@ import cn.zest.www.zestllm.admin.model.request.CreateProviderPresetRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportGatewayModelsRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportProviderPresetsRequest;
 import cn.zest.www.zestllm.admin.model.vo.GatewayModelVO;
+import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
+import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
 import org.junit.jupiter.api.Test;
@@ -37,6 +39,12 @@ class IntegrationImportServiceTest {
     private ModelRegistryManageService modelRegistryManageService;
     @Mock
     private LlmGatewayModelRepo gatewayModelRepo;
+    @Mock
+    private LlmAiTaskDefRepo taskDefRepo;
+    @Mock
+    private LlmAgentProfileRepo agentProfileRepo;
+    @Mock
+    private AgentProfileResolver agentProfileResolver;
 
     @InjectMocks
     private IntegrationImportService integrationImportService;
@@ -76,5 +84,24 @@ class IntegrationImportServiceTest {
 
         assertThat(result.getUpdated()).isEqualTo(1);
         verify(modelRegistryManageService).upsertForImport(item);
+    }
+
+    @Test
+    void importGatewayModels_dryRunDoesNotPersist() {
+        CreateGatewayModelRequest item = new CreateGatewayModelRequest();
+        item.setModelName("new-model");
+        item.setUpstreamModel("openai/gpt-4");
+
+        IntegrationImportGatewayModelsRequest request = new IntegrationImportGatewayModelsRequest();
+        request.setDryRun(true);
+        request.setItems(List.of(item));
+
+        when(gatewayModelRepo.findByModelName("new-model")).thenReturn(Optional.empty());
+
+        var result = integrationImportService.importGatewayModels(request);
+
+        assertThat(result.isDryRun()).isTrue();
+        assertThat(result.getCreated()).isEqualTo(1);
+        verify(modelRegistryManageService, never()).upsertForImport(any());
     }
 }

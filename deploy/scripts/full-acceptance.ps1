@@ -568,6 +568,33 @@ try {
     Assert-Pass "AC62" $false "integration features: $($_.Exception.Message)"
 }
 
+try {
+    $ov = Invoke-AdminGet "/api/admin/integration/overview"
+    $ovj = $ov | ConvertTo-Json -Depth 6 -Compress
+    if ($ov.data) { $ovj = ($ov.data | ConvertTo-Json -Depth 6 -Compress) }
+    Assert-Pass "AC63" ($ovj.Contains("gatewayModels") -and $ovj.Contains("secretRefCount")) "integration overview"
+} catch {
+    Assert-Pass "AC63" $false "integration overview: $($_.Exception.Message)"
+}
+
+try {
+    $dry = Invoke-AdminPost "/api/admin/integration/import/gateway-models" '{"dryRun":true,"items":[{"modelName":"deepseek-v4-flash","upstreamModel":"deepseek/deepseek-v4-flash"}]}'
+    $dryj = $dry | ConvertTo-Json -Compress
+    if ($dry.data) { $dryj = ($dry.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC64" ($dryj.Contains('"dryRun":true') -and $dryj.Contains("updated")) "integration import dry-run"
+} catch {
+    Assert-Pass "AC64" $false "integration import dry-run: $($_.Exception.Message)"
+}
+
+try {
+    $ss = Invoke-AdminGet "/api/admin/integration/sync-litellm/status"
+    $ssj = $ss | ConvertTo-Json -Depth 6 -Compress
+    if ($ss.data) { $ssj = ($ss.data | ConvertTo-Json -Depth 6 -Compress) }
+    Assert-Pass "AC65" ($ssj.Contains("liteLLMReachable") -and $ssj.Contains("models")) "litellm sync status"
+} catch {
+    Assert-Pass "AC65" $false "litellm sync status: $($_.Exception.Message)"
+}
+
 # --- Summary ---
 Write-Report "--- SUMMARY ---"
 Write-Report "PASSED=$script:Passed FAILED=$script:Failed SKIPPED=$script:Skipped"

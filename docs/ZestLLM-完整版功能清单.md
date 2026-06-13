@@ -224,8 +224,10 @@ public AiChatResult aiChat(@AiInput("question") String question, @AiOutput AiCha
 |-----|------|
 | Gateway Model SSOT | `GET/POST /api/admin/gateway-models` |
 | Secret Ref | `GET/POST /api/admin/secret-refs`（列表脱敏） |
-| 批量 Import | `POST /api/admin/integration/import/*` |
+| 批量 Import | `POST /api/admin/integration/import/*`（支持 `dryRun` 预览） |
+| 集成概览 | `GET /api/admin/integration/overview` |
 | LiteLLM Sync | `POST /api/admin/integration/sync-litellm` |
+| LiteLLM Sync 状态 | `GET /api/admin/integration/sync-litellm/status` |
 | Features | `GET /api/admin/meta/features` → `integrationSuiteApi` |
 
 详见 [ZestLLM-Integration-Suite.md](./ZestLLM-Integration-Suite.md)。

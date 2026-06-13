@@ -25,6 +25,13 @@ public class AdminSessionRevocationService {
         redisTemplate.opsForValue().set(PREFIX + username, "1", TTL);
     }
 
+    public void clearRevocation(String username) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+        redisTemplate.delete(PREFIX + username);
+    }
+
     public boolean isRevoked(String username) {
         if (username == null || username.isBlank()) {
             return false;

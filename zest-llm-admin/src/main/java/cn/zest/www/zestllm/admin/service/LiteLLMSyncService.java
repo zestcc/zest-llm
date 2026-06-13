@@ -2,6 +2,7 @@ package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.model.entity.LlmGatewayModelDO;
 import cn.zest.www.zestllm.admin.model.vo.LiteLLMSyncResultVO;
+import cn.zest.www.zestllm.admin.model.vo.LiteLLMSyncStatusVO;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
 import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -29,6 +31,39 @@ public class LiteLLMSyncService {
     private final SecretRefManageService secretRefManageService;
     private final LiteLLMProperties liteLLMProperties;
     private final ObjectMapper objectMapper;
+
+    public LiteLLMSyncStatusVO getSyncStatus() {
+        List<LlmGatewayModelDO> models = gatewayModelRepo.findAllActive();
+        int synced = 0;
+        int failed = 0;
+        int pending = 0;
+        List<LiteLLMSyncStatusVO.ModelSyncItem> items = new ArrayList<>();
+        for (LlmGatewayModelDO model : models) {
+            String status = model.getSyncStatus();
+            if ("SYNCED".equalsIgnoreCase(status)) {
+                synced++;
+            } else if ("FAILED".equalsIgnoreCase(status)) {
+                failed++;
+            } else {
+                pending++;
+            }
+            items.add(LiteLLMSyncStatusVO.ModelSyncItem.builder()
+                    .modelName(model.getModelName())
+                    .upstreamModel(model.getUpstreamModel())
+                    .syncStatus(status != null ? status : "PENDING")
+                    .lastSyncAt(model.getLastSyncAt())
+                    .build());
+        }
+        return LiteLLMSyncStatusVO.builder()
+                .liteLLMReachable(isLiteLLMReachable())
+                .liteLLMBaseUrl(liteLLMProperties.getBaseUrl())
+                .total(models.size())
+                .synced(synced)
+                .failed(failed)
+                .pending(pending)
+                .models(items)
+                .build();
+    }
 
     public LiteLLMSyncResultVO syncAll() {
         List<LlmGatewayModelDO> models = gatewayModelRepo.findAllActive();
@@ -132,6 +167,16 @@ public class LiteLLMSyncService {
         model.setLastSyncAt(LocalDateTime.now());
         model.setUpdatedAt(LocalDateTime.now());
         gatewayModelRepo.update(model);
+    }
+
+    private boolean isLiteLLMReachable() {
+        try {
+            buildClient().get().uri("/model/info").retrieve().toBodilessEntity();
+            return true;
+        } catch (Exception ex) {
+            log.debug("LiteLLM unreachable: {}", ex.getMessage());
+            return false;
+        }
     }
 
     private RestClient buildClient() {

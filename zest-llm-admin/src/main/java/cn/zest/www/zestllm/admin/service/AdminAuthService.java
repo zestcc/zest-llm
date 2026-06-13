@@ -7,18 +7,31 @@ import cn.zest.www.zestllm.admin.model.entity.LlmAdminUserDO;
 import cn.zest.www.zestllm.admin.model.request.AdminLoginRequest;
 import cn.zest.www.zestllm.admin.model.vo.AdminLoginVO;
 import cn.zest.www.zestllm.admin.repo.LlmAdminUserRepo;
-import lombok.RequiredArgsConstructor;
+import cn.zest.www.zestllm.admin.service.sso.AdminSessionRevocationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
 public class AdminAuthService {
 
     private final LlmAdminUserRepo adminUserRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
+    private final AdminSessionRevocationService sessionRevocationService;
+
+    public AdminAuthService(LlmAdminUserRepo adminUserRepo,
+                            PasswordEncoder passwordEncoder,
+                            JwtTokenProvider jwtTokenProvider,
+                            JwtProperties jwtProperties,
+                            @Autowired(required = false) AdminSessionRevocationService sessionRevocationService) {
+        this.adminUserRepo = adminUserRepo;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.jwtProperties = jwtProperties;
+        this.sessionRevocationService = sessionRevocationService;
+    }
 
     public AdminLoginVO login(AdminLoginRequest request) {
         LlmAdminUserDO user = adminUserRepo.findByUsername(request.getUsername())
@@ -28,6 +41,9 @@ public class AdminAuthService {
         }
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw BusinessException.unauthorized("用户名或密码错误");
+        }
+        if (sessionRevocationService != null) {
+            sessionRevocationService.clearRevocation(user.getUsername());
         }
         String token = jwtTokenProvider.createToken(user.getUsername(), user.getRole());
         AdminLoginVO vo = new AdminLoginVO();

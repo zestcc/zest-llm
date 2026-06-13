@@ -40,6 +40,13 @@ class AdminSessionRevocationServiceTest {
     }
 
     @Test
+    void clearRevocation() {
+        when(redisTemplate.delete("zest-llm:admin:sso-logout:admin")).thenReturn(true);
+        service.clearRevocation("admin");
+        verify(redisTemplate).delete("zest-llm:admin:sso-logout:admin");
+    }
+
+    @Test
     void notRevokedByDefault() {
         when(redisTemplate.hasKey(anyString())).thenReturn(false);
         assertFalse(service.isRevoked("user1"));

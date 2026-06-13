@@ -28,6 +28,7 @@ public class AdminSsoUserProvisioner {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
+    private final AdminSessionRevocationService sessionRevocationService;
 
     public AdminSsoLoginResult provisionFromClaims(String providerId, Claims claims, AdminSsoProviderConfig config) {
         String subject = claims.getSubject();
@@ -42,6 +43,9 @@ public class AdminSsoUserProvisioner {
     }
 
     public AdminLoginVO toLoginVo(AdminSsoLoginResult result) {
+        if (sessionRevocationService != null) {
+            sessionRevocationService.clearRevocation(result.username());
+        }
         String token = jwtTokenProvider.createToken(result.username(), result.role());
         AdminLoginVO vo = new AdminLoginVO();
         vo.setToken(token);
