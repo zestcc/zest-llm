@@ -73,11 +73,28 @@ if ($StopOnly) {
 
 New-Item -ItemType Directory -Force -Path $LogDir, (Join-Path $LogDir "pids") | Out-Null
 
-if (-not (Test-Path $LocalYml)) {
+function Ensure-DemoLocalConfig {
     if (-not (Test-Path $ExampleYml)) { throw "Missing $ExampleYml" }
-    Copy-Item $ExampleYml $LocalYml
-    Write-Host "Created demo application-local.yml — edit MySQL password if needed." -ForegroundColor Yellow
+    if (-not (Test-Path $LocalYml)) {
+        Copy-Item $ExampleYml $LocalYml
+        Write-Host "Created demo application-local.yml — edit MySQL password if needed." -ForegroundColor Yellow
+        return
+    }
+    $content = Get-Content $LocalYml -Raw -Encoding UTF8
+    $agentAuthOk = $content -match '(?ms)\n\s+agent:\s*\n(?:[^\n]+\n)*?\s+auth-token:'
+    if ($agentAuthOk) { return }
+    Write-Host "WARN: demo application-local.yml lacks zest.llm.agent auth-token — syncing from example (agent auth, litellm-api-key, registry logging)." -ForegroundColor Yellow
+    $savedPwd = $null
+    if ($content -match '(?m)^(\s+password:\s*.+)$') { $savedPwd = $Matches[1] }
+    Copy-Item $ExampleYml $LocalYml -Force
+    if ($savedPwd) {
+        $newContent = Get-Content $LocalYml -Raw -Encoding UTF8
+        $newContent = $newContent -replace '(?m)^(\s+password:\s*).+$', $savedPwd
+        [System.IO.File]::WriteAllText($LocalYml, $newContent)
+    }
 }
+
+Ensure-DemoLocalConfig
 
 if (-not $SkipBuild) {
     Write-Host "== mvn package zest-llm-demo (skip tests) ==" -ForegroundColor Cyan
