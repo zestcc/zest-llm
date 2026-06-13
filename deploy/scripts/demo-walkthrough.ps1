@@ -30,7 +30,17 @@ AdminGet "/api/admin/agent-profiles/aiChat/versions/v1/publish-preview" | Out-Nu
 Write-Host "[5/6] App overview..."
 AdminGet "/api/admin/apps/overview" | Out-Null
 
-Write-Host "[6/6] AI job overview..."
+Write-Host "[6/7] AI job overview..."
 AdminGet "/api/admin/ai-jobs/overview" | Out-Null
+
+$demoBase = "http://127.0.0.1:8081"
+Write-Host "[7/7] Demo methodA (if :8081 up)..."
+try {
+    $demo = Invoke-RestMethod -Uri "$demoBase/demo/order/methodA?orderId=1&question=demo-walkthrough" -TimeoutSec 90
+    if (-not $demo.traceId) { throw "missing traceId" }
+    Write-Host "  Demo traceId=$($demo.traceId) answer=$($demo.answer)"
+} catch {
+    Write-Host "  SKIP Demo (:8081 not up) — start with -WithDemo" -ForegroundColor Yellow
+}
 
 Write-Host "PASS demo walkthrough traceId=$($prep.traceId)" -ForegroundColor Green

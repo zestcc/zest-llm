@@ -1,7 +1,9 @@
-# ZestLLM 本地完整版一键启动（Windows）
-# 用法: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-EmbedUi] [-SkipBuild] [-StopOnly]
+# ZestLLM 本地完整版一键启动（Windows，无 Docker 友好）
+# 用法: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
 param(
     [switch]$WithLiteLLM,
+    [switch]$WithDemo,
+    [switch]$WithMcpMock,
     [switch]$EmbedUi,
     [switch]$SkipBuild,
     [switch]$StopOnly
@@ -53,6 +55,9 @@ function Wait-HttpOk([string]$Url, [int]$Retries = 60) {
 if ($StopOnly) {
     Stop-FromPidFile $AdminPidFile "Admin"
     Stop-FromPidFile $UiPidFile "Admin UI dev"
+    & (Join-Path $PSScriptRoot "start-litellm-local.ps1") -StopOnly
+    & (Join-Path $PSScriptRoot "start-demo-local.ps1") -StopOnly
+    & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1") -StopOnly
     Write-Host "Stopped local stack (PID files)." -ForegroundColor Green
     exit 0
 }
@@ -72,35 +77,26 @@ try {
 } catch { $mysqlUp = $false }
 
 if (-not $mysqlUp) {
-    $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if ($docker) {
-        Write-Host "== Starting MySQL via Docker ==" -ForegroundColor Cyan
-        Push-Location $Deploy
-        docker compose up -d mysql
-        Pop-Location
-        Start-Sleep -Seconds 8
-    } else {
-        throw "MySQL :3306 not reachable and Docker not found. Start MySQL manually."
-    }
+    throw "MySQL :3306 not reachable. Start MySQL 8 locally (no Docker required)."
 }
 
 if ($WithLiteLLM) {
-    $docker = Get-Command docker -ErrorAction SilentlyContinue
-    if ($docker) {
-        Write-Host "== Starting LiteLLM + openai-mock (Docker) ==" -ForegroundColor Cyan
-        Push-Location $Deploy
-        docker compose up -d openai-mock litellm
-        Pop-Location
-    } else {
-        Write-Host "== Docker not found — starting LiteLLM via pip ==" -ForegroundColor Cyan
-        & (Join-Path $PSScriptRoot "start-litellm-local.ps1")
-    }
+    Write-Host "== Starting LiteLLM via pip (config-local mock) ==" -ForegroundColor Cyan
+    & (Join-Path $PSScriptRoot "start-litellm-local.ps1")
+}
+
+if ($WithMcpMock) {
+    & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1")
 }
 
 if (-not $SkipBuild) {
     Write-Host "== mvn package (skip tests) ==" -ForegroundColor Cyan
     Push-Location $Root
-    mvn -pl zest-llm-admin -am package -DskipTests -q
+    if ($WithDemo) {
+        mvn -pl zest-llm-admin,zest-llm-demo -am package -DskipTests -q
+    } else {
+        mvn -pl zest-llm-admin -am package -DskipTests -q
+    }
     Pop-Location
 }
 
@@ -145,6 +141,13 @@ if (-not $EmbedUi) {
     }
 }
 
+if ($WithDemo) {
+    if (-not $WithLiteLLM) {
+        Write-Host "WARN: Demo AI 调用建议同时 -WithLiteLLM" -ForegroundColor Yellow
+    }
+    & (Join-Path $PSScriptRoot "start-demo-local.ps1") -SkipBuild
+}
+
 Write-Host ""
 Write-Host "ZestLLM local stack is up." -ForegroundColor Green
 if ($EmbedUi) {
@@ -154,9 +157,12 @@ if ($EmbedUi) {
     Write-Host "  Admin API:           http://127.0.0.1:8088"
 }
 Write-Host "  ZestFlow CP:         http://127.0.0.1:20552"
-if ($WithLiteLLM) { Write-Host "  LiteLLM:             http://127.0.0.1:4000 (Model Gateway UP)" }
-else { Write-Host "  LiteLLM:             not started (Dashboard Gateway DOWN is expected)" }
+if ($WithLiteLLM) { Write-Host "  LiteLLM:             http://127.0.0.1:4000" }
+else { Write-Host '  LiteLLM:             not started (use -WithLiteLLM for mock gateway)' }
+if ($WithDemo) { Write-Host '  Demo: http://127.0.0.1:8081/demo/order/methodA?orderId=1&question=hi' }
+if ($WithMcpMock) { Write-Host "  MCP mock:            http://127.0.0.1:9090/mcp" }
 Write-Host "  Logs:                $LogDir"
 Write-Host ""
 Write-Host "Verify: powershell -File deploy/scripts/verify-local.ps1"
+Write-Host "Demo:   powershell -File deploy/scripts/demo-walkthrough.ps1"
 Write-Host "Stop:   powershell -File deploy/scripts/start-local-full.ps1 -StopOnly"

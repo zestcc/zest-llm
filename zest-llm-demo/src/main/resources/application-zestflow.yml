@@ -2,7 +2,7 @@ zestflow:
   executor:
     port: 20551
     app-name: zest-llm-demo
-    admin-addresses: ""
+    admin-addresses: http://127.0.0.1:8088
     execute-endpoint-enabled: true
     chain-route-enabled: false
     execute-response-mode: BODY
@@ -15,4 +15,4 @@ zestflow:
   collector:
     async-enabled: false
     registry:
-      admin-addresses: ""
+      admin-addresses: http://127.0.0.1:8088

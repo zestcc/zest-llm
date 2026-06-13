@@ -179,6 +179,21 @@ try {
     Assert-Pass "RT-02" $false "invoke: $($_.Exception.Message)"
 }
 
+# --- DEMO (@ZestLLM 业务侧，需 :8081) ---
+Write-Report "--- DEMO ---"
+if (Test-Reachable $DemoUrl) {
+    try {
+        $demo = Invoke-RestMethod -Uri "$DemoUrl/demo/order/methodA?orderId=1&question=acceptance-demo" -TimeoutSec 90
+        $hasTrace = $null -ne $demo.traceId -and "$($demo.traceId)".Length -gt 0
+        $hasAnswer = $null -ne $demo.answer -and "$($demo.answer)".Length -gt 0
+        Assert-Pass "DEMO-01" ($hasTrace -and $hasAnswer) "methodA traceId+answer (AC1 smoke)"
+    } catch {
+        Assert-Pass "DEMO-01" $false "methodA: $($_.Exception.Message)"
+    }
+} else {
+    Assert-Skip "DEMO-01" "Demo not running on $DemoUrl (start with -WithDemo)"
+}
+
 # --- FUNC Probe write (admin) ---
 Write-Report "--- FUNC-PROBE ---"
 try {

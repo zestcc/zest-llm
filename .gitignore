@@ -35,3 +35,4 @@ replay_pid*.log
 # Local deploy runtime artifacts
 deploy/logs/
 deploy/test-reports/
+deploy/tools/

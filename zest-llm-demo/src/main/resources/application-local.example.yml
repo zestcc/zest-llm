@@ -1,0 +1,34 @@
+# Local dev — copy to application-local.yml（与 Admin 共用 MySQL zest_llm）
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/zest_llm?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+zest:
+  llm:
+    runtime-mode: agent
+    control-plane-url: http://127.0.0.1:8088
+    app-key: order-service
+    auth-token: demo-token-123
+    agent:
+      enabled: true
+      control-plane-url: http://127.0.0.1:8088
+      app-key: order-service
+      auth-token: demo-token-123
+      litellm-url: http://127.0.0.1:4000
+      litellm-api-key: sk-zest-llm-demo
+    litellm:
+      base-url: http://127.0.0.1:4000
+
+zestflow:
+  executor:
+    admin-addresses: http://127.0.0.1:8088
+  collector:
+    registry:
+      admin-addresses: http://127.0.0.1:8088
+
+logging:
+  level:
+    com.zestflow.executor.registry: ERROR

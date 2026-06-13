@@ -91,10 +91,13 @@ powershell -File deploy/scripts/start-litellm-local.ps1 -RealModels  # 真实 co
 ```
 
 ```powershell
-# Windows
+# Windows（无 Docker：MySQL 本机 + pip LiteLLM）
 Copy-Item zest-llm-admin/src/main/resources/application-local.example.yml `
           zest-llm-admin/src/main/resources/application-local.yml
-powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi    # 或 -WithLiteLLM
+pip install "litellm[proxy]"
+
+# 控制面 + mock 网关 + 业务 Demo（推荐演示）
+powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithLiteLLM -WithDemo
 powershell -File deploy/scripts/verify-local.ps1
 powershell -File deploy/scripts/start-local-full.ps1 -StopOnly
 ```
@@ -111,6 +114,8 @@ bash deploy/scripts/start-local-full.sh --stop-only
 | 入口 | 地址 |
 |------|------|
 | Admin（嵌入 UI，推荐） | http://127.0.0.1:8088 |
+| Demo（order-service） | http://127.0.0.1:8081/demo/order/methodA?orderId=1&question=hi |
+| LiteLLM mock | http://127.0.0.1:4000 |
 | Admin UI dev（热更新） | http://localhost:5174 |
 | 构建信息 API | `GET /api/admin/meta/build`（含 gitCommit / buildTime） |
 | 登录 | admin / admin123 |

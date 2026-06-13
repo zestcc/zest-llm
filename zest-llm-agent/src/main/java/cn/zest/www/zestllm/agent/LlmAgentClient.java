@@ -92,14 +92,25 @@ public class LlmAgentClient {
         String code = request.getCode();
         try {
             PrepareResponse response = fetchPrepareFromControlPlane(request);
+            if (!isValidPrepare(response)) {
+                throw new ZestLlmException(LlmErrorCode.AUTH_FAILED, response != null ? response.getTraceId() : null,
+                        "Control Plane prepare returned empty policy — check zest.llm.agent.auth-token and app-key");
+            }
             policyCache.put(appKey, code, response);
             return response;
         } catch (RestClientException ex) {
             log.warn("Control Plane prepare failed appKey={} code={}, trying local cache", appKey, code, ex);
             return policyCache.get(appKey, code)
+                    .filter(this::isValidPrepare)
                     .orElseThrow(() -> new ZestLlmException(LlmErrorCode.ADAPTER_UNAVAILABLE, null,
                             "Control Plane unavailable and no cached policy for " + appKey + ":" + code));
         }
+    }
+
+    private boolean isValidPrepare(PrepareResponse response) {
+        return response != null
+                && response.getModel() != null && !response.getModel().isBlank()
+                && response.getRenderedPrompt() != null && !response.getRenderedPrompt().isBlank();
     }
 
     private PrepareResponse fetchPrepareFromControlPlane(InvokeRequest request) {
@@ -403,9 +414,10 @@ public class LlmAgentClient {
     }
 
     private GatewayEndpoint resolveGatewayEndpoint(PrepareResponse prepared) {
-        String baseUrl = prepared.getGatewayBaseUrl();
+        // 本地 agent.litellm-url 优先于 CP 下发的 Docker 网关地址（如 http://litellm:4000）
+        String baseUrl = properties.getLitellmUrl();
         if (baseUrl == null || baseUrl.isBlank()) {
-            baseUrl = properties.getLitellmUrl();
+            baseUrl = prepared.getGatewayBaseUrl();
         }
         String apiKey = toolOrchestrator.resolveGatewayApiKey(prepared.getOutboundSecretRef(), properties.getLitellmApiKey());
         return new GatewayEndpoint(baseUrl, apiKey);
@@ -415,7 +427,10 @@ public class LlmAgentClient {
     }
 
     private RestClient resolveLitellmClient(PrepareResponse prepared) {
-        String baseUrl = prepared.getGatewayBaseUrl();
+        String baseUrl = properties.getLitellmUrl();
+        if (baseUrl == null || baseUrl.isBlank()) {
+            baseUrl = prepared.getGatewayBaseUrl();
+        }
         if (baseUrl == null || baseUrl.isBlank()) {
             return litellmClient;
         }
