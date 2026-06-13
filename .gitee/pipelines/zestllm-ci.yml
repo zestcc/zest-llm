@@ -1,5 +1,5 @@
-# Gitee Go 流水线（与 .gitee/pipelines/zestllm-ci.yml 同步）
-# 文档：docs/Gitee-CI与生产签字.md
+# Gitee Go 流水线 — 与 deploy/ci/gitee-pipeline.yml 同步
+# 仓库设置 → 流水线 → 选择「从文件导入」
 
 name: zestllm-ci
 

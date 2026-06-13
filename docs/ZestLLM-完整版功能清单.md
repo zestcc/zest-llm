@@ -347,7 +347,7 @@ bash deploy/scripts/verify-local.sh
 | build-and-test | `mvn test` + UI build embed + **static 目录 diff 门禁** |
 | docker-e2e | Compose 全栈 + `e2e-acceptance.sh` + `run-journeys.sh` |
 
-> 若仓库仅在 Gitee 托管、未镜像 GitHub，需在 Gitee Go 复刻同等流水线。
+> 若仓库仅在 Gitee 托管、未镜像 GitHub，见 [Gitee-CI与生产签字.md](./Gitee-CI与生产签字.md)。
 
 ---
 

@@ -132,10 +132,11 @@ powershell -File deploy/scripts/production-acceptance.ps1
 ```
 
 ```bash
-bash deploy/scripts/production-acceptance.sh   # Docker 全栈
+bash deploy/scripts/run-production-signoff.sh   # Linux Docker 生产签字
+bash deploy/scripts/production-acceptance.sh   # 已有 compose 时
 ```
 
-详见 [docs/生产级全量测试计划.md](docs/生产级全量测试计划.md)。
+详见 [docs/Gitee-CI与生产签字.md](docs/Gitee-CI与生产签字.md) · [docs/生产级全量测试计划.md](docs/生产级全量测试计划.md)。
 
 ## 业务接入
 
