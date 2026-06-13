@@ -365,7 +365,7 @@ bash deploy/scripts/verify-local.sh
 
 完整条目：[产品验收标准.md](./产品验收标准.md)。
 
-**本地完整版达标线**：`mvn test` SUCCESS + `full-acceptance.ps1` **58/58 PASS**。
+**本地完整版达标线**：`mvn test` SUCCESS + `full-acceptance.ps1` **59 PASS**（含 DEMO-01/02）。
 
 ---
 

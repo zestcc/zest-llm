@@ -69,7 +69,7 @@ bash deploy/scripts/loadtest-cp-prepare.sh
 
 ```bash
 bash deploy/scripts/e2e-acceptance.sh
-powershell -File deploy/scripts/full-acceptance.ps1   # 含 AC39-48
+powershell -File deploy/scripts/full-acceptance.ps1   # 含 AC39-48、DEMO-01/02
 powershell -File deploy/scripts/stress-test-prepare.ps1 -Concurrency 50 -Total 200
 ```
 
@@ -115,12 +115,15 @@ bash deploy/scripts/start-local-full.sh --stop-only
 |------|------|
 | Admin（嵌入 UI，推荐） | http://127.0.0.1:8088 |
 | Demo（order-service） | http://127.0.0.1:8081/demo/order/methodA?orderId=1&question=hi |
+| Demo flowChat（ZestFlow） | http://127.0.0.1:8081/demo/order/flowChat?orderId=1&question=hi |
 | LiteLLM mock | http://127.0.0.1:4000 |
 | Admin UI dev（热更新） | http://localhost:5174 |
 | 构建信息 API | `GET /api/admin/meta/build`（含 gitCommit / buildTime） |
 | 登录 | admin / admin123 |
 
 进程通过 `deploy/logs/pids/*.pid` 管理，停止脚本不会误杀同端口其他服务。
+
+**Gitee CI**：`deploy/ci/gitee-pipeline.yml`（`mvn test` 自动门禁；Docker E2E 为 manual 阶段）。
 
 ## 业务接入
 
