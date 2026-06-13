@@ -23,3 +23,7 @@ zestflow:
     async-enabled: false
     registry:
       admin-addresses: ${ZESTFLOW_COLLECTOR_ADMIN_ADDRESSES:http://127.0.0.1:8088}
+  admin:
+    # ZestLLM 合一 Hub：接收 Demo/远程 Executor 注册（POST /api/zestflow/registry/register）
+    registry-token: ${ZESTFLOW_ADMIN_REGISTRY_TOKEN:}
+    deploy-mode: standalone

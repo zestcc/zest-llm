@@ -17,7 +17,7 @@ public class DemoFlowChainBootstrap implements ApplicationListener<ApplicationRe
     public static final String CHN_DEMO_ORDER_CHAT = "CHN_DEMO_ORDER_CHAT";
 
     private static final String CHAIN_JSON = """
-            {"code":"CHN_DEMO_ORDER_CHAT","version":1,"lifecycle":"production","nodes":[{"id":"n1","label":"Order AI Chat","type":"NORMAL","component":"orderAiFlowHandler","componentName":"chatViaCp"}],"edges":[]}
+            {"code":"CHN_DEMO_ORDER_CHAT","version":1,"lifecycle":"production","nodes":[{"id":"n1","label":"Order AI Chat","type":"NORMAL","component":"chatViaCp"}],"edges":[]}
             """;
 
     private final ChainManager chainManager;

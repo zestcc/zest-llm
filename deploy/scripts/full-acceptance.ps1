@@ -190,8 +190,19 @@ if (Test-Reachable $DemoUrl) {
     } catch {
         Assert-Pass "DEMO-01" $false "methodA: $($_.Exception.Message)"
     }
+    try {
+        $flow = Invoke-RestMethod -Uri "$DemoUrl/demo/order/flowChat?orderId=1&question=acceptance-flow" -TimeoutSec 120
+        $flowTrace = $null -ne $flow.traceId -and "$($flow.traceId)".Length -gt 0
+        $flowAnswer = ($null -ne $flow.answer -and "$($flow.answer)".Length -gt 0) `
+            -or ($null -ne $flow.result -and "$($flow.result)".Length -gt 0)
+        $flowMode = "$($flow.mode)" -eq "zestflow"
+        Assert-Pass "DEMO-02" ($flowTrace -and $flowAnswer -and $flowMode) "flowChat traceId+answer (AC20 smoke)"
+    } catch {
+        Assert-Pass "DEMO-02" $false "flowChat: $($_.Exception.Message)"
+    }
 } else {
     Assert-Skip "DEMO-01" "Demo not running on $DemoUrl (start with -WithDemo)"
+    Assert-Skip "DEMO-02" "Demo not running on $DemoUrl (start with -WithDemo)"
 }
 
 # --- FUNC Probe write (admin) ---

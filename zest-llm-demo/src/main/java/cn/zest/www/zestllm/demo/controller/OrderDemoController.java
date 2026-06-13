@@ -3,6 +3,8 @@ package cn.zest.www.zestllm.demo.controller;
 import cn.zest.www.zestllm.demo.facade.OrderAiFacade;
 import cn.zest.www.zestllm.demo.flow.DemoFlowChainBootstrap;
 import cn.zest.www.zestllm.demo.model.AiChatResult;
+import com.zestflow.common.exception.ChainExecutionException;
+import com.zestflow.common.model.dto.ChainExecuteResultDTO;
 import com.zestflow.executor.http.ChainGateway;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,18 +40,58 @@ public class OrderDemoController {
     @GetMapping("/flowChat")
     public Map<String, Object> flowChat(@RequestParam Long orderId,
                                         @RequestParam String question) {
-        Object chainResult = chainGateway.executeByKey(
-                DemoFlowChainBootstrap.CHN_DEMO_ORDER_CHAT,
-                Map.of("question", question != null ? question : "hello"));
         Map<String, Object> view = new LinkedHashMap<>();
         view.put("orderId", orderId);
         view.put("mode", "zestflow");
         view.put("chainCode", DemoFlowChainBootstrap.CHN_DEMO_ORDER_CHAT);
-        if (chainResult instanceof Map<?, ?> resultMap) {
-            resultMap.forEach((key, value) -> view.put(String.valueOf(key), value));
-        } else {
-            view.put("result", chainResult);
-        }
+        ChainExecuteResultDTO chainResult = runDemoChain(question);
+        mergeChainResult(view, chainResult);
         return view;
+    }
+
+    private ChainExecuteResultDTO runDemoChain(String question) {
+        try {
+            return chainGateway.execute(
+                    DemoFlowChainBootstrap.CHN_DEMO_ORDER_CHAT,
+                    Map.of("question", question != null ? question : "hello"));
+        } catch (ChainExecutionException ex) {
+            ChainExecuteResultDTO partial = ex.getResult();
+            if (partial != null && hasChainPayload(partial)) {
+                return partial;
+            }
+            throw ex;
+        }
+    }
+
+    private boolean hasChainPayload(ChainExecuteResultDTO chainResult) {
+        if (chainResult.getReturnValue() != null || chainResult.getFinalReturnValue() != null) {
+            return true;
+        }
+        if (chainResult.getResultData() != null && !chainResult.getResultData().isEmpty()) {
+            return true;
+        }
+        return chainResult.getNodeResults() != null && !chainResult.getNodeResults().isEmpty();
+    }
+
+    private void mergeChainResult(Map<String, Object> view, ChainExecuteResultDTO chainResult) {
+        Object payload = chainResult.getReturnValue();
+        if (payload == null) {
+            payload = chainResult.getFinalReturnValue();
+        }
+        if (payload == null && chainResult.getResultData() != null && !chainResult.getResultData().isEmpty()) {
+            payload = chainResult.getResultData();
+        }
+        if (payload == null && chainResult.getNodeResults() != null && !chainResult.getNodeResults().isEmpty()) {
+            var lastNode = chainResult.getNodeResults().get(chainResult.getNodeResults().size() - 1);
+            payload = lastNode.getReturnValue();
+            if (payload == null && lastNode.getOutputData() != null && !lastNode.getOutputData().isEmpty()) {
+                payload = lastNode.getOutputData();
+            }
+        }
+        if (payload instanceof Map<?, ?> resultMap) {
+            resultMap.forEach((key, value) -> view.put(String.valueOf(key), value));
+        } else if (payload != null) {
+            view.put("result", payload);
+        }
     }
 }

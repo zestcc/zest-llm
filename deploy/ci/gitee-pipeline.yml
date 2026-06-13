@@ -1,0 +1,44 @@
+# Gitee Go 流水线（构建门禁；Docker E2E 为手动/独立 Runner 阶段）
+# 文档：docs/ZestLLM-完整版功能清单.md §12.3
+# 在 Gitee 仓库设置中导入本文件，或复制为 .gitee/pipelines/zestllm-ci.yml
+
+name: zestllm-ci
+
+stages:
+  - build
+  - e2e-manual
+
+build-and-test:
+  stage: build
+  image: maven:3.9-eclipse-temurin-17
+  script:
+    - mvn -B test
+  artifacts:
+    paths:
+      - "**/target/surefire-reports/"
+    expire_in: 7 days
+
+# 需要 Docker + compose 的 Runner；无 Docker 的 Gitee Go 可跳过此 job 或标记 manual
+docker-e2e:
+  stage: e2e-manual
+  image: docker:24
+  services:
+    - docker:24-dind
+  when: manual
+  allow_failure: true
+  script:
+    - apk add --no-cache bash curl git openjdk17
+    - cd deploy && docker compose up -d --build mysql valkey litellm mcp-mock admin demo
+    - |
+      for i in $(seq 1 60); do
+        curl -sf http://localhost:8088/swagger-ui.html \
+          && curl -sf "http://localhost:8081/demo/order/flowChat?orderId=1&question=ci-warmup" \
+          && exit 0
+        sleep 10
+      done
+      exit 1
+    - bash deploy/scripts/e2e-acceptance.sh
+  only:
+    - main
+    - master
+    - develop

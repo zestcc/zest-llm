@@ -41,6 +41,7 @@ zest:
       report-channel: sync
     litellm:
       base-url: http://localhost:4000
+      api-key: ${LITELLM_API_KEY:sk-zest-llm-demo}
       connect-timeout-ms: 5000
       read-timeout-ms: 60000
     flow:

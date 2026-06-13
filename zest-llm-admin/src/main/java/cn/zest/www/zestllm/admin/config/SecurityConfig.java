@@ -37,6 +37,7 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers("/v1/**").permitAll()
                         .requestMatchers("/api/flow/**").permitAll()
+                        .requestMatchers("/api/zestflow/**").permitAll()
                         .requestMatchers("/api/admin/auth/login").permitAll()
                         .requestMatchers("/api/admin/auth/oidc/**").permitAll()
                         .requestMatchers("/", "/index.html", "/assets/**", "/favicon.ico").permitAll()
