@@ -109,7 +109,7 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 - [ ] 内嵌 UI 生产 redirect：`http(s)://<admin-host>/login/callback`
 - [ ] 多实例部署时配置 `spring.data.redis.host`（PKCE state 共享）
 - [ ] ZestSSO client `zest-llm-admin` 已在 IdP 侧创建
-- [ ] 运行 `deploy/scripts/sso-smoke.ps1` 与 `full-acceptance.ps1` SSO 段
+- [ ] 运行 `deploy/scripts/sso-smoke.ps1` 与 `production-acceptance.ps1`（含 SSO 段）
 
 ---
 
