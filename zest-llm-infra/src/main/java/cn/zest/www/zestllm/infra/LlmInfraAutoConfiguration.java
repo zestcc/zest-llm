@@ -7,6 +7,7 @@ import cn.zest.www.zestllm.infra.cache.CaffeinePolicyCacheAdapter;
 import cn.zest.www.zestllm.infra.cache.NoopResponseCacheAdapter;
 import cn.zest.www.zestllm.infra.cache.ValkeyPolicyCacheAdapter;
 import cn.zest.www.zestllm.infra.cache.ValkeyResponseCacheAdapter;
+import cn.zest.www.zestllm.infra.config.HttpKnowledgeProperties;
 import cn.zest.www.zestllm.infra.config.LangfuseProperties;
 import cn.zest.www.zestllm.infra.config.VaultProperties;
 import cn.zest.www.zestllm.infra.config.DifyProperties;
@@ -17,6 +18,7 @@ import cn.zest.www.zestllm.infra.config.RagflowProperties;
 import cn.zest.www.zestllm.infra.gateway.LiteLLMGatewayAdapter;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
 import cn.zest.www.zestllm.infra.knowledge.DifyKbKnowledgeRetrievalAdapter;
+import cn.zest.www.zestllm.infra.knowledge.HttpKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.knowledge.NoopKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.learning.NoopLearningPipelineAdapter;
@@ -69,7 +71,8 @@ import java.util.List;
 
 @Configuration
 @EnableConfigurationProperties({LiteLLMProperties.class, LlmAdapterProperties.class, LangfuseProperties.class,
-        VaultProperties.class, KafkaReportProperties.class, DifyProperties.class, RagflowProperties.class})
+        VaultProperties.class, KafkaReportProperties.class, DifyProperties.class, RagflowProperties.class,
+        HttpKnowledgeProperties.class})
 public class LlmInfraAutoConfiguration {
 
     @Bean
@@ -150,6 +153,15 @@ public class LlmInfraAutoConfiguration {
                                                                     SecretResolver secretResolver,
                                                                     ObjectMapper objectMapper) {
         return new DifyKbKnowledgeRetrievalAdapter(properties, secretResolver, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.knowledge-retrieval", havingValue = "http-knowledge")
+    @ConditionalOnMissingBean(KnowledgeRetrievalAdapter.class)
+    public KnowledgeRetrievalAdapter httpKnowledgeRetrievalAdapter(HttpKnowledgeProperties properties,
+                                                                  SecretResolver secretResolver,
+                                                                  ObjectMapper objectMapper) {
+        return new HttpKnowledgeRetrievalAdapter(properties, secretResolver, objectMapper);
     }
 
     @Bean

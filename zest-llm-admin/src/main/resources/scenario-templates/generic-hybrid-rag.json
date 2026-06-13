@@ -1,0 +1,12 @@
+{
+  "id": "generic-hybrid-rag",
+  "name": "通用 Hybrid RAG",
+  "description": "Integration Suite 示例：http-knowledge + system_prefix 注入，推荐 medium 栈",
+  "recommendedTier": "medium",
+  "taskCodeSuggestion": "aiRag",
+  "taskName": "Hybrid RAG",
+  "runtimeMode": "hybrid",
+  "requiresMcp": false,
+  "requiresKnowledge": true,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"hybrid\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"deepseek-v4-flash\"},\"generation\":{\"maxTokens\":4096,\"temperature\":0.3,\"timeoutMs\":90000},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\"},\"knowledge\":{\"enabled\":true,\"provider\":\"http-knowledge\",\"datasetIds\":[\"default-kb\"],\"topK\":5,\"scoreThreshold\":0.6,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":false}}}"
+}

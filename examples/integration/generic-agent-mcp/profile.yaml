@@ -1,0 +1,20 @@
+apiVersion: zestllm/v1
+runtimeMode: agent
+providerRef: litellm-default
+model:
+  primary: deepseek-v4-flash
+generation:
+  maxTokens: 4096
+  temperature: 0.5
+  timeoutMs: 120000
+tools:
+  - type: mcp
+    serverRef: default-mcp
+    enabled: true
+extensions:
+  runtimeBackend:
+    type: native
+  knowledge:
+    enabled: false
+  learningLoop:
+    enabled: false

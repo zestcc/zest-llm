@@ -514,6 +514,60 @@ try {
     Assert-Pass "AC53" $false "learning suggest multi: $($_.Exception.Message)"
 }
 
+Write-Report "--- INTEGRATION-SUITE AC57-62 ---"
+try {
+    $gm = Invoke-AdminGet "/api/admin/gateway-models"
+    $gmj = $gm | ConvertTo-Json -Compress
+    if ($gm.data) { $gmj = ($gm.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC57" ($gmj.Contains("deepseek-v4-flash")) "gateway-models list"
+} catch {
+    Assert-Pass "AC57" $false "gateway-models: $($_.Exception.Message)"
+}
+
+try {
+    $imp = Invoke-AdminPost "/api/admin/integration/import/gateway-models" '{"items":[{"modelName":"deepseek-v4-flash","upstreamModel":"deepseek/deepseek-v4-flash","apiKeySecretRef":"deepseek-api-key"}]}'
+    $impj = $imp | ConvertTo-Json -Compress
+    Assert-Pass "AC58" ($impj.Contains("updated")) "integration import idempotent"
+} catch {
+    Assert-Pass "AC58" $false "integration import: $($_.Exception.Message)"
+}
+
+try {
+    $pv59 = Invoke-AdminGet "/api/admin/agent-profiles/aiChat/versions/v1/publish-preview"
+    $pv59j = $pv59 | ConvertTo-Json -Depth 6 -Compress
+    if ($pv59.data) { $pv59j = ($pv59.data | ConvertTo-Json -Depth 6 -Compress) }
+    Assert-Pass "AC59" ($pv59j.Contains("adapterHealthSummary") -and $pv59j.Contains("knowledgeHealthUp")) "publish-preview extended"
+} catch {
+    Assert-Pass "AC59" $false "publish-preview extended: $($_.Exception.Message)"
+}
+
+try {
+    $st60 = Invoke-AdminGet "/api/admin/scenario-templates"
+    $st60j = $st60 | ConvertTo-Json -Compress
+    if ($st60.data) { $st60j = ($st60.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC60" ($st60j.Contains("generic-chat-agent") -and $st60j.Contains("generic-hybrid-rag")) "generic scenario templates"
+} catch {
+    Assert-Pass "AC60" $false "generic templates: $($_.Exception.Message)"
+}
+
+try {
+    $sr = Invoke-AdminGet "/api/admin/secret-refs"
+    $srj = $sr | ConvertTo-Json -Compress
+    if ($sr.data) { $srj = ($sr.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC61" ($srj.Contains("deepseek-api-key")) "secret-refs list"
+} catch {
+    Assert-Pass "AC61" $false "secret-refs: $($_.Exception.Message)"
+}
+
+try {
+    $feat62 = Invoke-AdminGet "/api/admin/meta/features"
+    $f62j = $feat62 | ConvertTo-Json -Compress
+    if ($feat62.data) { $f62j = ($feat62.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC62" ($f62j.Contains("integrationSuiteApi")) "integration suite features"
+} catch {
+    Assert-Pass "AC62" $false "integration features: $($_.Exception.Message)"
+}
+
 # --- Summary ---
 Write-Report "--- SUMMARY ---"
 Write-Report "PASSED=$script:Passed FAILED=$script:Failed SKIPPED=$script:Skipped"

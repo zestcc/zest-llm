@@ -437,4 +437,31 @@ if [ "$INTEGRATION_STRICT" = "1" ]; then
     || { echo "FAIL INTEGRATION aiOps prepare: $PREP_OPS"; exit 1; }
 fi
 
+echo "== AC57: gateway-models list =="
+GM=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/gateway-models")
+echo "$GM" | grep -q "deepseek-v4-flash" && echo "PASS AC57" || { echo "FAIL AC57: $GM"; exit 1; }
+
+echo "== AC58: integration import idempotent =="
+IMP58=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/integration/import/gateway-models" \
+  -d '{"items":[{"modelName":"deepseek-v4-flash","upstreamModel":"deepseek/deepseek-v4-flash","apiKeySecretRef":"deepseek-api-key"}]}')
+echo "$IMP58" | grep -q '"updated":1' && echo "PASS AC58" || { echo "FAIL AC58: $IMP58"; exit 1; }
+
+echo "== AC59: publish-preview extended fields =="
+PV59=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/agent-profiles/aiChat/versions/v1/publish-preview")
+echo "$PV59" | grep -q "adapterHealthSummary" && echo "$PV59" | grep -q "knowledgeHealthUp" \
+  && echo "PASS AC59" || { echo "FAIL AC59: $PV59"; exit 1; }
+
+echo "== AC60: generic scenario templates =="
+echo "$ST" | grep -q "generic-chat-agent" && echo "$ST" | grep -q "generic-hybrid-rag" \
+  && echo "PASS AC60" || { echo "FAIL AC60: $ST"; exit 1; }
+
+echo "== AC61: secret-refs list =="
+SR61=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/secret-refs")
+echo "$SR61" | grep -q "deepseek-api-key" && echo "PASS AC61" || { echo "FAIL AC61: $SR61"; exit 1; }
+
+echo "== AC62: integration suite features =="
+FEAT62=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/meta/features")
+echo "$FEAT62" | grep -q "integrationSuiteApi" && echo "PASS AC62" || { echo "FAIL AC62: $FEAT62"; exit 1; }
+
 echo "== All automated E2E checks passed =="

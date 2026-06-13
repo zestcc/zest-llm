@@ -37,9 +37,22 @@ public class AgentProfilePublishService {
     private final ProfileExtensionsValidator profileExtensionsValidator;
     private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
     private final AgentProfileProbeService agentProfileProbeService;
+    private final IntegrationWebhookService integrationWebhookService;
 
     @Transactional(rollbackFor = Exception.class)
     public AgentProfilePublishResultVO publish(String taskCode, String version, String operator) {
+        String op = operator != null ? operator : "admin";
+        try {
+            AgentProfilePublishResultVO result = doPublish(taskCode, version, op);
+            integrationWebhookService.notifyPublishResult(taskCode, version, true, "published", op);
+            return result;
+        } catch (BusinessException ex) {
+            integrationWebhookService.notifyPublishResult(taskCode, version, false, ex.getMessage(), op);
+            throw ex;
+        }
+    }
+
+    private AgentProfilePublishResultVO doPublish(String taskCode, String version, String operator) {
         LlmAiTaskDefDO task = taskDefRepo.findByCode(taskCode)
                 .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
         LlmAgentProfileDO profile = agentProfileRepo.findByTaskIdAndVersion(task.getId(), version)

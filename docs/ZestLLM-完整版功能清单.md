@@ -214,8 +214,21 @@ public AiChatResult aiChat(@AiInput("question") String question, @AiOutput AiCha
 | `report-basic` | 报表解读 | medium | hybrid | knowledge + learningLoop |
 | `knowledge-qa` | 知识问答 | medium | agent | dify-kb + learningLoop |
 | `ops-monitor` | 运维诊断 | large | agent | MCP + Dify + RAG 引用 |
+| `generic-chat-agent` | 通用对话 | small | agent | Integration Suite 示例 |
+| `generic-hybrid-rag` | 通用 Hybrid RAG | medium | hybrid | http-knowledge |
+| `generic-agent-mcp` | 通用 MCP Agent | medium | agent | MCP 工具 |
 
-Wizard 应用模板 → 创建/更新 Task + Profile 草稿（版本 `v-tpl-{slug}`，重复应用更新 DRAFT）。
+## 8.1 Integration Suite API（v1）
+
+| API | 路径 |
+|-----|------|
+| Gateway Model SSOT | `GET/POST /api/admin/gateway-models` |
+| Secret Ref | `GET/POST /api/admin/secret-refs`（列表脱敏） |
+| 批量 Import | `POST /api/admin/integration/import/*` |
+| LiteLLM Sync | `POST /api/admin/integration/sync-litellm` |
+| Features | `GET /api/admin/meta/features` → `integrationSuiteApi` |
+
+详见 [ZestLLM-Integration-Suite.md](./ZestLLM-Integration-Suite.md)。
 
 ---
 
@@ -243,7 +256,7 @@ Wizard 应用模板 → 创建/更新 Task + Profile 草稿（版本 `v-tpl-{slu
 | PolicyCache | Caffeine / Valkey | `caffeine` / `valkey` |
 | ResponseCache | Valkey / Noop | `valkey` / `noop` |
 | Quota | DB / Redis Token Bucket | `db` |
-| Knowledge | RAGFlow / Noop | `ragflow` / `noop` |
+| Knowledge | RAGFlow / Dify KB / http-knowledge / Noop | `ragflow` / `dify-kb` / `http-knowledge` / `noop` |
 | LearningPipeline | ZestEval / Noop | `zest-eval` / `noop` |
 | ReportChannel | Sync / Kafka | `sync` / `kafka` |
 | AlertWebhook | HTTP / Noop | `http` / `noop` |

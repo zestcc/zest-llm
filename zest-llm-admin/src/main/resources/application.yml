@@ -44,6 +44,11 @@ zest:
       api-key: ${LITELLM_API_KEY:sk-zest-llm-demo}
       connect-timeout-ms: 5000
       read-timeout-ms: 60000
+    # http-knowledge SPI: zest.llm.adapters.knowledge-retrieval=http-knowledge
+    http-knowledge:
+      base-url: http://localhost:8090
+      retrieve-path: /v1/retrieve
+      health-path: /health
     flow:
       enabled: true
       control-plane-url: http://localhost:8088
@@ -61,6 +66,8 @@ zest-llm:
   admin:
     meta:
       app-version: 1.0.0
+    integration:
+      webhook-url: ${ZEST_INTEGRATION_WEBHOOK_URL:}
     jwt:
       secret: change-me-in-production-zest-llm-admin-jwt-secret-key
       expiration-ms: 86400000

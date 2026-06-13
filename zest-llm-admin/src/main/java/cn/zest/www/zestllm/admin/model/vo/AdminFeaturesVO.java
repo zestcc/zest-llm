@@ -15,5 +15,9 @@ public class AdminFeaturesVO {
     private boolean capabilityStackApi;
     private boolean scenarioTemplateApi;
     private boolean integrationAdaptersEnabled;
+    private boolean integrationSuiteApi;
+    private boolean gatewayModelApi;
+    private boolean secretRefApi;
+    private boolean integrationImportApi;
     private Map<String, Boolean> schemaReady;
 }

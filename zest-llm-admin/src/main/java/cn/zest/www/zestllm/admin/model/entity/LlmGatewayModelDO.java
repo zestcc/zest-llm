@@ -1,0 +1,26 @@
+package cn.zest.www.zestllm.admin.model.entity;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
+import lombok.Data;
+
+import java.time.LocalDateTime;
+
+@Data
+@TableName("llm_gateway_model")
+public class LlmGatewayModelDO {
+    @TableId(type = IdType.ASSIGN_ID)
+    private Long id;
+    private String modelName;
+    private String upstreamModel;
+    private String apiBase;
+    private String apiKeySecretRef;
+    private String extraJson;
+    private String status;
+    private String syncStatus;
+    private LocalDateTime lastSyncAt;
+    private Integer sortOrder;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+}

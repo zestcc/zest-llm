@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminMetaService {
 
-    private static final String FLYWAY_LATEST = "V19";
+    private static final String FLYWAY_LATEST = "V23";
 
     private final JdbcTemplate jdbcTemplate;
     private final Environment environment;
@@ -42,8 +42,13 @@ public class AdminMetaService {
         schemaReady.put("llm_agent_probe_alert", tableExists("llm_agent_probe_alert"));
         schemaReady.put("llm_execution_archive_run", tableExists("llm_execution_archive_run"));
         schemaReady.put("llm_learning_cycle_run", tableExists("llm_learning_cycle_run"));
+        schemaReady.put("llm_gateway_model", tableExists("llm_gateway_model"));
+        schemaReady.put("llm_secret_ref", tableExists("llm_secret_ref"));
         boolean agentProbeApi = Boolean.TRUE.equals(schemaReady.get("llm_agent_profile_probe"));
         boolean learningApi = Boolean.TRUE.equals(schemaReady.get("llm_learning_cycle_run"));
+        boolean gatewayModelApi = Boolean.TRUE.equals(schemaReady.get("llm_gateway_model"));
+        boolean secretRefApi = Boolean.TRUE.equals(schemaReady.get("llm_secret_ref"));
+        boolean integrationSuiteApi = gatewayModelApi && secretRefApi;
         return AdminFeaturesVO.builder()
                 .appVersion(appVersion)
                 .flywayLatestScript(FLYWAY_LATEST)
@@ -52,6 +57,10 @@ public class AdminMetaService {
                 .capabilityStackApi(true)
                 .scenarioTemplateApi(true)
                 .integrationAdaptersEnabled(true)
+                .integrationSuiteApi(integrationSuiteApi)
+                .gatewayModelApi(gatewayModelApi)
+                .secretRefApi(secretRefApi)
+                .integrationImportApi(integrationSuiteApi)
                 .schemaReady(schemaReady)
                 .build();
     }

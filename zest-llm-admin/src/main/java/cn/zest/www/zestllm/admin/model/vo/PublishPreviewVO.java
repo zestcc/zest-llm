@@ -18,4 +18,8 @@ public class PublishPreviewVO {
     private String message;
     private List<String> failedCaseCodes;
     private boolean learningLoopEnabled;
+    private boolean knowledgeHealthUp;
+    private String knowledgeHealthMessage;
+    private List<AdapterHealthVO> adapterHealthSummary;
+    private EvalGateSummaryVO evalGateSummary;
 }

@@ -52,6 +52,8 @@ class AgentProfilePublishServiceTest {
     private ZestEvalLearningPipelineAdapter learningPipelineAdapter;
     @Mock
     private AgentProfileProbeService agentProfileProbeService;
+    @Mock
+    private IntegrationWebhookService integrationWebhookService;
 
     @InjectMocks
     private AgentProfilePublishService publishService;

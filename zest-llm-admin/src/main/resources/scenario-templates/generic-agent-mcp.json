@@ -1,0 +1,12 @@
+{
+  "id": "generic-agent-mcp",
+  "name": "通用 MCP Agent",
+  "description": "Integration Suite 示例：MCP 工具编排 + native runtime，推荐 medium 栈",
+  "recommendedTier": "medium",
+  "taskCodeSuggestion": "aiMcp",
+  "taskName": "MCP Agent",
+  "runtimeMode": "agent",
+  "requiresMcp": true,
+  "requiresKnowledge": false,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"deepseek-v4-flash\"},\"generation\":{\"maxTokens\":4096,\"temperature\":0.5,\"timeoutMs\":120000},\"tools\":[{\"type\":\"mcp\",\"serverRef\":\"default-mcp\",\"enabled\":true}],\"extensions\":{\"runtimeBackend\":{\"type\":\"native\"},\"knowledge\":{\"enabled\":false},\"learningLoop\":{\"enabled\":false}}}"
+}

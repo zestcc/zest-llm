@@ -18,7 +18,7 @@ import java.sql.Connection;
 
 @Slf4j
 @Configuration
-@EnableConfigurationProperties({JwtProperties.class, AdminOidcProperties.class, AdminSsoProperties.class, ExecutionArchiveProperties.class, AgentProfileProbeProperties.class, LearningCycleProperties.class, LearningAutoPublishProperties.class, AdminObservabilityProperties.class, ZestFlowAdminProperties.class})
+@EnableConfigurationProperties({JwtProperties.class, AdminOidcProperties.class, AdminSsoProperties.class, ExecutionArchiveProperties.class, AgentProfileProbeProperties.class, LearningCycleProperties.class, LearningAutoPublishProperties.class, AdminObservabilityProperties.class, ZestFlowAdminProperties.class, IntegrationWebhookProperties.class})
 @RequiredArgsConstructor
 public class AdminAutoConfiguration {
 
