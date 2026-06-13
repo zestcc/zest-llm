@@ -1,0 +1,125 @@
+# 生产环境 Helm values 示例 — 勿提交真实密钥
+# 用法:
+#   helm upgrade --install zest-llm ./deploy/helm/zest-llm \
+#     -f deploy/helm/zest-llm/values-production.example.yaml \
+#     --set mysql.existingSecret=zest-llm-mysql \
+#     --set-file admin.sso.clientSecret=/path/to/sso-secret.txt  # 若 Chart 已支持
+
+replicaCount: 2
+
+image:
+  admin:
+    repository: registry.example.com/zest/zest-llm-admin
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  demo:
+    repository: registry.example.com/zest/zest-llm-demo
+    tag: "1.0.0"
+    pullPolicy: IfNotPresent
+  litellm:
+    repository: ghcr.io/berriai/litellm
+    tag: main-latest
+    pullPolicy: IfNotPresent
+
+service:
+  admin:
+    port: 8088
+    type: ClusterIP
+  demo:
+    port: 8081
+    type: ClusterIP
+  litellm:
+    port: 4000
+    type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  host: zest-llm.example.com
+  tls: true
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/proxy-body-size: "32m"
+
+# 外部托管 MySQL / Valkey — 密码通过 K8s Secret 注入
+mysql:
+  host: mysql.prod.svc.cluster.local
+  port: 3306
+  database: zest_llm
+  username: zest
+  password: ""  # 留空，使用 existingSecret
+  existingSecret: zest-llm-mysql
+  secretPasswordKey: password
+
+redis:
+  host: valkey.prod.svc.cluster.local
+  port: 6379
+
+litellm:
+  enabled: true
+  baseUrl: http://litellm:4000
+  # 生产 OpenAI / 网关密钥 — 建议 existingSecret（Chart 扩展时对齐）
+  openaiApiKey: ""
+
+demo:
+  enabled: false
+  controlPlaneUrl: http://zest-llm-admin:8088
+
+adapters:
+  policyCache: valkey
+  responseCache: valkey
+  observability: langfuse
+
+# Admin SSO（多副本须配 Redis PKCE；以下键供 values 扩展 / 手工 env 对照）
+admin:
+  sso:
+    enabled: true
+    provider: zest-sso
+    issuer: https://sso.example.com
+    discoveryUri: https://sso.example.com/api/public/.well-known/openid-configuration
+    clientId: zest-llm-admin
+    # clientSecret: 通过 ExternalSecret / SealedSecret 注入，勿写入 Git
+    existingSecret: zest-llm-sso
+    secretClientSecretKey: client-secret
+    redirectUri: https://zest-llm.example.com/login/callback
+    postLogoutRedirectUri: https://zest-llm.example.com/login
+  jwt:
+    existingSecret: zest-llm-jwt
+    secretKey: secret
+
+probes:
+  admin:
+    livenessPath: /actuator/health/liveness
+    readinessPath: /actuator/health/readiness
+  demo:
+    livenessPath: /demo/order/methodA?orderId=1&question=ping
+    readinessPath: /demo/order/methodA?orderId=1&question=ping
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+resources:
+  admin:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi
+  demo:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  litellm:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: "2"
+      memory: 2Gi

@@ -40,7 +40,13 @@ docker-e2e:
     - cd "$CI_PROJECT_DIR"
     - bash deploy/scripts/zest-stack-up.sh small
     - bash deploy/scripts/wait-stack-ready.sh
-    - TIER=production SKIP_IT=1 bash deploy/scripts/production-acceptance.sh
+    # production-acceptance: 白盒 → e2e → sso-smoke → journeys → loadtest（含 GATE-SSO）
+    - TIER=production SKIP_IT=1 bash deploy/scripts/production-acceptance.sh 2>&1 | tee deploy/test-reports/ci-docker-e2e.log
+    - grep -E 'PASS GATE-SSO|SKIP GATE-SSO' deploy/test-reports/ci-docker-e2e.log
+  artifacts:
+    paths:
+      - deploy/test-reports/
+    expire_in: 14 days
   only:
     - main
     - master

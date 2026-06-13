@@ -70,6 +70,27 @@ powershell -File deploy/scripts/sso-smoke.ps1 -AdminUrl http://localhost:8088 -S
 
 `enabled: false`（默认）时，仍可使用 `admin` / `admin123` 本地登录。
 
+### 3.5 浏览器联调：验证 `sso_subject` 已写入
+
+完成 SSO 登录回调后，在 MySQL 中确认用户映射（**浏览器步骤不可被 `sso-smoke.sh` 替代**）：
+
+1. 确认 Admin 已启用 SSO（`zest-llm.admin.sso.enabled=true`）且 ZestSSO 可达。
+2. 浏览器打开登录页（Vite `:5174/login` 或内嵌 UI `:8088/login`），点击 **ZestSSO 登录**。
+3. 在 IdP 完成认证，确认跳回 `/login/callback` 且无报错。
+4. 登录后访问需鉴权页面（如「用户管理」），确认已拿到 Admin JWT。
+5. 查询数据库（替换为实际 `sub` / 邮箱）：
+
+```sql
+SELECT id, username, sso_provider, sso_subject, email, updated_at
+FROM llm_admin_user
+WHERE sso_provider IS NOT NULL
+ORDER BY updated_at DESC
+LIMIT 10;
+```
+
+6. **通过标准**：最新登录用户行中 `sso_provider` 为 `zest-sso`（或配置的 provider），`sso_subject` 非空且与 IdP `sub` claim 一致。
+7. 登出后重登：同一 IdP 用户应更新 `updated_at`，`sso_subject` 保持不变（upsert 幂等）。
+
 ---
 
 ## 4. API 端点

@@ -1,4 +1,4 @@
-#!/usr/bin/.env bash
+#!/usr/bin/env bash
 # ZestLLM 生产验收 E2E（AC1–AC38 + Agent 模式）
 set -euo pipefail
 
@@ -321,9 +321,17 @@ echo "== AC50: app overview =="
 AO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/apps/overview")
 echo "$AO" | grep -q "order-service" && echo "PASS AC50" || { echo "FAIL AC50: $AO"; exit 1; }
 
-echo "== AC51: capability stack export =="
+echo "== AC51: capability stack export (medium) =="
 EX=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capability-stack/export?tier=medium")
 echo "$EX" | grep -q "ZEST_STACK_TIER" && echo "PASS AC51" || { echo "FAIL AC51: $EX"; exit 1; }
+
+echo "== AC51b: capability stack export (large) =="
+EX_LG=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capability-stack/export?tier=large")
+echo "$EX_LG" | grep -q "ZEST_STACK_TIER" \
+  && echo "$EX_LG" | grep -q '"large"' \
+  && echo "$EX_LG" | grep -q "dify" \
+  && echo "$EX_LG" | grep -q "kafka" \
+  && echo "PASS AC51b" || { echo "FAIL AC51b: $EX_LG"; exit 1; }
 
 echo "== AC52: ai job wizard =="
 WZ=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \

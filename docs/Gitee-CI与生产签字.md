@@ -7,7 +7,7 @@
 | Job | 触发 | 内容 | 门禁 |
 |-----|------|------|------|
 | `build-and-test` | push/PR 自动 | `mvn test` + UI embed diff | 0 FAIL |
-| `docker-e2e` | **manual** | compose 全栈 + `production-acceptance.sh` | 四阶段全 PASS |
+| `docker-e2e` | **manual** | compose 全栈 + `production-acceptance.sh`（含 **sso-smoke** + **GATE-SSO**） | 五阶段全 PASS |
 
 配置文件：
 
@@ -51,7 +51,8 @@ bash deploy/scripts/run-production-signoff.sh medium
 | 项 | 要求 | 证据 |
 |----|------|------|
 | GATE-WB | mvn test 0 FAIL | signoff 日志 Phase WHITEBOX |
-| GATE-BB | e2e AC1–38 0 FAIL | production-acceptance BLACKBOX |
+| GATE-BB | e2e AC1–53 0 FAIL | production-acceptance BLACKBOX |
+| GATE-SSO | sso-smoke PASS 或 SKIP（未启 SSO） | production-acceptance `GATE-SSO` 行 |
 | GATE-CH | journeys PASS | production-acceptance CHAIN |
 | GATE-ST | P95 ≤ 500ms，成功率 ≥ 95% | STRESS 段 |
 | GATE-SEC | P0 安全全 PASS | full-acceptance SEC-* |

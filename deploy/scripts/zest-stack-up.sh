@@ -41,6 +41,16 @@ echo ""
 echo "Zest Stack ($TIER) started."
 echo "  Admin+UI  http://localhost:8088  (admin/admin123)"
 echo "  Demo      http://localhost:8081"
+if [ "$TIER" != "small" ]; then
+  echo "  Langfuse  http://localhost:3000"
+fi
+if [ "$TIER" = "large" ]; then
+  echo "  Dify API  http://localhost:5001"
+  echo "  RAGFlow   http://localhost:9380"
+fi
 echo ""
-echo "E2E:   bash deploy/scripts/run-production-signoff.sh"
+echo "E2E:   bash deploy/scripts/run-production-signoff.sh $TIER"
 echo "Quick: TIER=production bash deploy/scripts/production-acceptance.sh"
+if [ "$TIER" = "large" ]; then
+  echo "Validate config only: bash deploy/scripts/validate-large-tier-compose.sh"
+fi

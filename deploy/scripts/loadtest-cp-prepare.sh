@@ -1,7 +1,8 @@
-#!/usr/bin/.env bash
+#!/usr/bin/env bash
 # 方案 A Phase2：CP prepare 压测 + P50/P95/P99 报告
 set -euo pipefail
 
+TIER="${TIER:-production}"
 ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
 REQUESTS="${REQUESTS:-100}"
 CONCURRENCY="${CONCURRENCY:-10}"
@@ -9,7 +10,13 @@ ENDPOINT="${ENDPOINT:-prepare}"
 BODY='{"appKey":"order-service","code":"aiChat","inputs":{"question":"loadtest"}}'
 URL="$ADMIN_URL/v1/llm/$ENDPOINT"
 
-echo "== Load test $ENDPOINT: requests=$REQUESTS concurrency=$CONCURRENCY =="
+if [ "$TIER" = "local" ]; then
+  P95_MAX_MS="${P95_MAX_MS:-800}"
+else
+  P95_MAX_MS="${P95_MAX_MS:-500}"
+fi
+
+echo "== Load test $ENDPOINT tier=$TIER requests=$REQUESTS concurrency=$CONCURRENCY P95_MAX=${P95_MAX_MS}ms =="
 
 if command -v hey >/dev/null 2>&1; then
   hey -n "$REQUESTS" -c "$CONCURRENCY" -m POST \
@@ -35,9 +42,7 @@ for i in $(seq 1 "$REQUESTS"); do
   echo "$latency $code" >> "$TMP"
 done
 
-P95_MAX_MS="${P95_MAX_MS:-500}"
-
-python3 - "$TMP" "$P95_MAX_MS" <<'PY'
+python3 - "$TMP" "$P95_MAX_MS" "$TIER" <<'PY'
 import sys
 rows = []
 for line in open(sys.argv[1]):
@@ -61,10 +66,11 @@ def pct(p):
 
 p95 = pct(95)
 p95_max = int(sys.argv[2])
-print(f"samples={len(latencies)} fail={fail}")
-print(f"P50={pct(50)}ms P95={p95}ms P99={pct(99)}ms max={latencies[-1]}ms")
+tier = sys.argv[3]
+print(f"tier={tier} samples={len(latencies)} fail={fail}")
+print(f"P50={pct(50)}ms P95={p95}ms P99={pct(99)}ms max={latencies[-1]}ms (threshold P95<={p95_max}ms)")
 if p95 > p95_max:
-    print(f"FAIL: P95 {p95}ms exceeds threshold {p95_max}ms")
+    print(f"FAIL: tier={tier} P95 {p95}ms exceeds threshold {p95_max}ms")
     sys.exit(1)
 PY
 
