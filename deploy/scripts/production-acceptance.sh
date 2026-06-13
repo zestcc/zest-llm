@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ZestLLM 生产级全量验收编排（Linux / Docker 全栈）
-# 四阶段：白盒 → 黑盒(e2e) → 链路(journeys) → 压测(loadtest)
+# 五阶段：白盒 → 黑盒(e2e) → SSO 冒烟 → 链路(journeys) → 压测(loadtest)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
@@ -45,6 +45,15 @@ log "======== PHASE: BLACKBOX e2e-acceptance AC1-38 ========"
 ADMIN_URL="$ADMIN_URL" bash deploy/scripts/e2e-acceptance.sh 2>&1 | tee -a "$MASTER"
 log "PASS BLACKBOX e2e"
 
+log "======== PHASE: SSO sso-smoke ========"
+if [ "${SKIP_SSO:-0}" = "1" ]; then
+  log "SKIP SSO (SKIP_SSO=1)"
+else
+  ADMIN_URL="$ADMIN_URL" SSO_BASE="${SSO_BASE:-http://localhost:9000}" \
+    bash deploy/scripts/sso-smoke.sh 2>&1 | tee -a "$MASTER"
+  log "PASS SSO sso-smoke"
+fi
+
 log "======== PHASE: CHAIN run-journeys ========"
 bash deploy/scripts/run-journeys.sh 2>&1 | tee -a "$MASTER"
 log "PASS CHAIN journeys"
@@ -57,6 +66,11 @@ log "PASS STRESS"
 log "======== PRODUCTION GATES ========"
 log "PASS GATE-WB mvn test"
 log "PASS GATE-BB e2e-acceptance AC1-38"
+if [ "${SKIP_SSO:-0}" = "1" ]; then
+  log "SKIP GATE-SSO sso-smoke"
+else
+  log "PASS GATE-SSO sso-smoke"
+fi
 log "PASS GATE-CH run-journeys"
 log "PASS GATE-ST P95<=${P95_MAX}ms"
 log "MasterReport=$MASTER"

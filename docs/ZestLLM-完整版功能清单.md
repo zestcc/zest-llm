@@ -1,7 +1,7 @@
 # ZestLLM 完整版功能清单
 
-> **版本** 1.0.0 · **日期** 2026-06-11 · **适用范围** 控制面完整版（本地 / Docker small～medium / CI 门禁）  
-> **数据库** MySQL 8 only · **Flyway 最新** V19 · **Admin 应用版本** 1.0.0
+> **版本** 1.0.0 · **日期** 2026-06-13 · **适用范围** 控制面完整版（本地 / Docker small～medium / CI 门禁）  
+> **数据库** MySQL 8 only · **Flyway 最新** V22 · **Admin 应用版本** 1.0.0
 
 ---
 
@@ -11,7 +11,7 @@
 
 1. **控制面（Admin CP）** 功能齐备：治理、配置、运维、Zest Stack 门户、M5 场景/Wizard/Learning 等 API 与 UI 可用。  
 2. **Runtime 契约** 完整：`prepare` / `invoke` / `report`（含流式）+ 鉴权 + Execution 审计。  
-3. **本地可一键启动 + 自动化验收**：`start-local-full` + `verify-local`，**58 项** API 验收 + `mvn test` 通过。  
+3. **本地可一键启动 + 自动化验收**：`start-local-full` + `verify-local`，**66+ 项** API 验收（`full-acceptance.ps1` 内 `Assert-Pass`）+ `mvn test` 通过。  
 4. **交付物齐全**：Docker Compose、Helm Chart、CI 门禁、文档与验收脚本对齐 **AC1–AC53**。
 
 **不包含**（单独立项或下一阶段）：
@@ -308,7 +308,9 @@ bash deploy/scripts/verify-local.sh
 | 脚本 | 用途 |
 |------|------|
 | `build-admin-ui.ps1` / `.sh` | UI 构建并嵌入 `admin/static` |
-| `full-acceptance.ps1` | 58 项 Admin API 验收（AC39–53 含 Wizard） |
+| `full-acceptance.ps1` | 66+ 项 Admin API 验收（含 SSO/CHAIN/REGISTRY、AC39–53 Wizard） |
+| `sso-smoke.ps1` / `sso-smoke.sh` | Admin SSO Discovery / config / authorize 冒烟 |
+| `production-acceptance.ps1` / `.sh` | 五阶段生产验收（白盒→黑盒→SSO→链路→压测） |
 | `e2e-acceptance.sh` | Docker 栈 E2E（AC1–53） |
 | `run-journeys.sh` | MCP/CI 旅程 |
 | `stress-test-prepare.ps1` | prepare 压测 P50/P95 |
@@ -365,9 +367,9 @@ bash deploy/scripts/verify-local.sh
 
 完整条目：[产品验收标准.md](./产品验收标准.md)。
 
-**本地完整版达标线**：`production-acceptance.ps1` 四阶段全绿（含 **61+ PASS** 黑盒 + CHAIN/REGISTRY）。
+**本地完整版达标线**：`production-acceptance.ps1` 五阶段全绿（含 **66+ PASS** 黑盒 + CHAIN/REGISTRY/SSO）。
 
-**生产签字达标线**：`production-acceptance.sh`（Docker）四阶段 + 签字表 GATE-* 全 PASS。
+**生产签字达标线**：`production-acceptance.sh`（Docker）五阶段 + 签字表 GATE-* 全 PASS（含 **GATE-SSO**）。
 
 ---
 
@@ -376,7 +378,7 @@ bash deploy/scripts/verify-local.sh
 | 能力 | 完整版状态 | 下一阶段 |
 |------|------------|----------|
 | 控制面 API + UI | ✅ 齐备 | UI  polish、国际化 |
-| 本地一键启动/验收 | ✅ | Gitee CI 镜像 |
+| 本地一键启动/验收 | ✅ 66+ PASS | Gitee CI docker-e2e manual |
 | Docker small/medium E2E | ✅ CI 覆盖 | Large tier 专项验收 |
 | Helm 最小可部署 | ✅ Chart 已有 | 生产 values、多 AZ、密钥管理 |
 | Wizard / 场景模板 | ✅ 幂等草稿 | 更多行业模板 |
@@ -391,6 +393,10 @@ bash deploy/scripts/verify-local.sh
 | 文档 | 内容 |
 |------|------|
 | [README.md](../README.md) | 快速开始、模块、本地完整版 |
+| [完整版推进状态.md](./完整版推进状态.md) | 模块状态、Linux 测试机下一步 |
+| [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) | Admin SSO 配置与联调 |
+| [Gitee-CI与生产签字.md](./Gitee-CI与生产签字.md) | Gitee CI 与生产签字流程 |
+| [生产级全量测试计划.md](./生产级全量测试计划.md) | 五阶段全量测试计划 |
 | [Zest-Stack完整实现方案.md](./Zest-Stack完整实现方案.md) | 分层部署与架构 |
 | [产品验收标准.md](./产品验收标准.md) | AC 门禁 |
 | [Agent配置模型.md](./Agent配置模型.md) | Profile SSOT |

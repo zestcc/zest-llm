@@ -125,7 +125,9 @@ bash deploy/scripts/start-local-full.sh --stop-only
 
 **Gitee CI**：`deploy/ci/gitee-pipeline.yml`（`mvn test` 自动门禁；Docker 四阶段 `production-acceptance.sh` 为 manual 阶段）。
 
-**生产级验收（四阶段：白盒→黑盒→链路→压测）**：
+**生产级验收（五阶段：白盒→黑盒→SSO→链路→压测）**：
+
+推进状态见 [docs/完整版推进状态.md](docs/完整版推进状态.md)。
 
 ```powershell
 powershell -File deploy/scripts/production-acceptance.ps1
