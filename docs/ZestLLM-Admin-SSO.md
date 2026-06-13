@@ -105,9 +105,47 @@ LIMIT 10;
 
 Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 
+SDK 自动注册（`zest.sso.client.enabled=true` 时）：
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| POST | `/api/admin/auth/sso/backchannel-logout` | 接收 ZestSSO `logout_token`，吊销本地 JWT |
+
 ---
 
-## 5. ZestFlow 参考实现的已知不足
+## 5. Back-Channel Logout（全局登出）
+
+ZestSSO 全局登出时 POST `logout_token` 至 RP；ZestLLM 将用户名写入 Redis，后续 JWT 请求返回 **401/403**。
+
+### 5.1 配置
+
+除 `zest-llm.admin.sso.enabled=true` 外，须启用 SDK 端点：
+
+```yaml
+zest:
+  sso:
+    client:
+      enabled: true
+      issuer: http://localhost:9000
+      client-id: zest-llm-admin
+      backchannel-logout-path: /api/admin/auth/sso/backchannel-logout
+```
+
+ZestSSO 侧 `zest-llm-admin` 的 `backchannelLogoutUri`（Flyway V12 预置）：
+
+`http://localhost:8088/api/admin/auth/sso/backchannel-logout`
+
+### 5.2 自动化联调
+
+```powershell
+powershell -File deploy/scripts/sso-backchannel-e2e.ps1
+```
+
+流程：OAuth 授权 → 本地登录 → 登出前 `/api/admin/apps` 200 → SSO Admin logout → 登出后 **401/403**。
+
+---
+
+## 6. ZestFlow 参考实现的已知不足
 
 移植自 ZestFlow `com.zestflow.admin.service.sso.*` 时需注意：
 
@@ -121,7 +159,7 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 
 ---
 
-## 6. 生产上线检查清单
+## 7. 生产上线检查清单
 
 - [ ] `spring.profiles.active` 含 `prod`，`AdminProductionGuard` 通过
 - [ ] `zest-llm.admin.sso.enabled=true`
@@ -130,12 +168,12 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 - [ ] 内嵌 UI 生产 redirect：`http(s)://<admin-host>/login/callback`
 - [ ] 多实例部署时配置 `spring.data.redis.host`（PKCE state 共享）
 - [ ] ZestSSO client `zest-llm-admin` 已在 IdP 侧创建
-- [ ] 运行 `deploy/scripts/sso-smoke.ps1` 与 `production-acceptance.ps1`（含 SSO 段）
+- [ ] 运行 `deploy/scripts/sso-smoke.ps1` 与 `deploy/scripts/sso-backchannel-e2e.ps1`
 - [ ] 浏览器联调后执行 [sso-browser-checklist.md](../deploy/scripts/sso-browser-checklist.md) 中的 SQL / `sso-db-verify.sh`
 
 ---
 
-## 7. 相关文件
+## 8. 相关文件
 
 | 路径 | 说明 |
 |------|------|
@@ -145,5 +183,5 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 | `zest-llm-admin-ui/src/views/LoginView.vue` | SSO 登录按钮 |
 | `application-local.example.yml` | 本地配置示例 |
 | `application-production.example.yml` | 生产 SSO 块 |
-| `deploy/scripts/sso-browser-checklist.md` | 浏览器联调 + SQL/curl 复制粘贴 |
+| `deploy/scripts/sso-backchannel-e2e.ps1` | Back-Channel 吊销联调（6 步） |
 | `deploy/scripts/sso-db-verify.sh` | 只读验证 `sso_subject`（需 `MYSQL_*`） |
