@@ -42,6 +42,7 @@ docker-e2e:
     - mkdir -p deploy/test-reports
     # Large Tier compose 干跑（不启动容器），与 small 栈签字互补
     - bash deploy/scripts/validate-large-tier-compose.sh 2>&1 | tee deploy/test-reports/validate-large-tier-compose.log
+    - bash deploy/scripts/preload-stack-images.sh 2>&1 | tee deploy/test-reports/preload-stack-images.log
     - bash deploy/scripts/zest-stack-up.sh small
     - bash deploy/scripts/wait-stack-ready.sh
     # production-acceptance: 白盒 → e2e → sso-smoke → journeys → loadtest（含 GATE-SSO）

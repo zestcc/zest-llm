@@ -1,6 +1,11 @@
+# 镜像可覆盖（国内/离线环境）:
+#   export LITELLM_IMAGE=docker.m.daocloud.io/ghcr.io/berriai/litellm:main-latest
+#   export WIREMOCK_IMAGE=wiremock/wiremock:3.3.1
+#   export MYSQL_IMAGE=mysql:8.0
+# 详见 deploy/env.compose.example
 services:
   mysql:
-    image: mysql:8.0
+    image: ${MYSQL_IMAGE:-mysql:8.0}
     container_name: zest-llm-mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -31,7 +36,7 @@ services:
       retries: 5
 
   openai-mock:
-    image: wiremock/wiremock:3.3.1
+    image: ${WIREMOCK_IMAGE:-wiremock/wiremock:3.3.1}
     container_name: zest-llm-openai-mock
     volumes:
       - ./openai-mock/mappings:/home/wiremock/mappings:ro
@@ -42,7 +47,7 @@ services:
       retries: 5
 
   litellm:
-    image: ghcr.io/berriai/litellm:main-latest
+    image: ${LITELLM_IMAGE:-ghcr.io/berriai/litellm:main-latest}
     container_name: zest-llm-litellm
     command: ["--config", "/app/config.yaml", "--port", "4000"]
     ports:
@@ -117,7 +122,7 @@ services:
       start_period: 120s
 
   mcp-mock:
-    image: wiremock/wiremock:3.3.1
+    image: ${WIREMOCK_IMAGE:-wiremock/wiremock:3.3.1}
     container_name: zest-llm-mcp-mock
     ports:
       - "9090:8080"
@@ -130,7 +135,7 @@ services:
       retries: 5
 
   alert-mock:
-    image: wiremock/wiremock:3.3.1
+    image: ${WIREMOCK_IMAGE:-wiremock/wiremock:3.3.1}
     container_name: zest-llm-alert-mock
     volumes:
       - ./alert-mock/mappings:/home/wiremock/mappings:ro

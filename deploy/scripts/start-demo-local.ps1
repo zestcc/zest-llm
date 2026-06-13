@@ -116,7 +116,22 @@ if (Test-DemoPort) {
         Write-Host "Demo already up: http://127.0.0.1:8081" -ForegroundColor Green
         exit 0
     }
-    Write-Host "Demo port :8081 is up but methodA not ready — restarting with fresh jar/config." -ForegroundColor Yellow
+    Write-Host "Port :8081 in use but methodA failed (e.g. zestflow-demo) — freeing listeners..." -ForegroundColor Yellow
+    try {
+        $conns = Get-NetTCPConnection -LocalPort 8081 -State Listen -ErrorAction SilentlyContinue
+        foreach ($c in $conns) {
+            $owningPid = $c.OwningProcess
+            if ($owningPid -and $owningPid -gt 0) {
+                $pn = (Get-Process -Id $owningPid -ErrorAction SilentlyContinue).ProcessName
+                Write-Host "  stopping PID $owningPid ($pn)" -ForegroundColor Yellow
+                Stop-Process -Id $owningPid -Force -ErrorAction SilentlyContinue
+            }
+        }
+    } catch { }
+    Start-Sleep -Seconds 2
+    if ((Test-DemoPort) -and -not (Test-DemoMethodA)) {
+        throw "Port 8081 still occupied after cleanup — stop conflicting service (e.g. zestflow-demo) and retry."
+    }
 }
 
 Write-Host "== Starting Demo (:8081) ==" -ForegroundColor Cyan
