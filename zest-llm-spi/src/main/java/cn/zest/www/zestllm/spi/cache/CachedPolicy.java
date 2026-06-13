@@ -41,4 +41,7 @@ public class CachedPolicy {
     private Map<String, ProviderDefinition> providers = new LinkedHashMap<>();
     /** 完整 Profile 快照（缓存用，不含密钥） */
     private AgentProfileDocument profileDocument;
+    /** prepare 热路径：命中策略缓存时避免重复查 task 表 */
+    private Long taskId;
+    private String taskCode;
 }

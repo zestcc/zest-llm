@@ -131,6 +131,7 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 - [ ] 多实例部署时配置 `spring.data.redis.host`（PKCE state 共享）
 - [ ] ZestSSO client `zest-llm-admin` 已在 IdP 侧创建
 - [ ] 运行 `deploy/scripts/sso-smoke.ps1` 与 `production-acceptance.ps1`（含 SSO 段）
+- [ ] 浏览器联调后执行 [sso-browser-checklist.md](../deploy/scripts/sso-browser-checklist.md) 中的 SQL / `sso-db-verify.sh`
 
 ---
 
@@ -144,3 +145,5 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 | `zest-llm-admin-ui/src/views/LoginView.vue` | SSO 登录按钮 |
 | `application-local.example.yml` | 本地配置示例 |
 | `application-production.example.yml` | 生产 SSO 块 |
+| `deploy/scripts/sso-browser-checklist.md` | 浏览器联调 + SQL/curl 复制粘贴 |
+| `deploy/scripts/sso-db-verify.sh` | 只读验证 `sso_subject`（需 `MYSQL_*`） |

@@ -41,7 +41,7 @@ else
   fi
 fi
 
-log "======== PHASE: BLACKBOX e2e-acceptance AC1-38 ========"
+log "======== PHASE: BLACKBOX e2e-acceptance AC1-54 ========"
 ADMIN_URL="$ADMIN_URL" bash deploy/scripts/e2e-acceptance.sh 2>&1 | tee -a "$MASTER"
 log "PASS BLACKBOX e2e"
 
@@ -65,7 +65,7 @@ log "PASS STRESS"
 
 log "======== PRODUCTION GATES ========"
 log "PASS GATE-WB mvn test"
-log "PASS GATE-BB e2e-acceptance AC1-38"
+log "PASS GATE-BB e2e-acceptance AC1-54"
 if [ "${SKIP_SSO:-0}" = "1" ]; then
   log "SKIP GATE-SSO sso-smoke"
 else

@@ -1,4 +1,5 @@
 # ZestLLM 本地完整版一键启动（Windows，无 Docker 友好）
+# 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 用法: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
 param(
     [switch]$WithLiteLLM,

@@ -28,6 +28,7 @@ build-and-test:
       - "**/target/surefire-reports/"
     expire_in: 7 days
 
+# docker-e2e：发布前手动触发；打 release tag 后建议在 Gitee 流水线再次手动跑本 job 留档签字证据。
 docker-e2e:
   stage: e2e-manual
   image: docker:24
@@ -38,6 +39,9 @@ docker-e2e:
   script:
     - apk add --no-cache bash curl git openjdk17 maven
     - cd "$CI_PROJECT_DIR"
+    - mkdir -p deploy/test-reports
+    # Large Tier compose 干跑（不启动容器），与 small 栈签字互补
+    - bash deploy/scripts/validate-large-tier-compose.sh 2>&1 | tee deploy/test-reports/validate-large-tier-compose.log
     - bash deploy/scripts/zest-stack-up.sh small
     - bash deploy/scripts/wait-stack-ready.sh
     # production-acceptance: 白盒 → e2e → sso-smoke → journeys → loadtest（含 GATE-SSO）
@@ -45,9 +49,15 @@ docker-e2e:
     - grep -E 'PASS GATE-SSO|SKIP GATE-SSO' deploy/test-reports/ci-docker-e2e.log
   artifacts:
     paths:
+      - deploy/test-reports/ci-docker-e2e.log
+      - deploy/test-reports/validate-large-tier-compose.log
+      - deploy/test-reports/production-*.txt
+      - deploy/test-reports/signoff-*.txt
+      - deploy/test-reports/mvn-test-latest.log
       - deploy/test-reports/
     expire_in: 14 days
   only:
     - main
     - master
     - develop
+    - tags

@@ -304,6 +304,11 @@ echo "== AC46: scenario templates =="
 ST=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/scenario-templates")
 echo "$ST" | grep -q "chat-basic" && echo "PASS AC46" || { echo "FAIL AC46: $ST"; exit 1; }
 
+echo "== AC54: knowledge-qa scenario template =="
+echo "$ST" | grep -q "knowledge-qa" \
+  && echo "$ST" | grep -q "知识问答" \
+  && echo "PASS AC54" || { echo "FAIL AC54: $ST"; exit 1; }
+
 echo "== AC47: ai jobs overview =="
 JO=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/ai-jobs/overview")
 echo "$JO" | grep -q "aiChat" && echo "PASS AC47" || { echo "FAIL AC47: $JO"; exit 1; }

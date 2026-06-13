@@ -1,4 +1,5 @@
 # 知识问答场景 Profile（medium 栈 + Dify KB）
+# 与内置模板 classpath:scenario-templates/knowledge-qa.json 对齐
 
 ```yaml
 apiVersion: zestllm/v1

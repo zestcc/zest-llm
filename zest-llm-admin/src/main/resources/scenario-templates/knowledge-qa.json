@@ -1,0 +1,12 @@
+{
+  "id": "knowledge-qa",
+  "name": "知识问答",
+  "description": "Dify 知识库问答 + Learning 闭环，适合 FAQ/产品文档场景（medium 栈 + dify-kb）",
+  "recommendedTier": "medium",
+  "taskCodeSuggestion": "aiKnowledge",
+  "taskName": "知识问答",
+  "runtimeMode": "agent",
+  "requiresMcp": false,
+  "requiresKnowledge": true,
+  "profileJson": "{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":2048,\"temperature\":0.3,\"timeoutMs\":60000},\"extensions\":{\"runtimeBackend\":{\"type\":\"native\"},\"knowledge\":{\"enabled\":true,\"provider\":\"dify-kb\",\"datasetIds\":[\"product-faq\"],\"topK\":5,\"scoreThreshold\":0.65,\"injectMode\":\"system_prefix\"},\"learningLoop\":{\"enabled\":true,\"minPassRate\":0.8,\"probeBeforePublish\":true}}}"
+}

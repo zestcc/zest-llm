@@ -1,4 +1,5 @@
 # ZestLLM Admin SSO smoke (Windows PowerShell)
+# 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # Usage: powershell -File deploy/scripts/sso-smoke.ps1 -AdminUrl http://localhost:8088 -SsoBase http://localhost:9000
 
 param(
@@ -64,3 +65,4 @@ Write-Host "OK provider=$($oidcData.provider) enabled=$($oidcData.enabled)"
 
 Write-Host "`n== Done ==" -ForegroundColor Green
 Write-Host "Manual: browser login -> SSO -> verify llm_admin_user.sso_subject"
+exit 0

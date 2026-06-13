@@ -1,4 +1,5 @@
 # Windows 本地启动 order-service Demo（无需 Docker）
+# 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 用法: powershell -File deploy/scripts/start-demo-local.ps1 [-StopOnly] [-SkipBuild]
 param(
     [switch]$StopOnly,

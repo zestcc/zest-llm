@@ -1,4 +1,5 @@
 # ZestLLM 生产级全量验收编排（Windows / 本地无 Docker 友好）
+# 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 四阶段：白盒 → 黑盒 → 链路 → 压测（+ SSO 冒烟）
 param(
     [ValidateSet("local", "production")]
@@ -26,7 +27,7 @@ $script:PhaseSkipped = 0
 function Write-Master($msg) {
     $line = "[$(Get-Date -Format 'HH:mm:ss')] $msg"
     Write-Host $line
-    Add-Content -Path $MasterReport -Value $line
+    Add-Content -Path $MasterReport -Value $line -Encoding utf8
 }
 
 function Invoke-Phase {
@@ -72,7 +73,7 @@ Invoke-Phase -Name "WHITEBOX mvn test" -Skip:$SkipWhiteBox -Block {
     mvn -B test 2>&1 | Tee-Object -FilePath $log
     $exit = $LASTEXITCODE
     Pop-Location
-    Add-Content -Path $MasterReport -Value "mvn log: $log"
+    Add-Content -Path $MasterReport -Value "mvn log: $log" -Encoding utf8
     if ($exit -ne 0) { throw "mvn test failed exit=$exit" }
 }
 

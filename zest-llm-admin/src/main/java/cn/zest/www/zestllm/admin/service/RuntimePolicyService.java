@@ -41,13 +41,20 @@ public class RuntimePolicyService {
     }
 
     public ResolvedPolicy resolvePolicy(LlmAppDO app, String code, Map<String, Object> inputs, String traceId) {
-        LlmAiTaskDefDO task = taskDefRepo.findByAppIdAndCode(app.getId(), code)
-                .orElseThrow(() -> new ZestLlmException(LlmErrorCode.TASK_NOT_FOUND, traceId));
-
         Map<String, Object> variables = inputs != null ? inputs : Collections.emptyMap();
         String cacheKey = CaffeinePolicyCacheAdapter.buildKey(app.getAppKey(), code);
         Optional<CachedPolicy> cached = policyCacheAdapter.getPolicy(cacheKey);
-        CachedPolicy policy = cached.orElseGet(() -> loadAndCachePolicy(app, task, cacheKey, traceId));
+
+        LlmAiTaskDefDO task;
+        CachedPolicy policy;
+        if (cached.isPresent() && cached.get().getTaskId() != null) {
+            policy = cached.get();
+            task = taskFromCachedPolicy(policy);
+        } else {
+            task = taskDefRepo.findByAppIdAndCode(app.getId(), code)
+                    .orElseThrow(() -> new ZestLlmException(LlmErrorCode.TASK_NOT_FOUND, traceId));
+            policy = cached.orElseGet(() -> loadAndCachePolicy(app, task, cacheKey, traceId));
+        }
         String rendered = promptRenderer.render(PromptTemplate.builder()
                 .templateBody(policy.getTemplateBody())
                 .version(policy.getPromptVersion())
@@ -65,6 +72,13 @@ public class RuntimePolicyService {
         CachedPolicy policy = agentProfileResolver.resolve(app, task, traceId);
         policyCacheAdapter.putPolicy(cacheKey, policy, POLICY_CACHE_TTL);
         return policy;
+    }
+
+    private static LlmAiTaskDefDO taskFromCachedPolicy(CachedPolicy policy) {
+        LlmAiTaskDefDO task = new LlmAiTaskDefDO();
+        task.setId(policy.getTaskId());
+        task.setCode(policy.getTaskCode());
+        return task;
     }
 
     public List<String> parseFallbackModels(String fallbackModels) {

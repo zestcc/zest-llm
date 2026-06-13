@@ -84,6 +84,8 @@ public class AgentProfileResolver {
         ProviderDefinition activeProvider = resolveActiveProvider(document, publishedProfile.orElse(null));
 
         return CachedPolicy.builder()
+                .taskId(task.getId())
+                .taskCode(task.getCode())
                 .promptVersion(prompt.getVersion())
                 .profileVersion(publishedProfile.map(LlmAgentProfileDO::getVersion).orElse(null))
                 .templateBody(prompt.getTemplateBody())

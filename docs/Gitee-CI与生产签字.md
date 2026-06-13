@@ -7,7 +7,7 @@
 | Job | 触发 | 内容 | 门禁 |
 |-----|------|------|------|
 | `build-and-test` | push/PR 自动 | `mvn test` + UI embed diff | 0 FAIL |
-| `docker-e2e` | **manual** | compose 全栈 + `production-acceptance.sh`（含 **sso-smoke** + **GATE-SSO**） | 五阶段全 PASS |
+| `docker-e2e` | **manual**（`main`/`master`/`develop`/**`tags`**） | compose 干跑 large + small 栈 + `production-acceptance.sh`（含 **sso-smoke** + **GATE-SSO**） | 五阶段全 PASS |
 
 配置文件：
 
@@ -19,7 +19,17 @@
 1. 仓库 → **流水线** → 新建 → 从仓库导入 `.gitee/pipelines/zestllm-ci.yml`
 2. 确保 Runner 标签匹配（默认 shared runner 或自建 Linux runner）
 3. push 到 `master` 后自动跑 `build-and-test`
-4. 发布前在流水线页面 **手动触发** `docker-e2e`
+4. 发布前在流水线页面 **手动触发** `docker-e2e`；打 **release tag** 后建议再次手动触发，归档签字证据。
+
+### docker-e2e 归档产物
+
+| 路径 | 说明 |
+|------|------|
+| `deploy/test-reports/ci-docker-e2e.log` | 完整验收 stdout |
+| `deploy/test-reports/validate-large-tier-compose.log` | Large Tier compose 干跑 |
+| `deploy/test-reports/production-*.txt` | 分阶段明细 |
+| `deploy/test-reports/signoff-*.txt` | 测试机 `run-production-signoff.sh` 附件 |
+| `deploy/test-reports/mvn-test-latest.log` | 白盒 surefire |
 
 ### 自建 Runner 要求（docker-e2e）
 
@@ -45,13 +55,15 @@ bash deploy/scripts/run-production-signoff.sh medium
 - `deploy/test-reports/signoff-*.txt` — 签字附件
 - `deploy/test-reports/production-*.txt` — 阶段明细
 - `deploy/test-reports/mvn-test-latest.log`
+- `deploy/test-reports/validate-large-tier-compose.log` — CI docker-e2e 干跑 large compose
+- `deploy/test-reports/ci-docker-e2e.log` — CI docker-e2e 完整日志
 
 ## 4. 生产签字表（人工）
 
 | 项 | 要求 | 证据 |
 |----|------|------|
 | GATE-WB | mvn test 0 FAIL | signoff 日志 Phase WHITEBOX |
-| GATE-BB | e2e AC1–53 0 FAIL | production-acceptance BLACKBOX |
+| GATE-BB | e2e AC1–54 0 FAIL | production-acceptance BLACKBOX |
 | GATE-SSO | sso-smoke PASS 或 SKIP（未启 SSO） | production-acceptance `GATE-SSO` 行 |
 | GATE-CH | journeys PASS | production-acceptance CHAIN |
 | GATE-ST | P95 ≤ 500ms，成功率 ≥ 95% | STRESS 段 |
