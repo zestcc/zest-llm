@@ -32,6 +32,7 @@ import cn.zest.www.zestllm.spi.profile.ToolDefinition;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.infra.knowledge.DifyKbKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.runtime.DifyAgentRuntimeAdapter;
 import cn.zest.www.zestllm.infra.tool.ToolOrchestrator;
@@ -385,6 +386,8 @@ public class AgentProfileProbeService {
         HealthStatus health;
         if (knowledgeRetrievalAdapter instanceof RagflowKnowledgeRetrievalAdapter ragflow) {
             health = ragflow.health(knowledge);
+        } else if (knowledgeRetrievalAdapter instanceof DifyKbKnowledgeRetrievalAdapter difyKb) {
+            health = difyKb.health(knowledge);
         } else {
             health = knowledgeRetrievalAdapter.health();
         }

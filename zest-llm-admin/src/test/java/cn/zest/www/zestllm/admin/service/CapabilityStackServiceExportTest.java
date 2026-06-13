@@ -37,4 +37,21 @@ class CapabilityStackServiceExportTest {
         assertEquals("medium", env.get("ZEST_STACK_TIER"));
         assertEquals("langfuse", env.get("ZEST_LLM_ADAPTERS_OBSERVABILITY"));
     }
+
+    @Test
+    void exportComposeEnv_large_containsDifyAndRagflow() {
+        when(adapterProperties.getModelGateway()).thenReturn("litellm");
+        when(adapterProperties.getObservability()).thenReturn("langfuse");
+        when(adapterProperties.getAgentRuntime()).thenReturn("dify");
+        when(adapterProperties.getKnowledgeRetrieval()).thenReturn("ragflow");
+        when(adapterProperties.getLearningPipeline()).thenReturn("zest-eval");
+
+        Map<String, String> env = service.exportComposeEnv("large");
+        assertEquals("large", env.get("ZEST_STACK_TIER"));
+        assertEquals("dify", env.get("ZEST_LLM_ADAPTERS_AGENT_RUNTIME"));
+        assertEquals("ragflow", env.get("ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL"));
+        assertEquals("http://dify-api:5001", env.get("DIFY_API_BASE"));
+        assertEquals("http://ragflow:9380", env.get("RAGFLOW_API_BASE"));
+        assertEquals("bash deploy/scripts/integration-demo.sh", env.get("integrationDemo"));
+    }
 }

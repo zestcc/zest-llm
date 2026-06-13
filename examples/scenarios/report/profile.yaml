@@ -13,8 +13,11 @@ generation:
 extensions:
   knowledge:
     enabled: true
-    provider: noop
+    provider: ragflow
     datasetIds: [report-docs]
+    topK: 5
+    scoreThreshold: 0.5
+    injectMode: system_prefix
     topK: 5
   learningLoop:
     enabled: true

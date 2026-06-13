@@ -18,7 +18,11 @@
   1. `validate-large-tier-compose.sh`（Large compose 干跑）
   2. `preload-stack-images.sh`（预拉镜像）
   3. `zest-stack-up.sh small` + `wait-stack-ready.sh`
-  4. `production-acceptance.sh`（含 **GATE-SSO**、P95≤500ms）
+  4. `production-acceptance.sh`（含 **GATE-SSO**、P95≤500ms、AC1–56）
+
+**B 整合栈（可选，需 large + integration profile）**：在 Runner 上单独执行  
+`bash deploy/scripts/run-integration-acceptance.sh`（见 `docs/B整合栈Demo指南.md`）。  
+当前 `docker-e2e` 仍用 **small 栈** 签字；integration 严格验收不阻塞 CI 主路径。
 
 ## 4. 下载归档
 

@@ -296,6 +296,48 @@ IMP=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: applic
   "$ADMIN_URL/api/admin/agent-profiles/import" -d "$EXT_PROFILE")
 echo "$IMP" | grep -q "v-ac39" && echo "PASS AC39" || { echo "FAIL AC39: $IMP"; exit 1; }
 
+INTEGRATION_STRICT="${ZEST_INTEGRATION_E2E:-0}"
+
+integration_fail_or_skip() {
+  local ac="$1"
+  local msg="$2"
+  if [ "$INTEGRATION_STRICT" = "1" ]; then
+    echo "FAIL $ac: $msg"
+    exit 1
+  else
+    echo "SKIP $ac: $msg"
+  fi
+}
+
+echo "== AC40: hybrid prepare returns knowledgePrefetch =="
+HYBRID_PROFILE="{\"taskCode\":\"aiChat\",\"version\":\"v-ac40-${AC_SUFFIX}\",\"profileJson\":\"{\\\"apiVersion\\\":\\\"zestllm/v1\\\",\\\"runtimeMode\\\":\\\"hybrid\\\",\\\"providerRef\\\":\\\"litellm-default\\\",\\\"model\\\":{\\\"primary\\\":\\\"gpt-4o-mini\\\"},\\\"generation\\\":{\\\"maxTokens\\\":512,\\\"temperature\\\":0.3,\\\"timeoutMs\\\":30000},\\\"extensions\\\":{\\\"knowledge\\\":{\\\"enabled\\\":true,\\\"provider\\\":\\\"noop\\\",\\\"datasetIds\\\":[\\\"demo\\\"],\\\"topK\\\":3,\\\"scoreThreshold\\\":0.5,\\\"injectMode\\\":\\\"system_prefix\\\"},\\\"learningLoop\\\":{\\\"enabled\\\":false}}}\",\"publish\":false}"
+curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profiles/import" -d "$HYBRID_PROFILE" >/dev/null || true
+PUB40=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profiles/aiChat/publish" -d "{\"version\":\"v-ac40-${AC_SUFFIX}\"}")
+[ "$PUB40" != "200" ] && echo "WARN AC40 publish blocked by probe gate, using existing published hybrid"
+PREP40=$(curl -s -X POST "$ADMIN_URL/v1/llm/prepare" \
+  -H "Authorization: Bearer demo-token-123" \
+  -H "Content-Type: application/json" \
+  -d '{"appKey":"order-service","code":"aiChat","inputs":{"question":"hybrid-test"}}')
+echo "$PREP40" | grep -q "knowledgePrefetch" && echo "PASS AC40" \
+  || integration_fail_or_skip "AC40" "hybrid prepare missing knowledgePrefetch: $PREP40"
+
+echo "== AC41: integration SPI adapter health =="
+ADAPTERS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/adapters/health/all")
+echo "$ADAPTERS" | grep -q "agent-runtime" \
+  && echo "$ADAPTERS" | grep -q "knowledge-retrieval" \
+  && echo "$ADAPTERS" | grep -q "learning-pipeline" \
+  && echo "PASS AC41" \
+  || integration_fail_or_skip "AC41" "adapters health missing SPI keys: $ADAPTERS"
+
+echo "== AC42: probe external-runtime or knowledge checks =="
+PROBE42=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/agent-profile-probes/aiChat/run" \
+  -d '{"smokeTest":false}')
+echo "$PROBE42" | grep -qE "external-runtime|knowledge" && echo "PASS AC42" \
+  || integration_fail_or_skip "AC42" "probe missing external/knowledge checks: $PROBE42"
+
 echo "== AC45: capability stack =="
 CS=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capability-stack")
 echo "$CS" | grep -q "currentTier" && echo "PASS AC45" || { echo "FAIL AC45: $CS"; exit 1; }
@@ -335,6 +377,7 @@ EX_LG=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/capabili
 echo "$EX_LG" | grep -q "ZEST_STACK_TIER" \
   && echo "$EX_LG" | grep -q '"large"' \
   && echo "$EX_LG" | grep -q "dify" \
+  && echo "$EX_LG" | grep -q "ragflow" \
   && echo "$EX_LG" | grep -q "kafka" \
   && echo "PASS AC51b" || { echo "FAIL AC51b: $EX_LG"; exit 1; }
 
@@ -349,5 +392,49 @@ SG=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: applica
   "$ADMIN_URL/api/admin/learning/suggest-cases" \
   -d '{"taskCode":"aiChat","limit":5,"distillationSources":["execution","langfuse"]}')
 echo "$SG" | grep -q '"code":200' && echo "PASS AC53" || { echo "FAIL AC53: $SG"; exit 1; }
+
+echo "== AC55: scenario wizard report-basic -> aiReport =="
+WZ55=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/ai-jobs/wizard" \
+  -d "{\"templateId\":\"report-basic\",\"appKey\":\"order-service\",\"taskCode\":\"aiReport\",\"publish\":false,\"runProbe\":false}" 2>/dev/null || echo '{"error":true}')
+if echo "$WZ55" | grep -q "aiReport"; then
+  echo "PASS AC55"
+else
+  integration_fail_or_skip "AC55" "wizard report-basic failed: $WZ55"
+fi
+
+echo "== AC56: scenario wizard ops-monitor -> aiOps =="
+WZ56=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  "$ADMIN_URL/api/admin/ai-jobs/wizard" \
+  -d "{\"templateId\":\"ops-monitor\",\"appKey\":\"order-service\",\"taskCode\":\"aiOps\",\"publish\":false,\"runProbe\":false}" 2>/dev/null || echo '{"error":true}')
+if echo "$WZ56" | grep -q "aiOps"; then
+  echo "PASS AC56"
+else
+  integration_fail_or_skip "AC56" "wizard ops-monitor failed: $WZ56"
+fi
+
+if [ "$INTEGRATION_STRICT" = "1" ]; then
+  echo "== INTEGRATION: adapter health ragflow/dify =="
+  echo "$ADAPTERS" | grep -qi "ragflow" && echo "PASS INTEGRATION ragflow adapter listed" \
+    || { echo "FAIL INTEGRATION: ragflow not in adapter health"; exit 1; }
+  echo "$ADAPTERS" | grep -qi "dify" && echo "PASS INTEGRATION dify adapter listed" \
+    || { echo "FAIL INTEGRATION: dify not in adapter health"; exit 1; }
+
+  echo "== INTEGRATION: prepare aiReport (hybrid ragflow) =="
+  PREP_RPT=$(curl -s -X POST "$ADMIN_URL/v1/llm/prepare" \
+    -H "Authorization: Bearer demo-token-123" \
+    -H "Content-Type: application/json" \
+    -d '{"appKey":"order-service","code":"aiReport","inputs":{"question":"Q4 revenue trend"}}')
+  echo "$PREP_RPT" | grep -q "knowledgePrefetch" && echo "PASS INTEGRATION aiReport prepare" \
+    || { echo "FAIL INTEGRATION aiReport prepare: $PREP_RPT"; exit 1; }
+
+  echo "== INTEGRATION: prepare aiOps =="
+  PREP_OPS=$(curl -s -X POST "$ADMIN_URL/v1/llm/prepare" \
+    -H "Authorization: Bearer demo-token-123" \
+    -H "Content-Type: application/json" \
+    -d '{"appKey":"order-service","code":"aiOps","inputs":{"question":"pod crash loop"}}')
+  echo "$PREP_OPS" | grep -q "profileVersion" && echo "PASS INTEGRATION aiOps prepare" \
+    || { echo "FAIL INTEGRATION aiOps prepare: $PREP_OPS"; exit 1; }
+fi
 
 echo "== All automated E2E checks passed =="

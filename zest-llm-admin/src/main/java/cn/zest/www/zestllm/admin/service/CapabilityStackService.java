@@ -133,6 +133,12 @@ public class CapabilityStackService {
         env.put("ZEST_STACK_TIER", tier.getId());
         tier.getAdapterDefaults().forEach((key, value) ->
                 env.put("ZEST_LLM_ADAPTERS_" + key.toUpperCase().replace('-', '_'), value));
+        if ("large".equals(tier.getId())) {
+            env.put("DIFY_API_BASE", "http://dify-api:5001");
+            env.put("RAGFLOW_API_BASE", "http://ragflow:9380");
+            env.put("integrationCompose", "docker-compose.integration.yml --profile integration");
+            env.put("integrationDemo", "bash deploy/scripts/integration-demo.sh");
+        }
         env.put("deployCommand", deployCommand(tier.getId()));
         env.put("composeHint", tier.getComposeHint());
         return env;

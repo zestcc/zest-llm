@@ -53,4 +53,6 @@ echo "E2E:   bash deploy/scripts/run-production-signoff.sh $TIER"
 echo "Quick: TIER=production bash deploy/scripts/production-acceptance.sh"
 if [ "$TIER" = "large" ]; then
   echo "Validate config only: bash deploy/scripts/validate-large-tier-compose.sh"
+  echo "B Demo:  bash deploy/scripts/integration-demo.sh"
+  echo "B AC:    bash deploy/scripts/run-integration-acceptance.sh"
 fi

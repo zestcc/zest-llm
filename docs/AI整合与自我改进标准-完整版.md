@@ -405,7 +405,7 @@ zest:
 |------|------|------|----------|
 | **M0** | 已完成 | LiteLLM、Langfuse、Profile、Probe、Eval 基础 | full-acceptance 43/0/0 |
 | **M1** | 2 周 | SPI 三接口 + noop/health；Profile extensions 解析；Prepare 扩展；Compose integration 骨架 | AC39–AC41 |
-| **M2** | 2 周 | Dify AgentRuntimeAdapter；RAGFlow KnowledgeAdapter；publish Eval/Probe 门禁 | AC42–AC43 |
+| **M2** | ✅ 已实现 | Dify AgentRuntimeAdapter；RAGFlow KnowledgeAdapter；publish Eval/Probe 门禁 | AC40–AC43 · `integration-demo.sh` |
 | **M3** | 2 周 | LearningPipeline 周期任务；Langfuse 失败样本导入 Eval；Admin UI 完整 | AC44 |
 | **M4** | 可选 | Braintrust 导出、多 Runtime 路由 | 按需 |
 
@@ -422,7 +422,7 @@ zest:
 | AC43 | Publish 门禁 | Eval 低于阈值时 publish 返回 409 `EVAL_BELOW_THRESHOLD` |
 | AC44 | Learning 建议 | `suggestCasesFromTraces` API 返回样本列表且不自动 publish |
 
-脚本：扩展 `deploy/scripts/full-acceptance.ps1` 与 `e2e-acceptance.sh`（M1 起）。
+脚本：扩展 `deploy/scripts/full-acceptance.ps1` 与 `e2e-acceptance.sh`（M1 起）；B 整合严格验收见 `run-integration-acceptance.sh`（`ZEST_INTEGRATION_E2E=1`）。
 
 ---
 
@@ -433,11 +433,11 @@ zest:
 | ModelGateway | `LiteLLMGatewayAdapter` | ✅ |
 | Observability | `LangfuseObservabilityAdapter` | ✅ |
 | Profile SSOT | `llm_agent_profile` + Admin | ✅ |
-| Agent Probe | `AdminAgentProfileProbeController` | 需扩展 external/knowledge 探测 |
-| Eval | Admin Eval CRUD + 批量 invoke | 需接 publish 门禁 |
-| AgentRuntime | — | **M1 SPI + M2 Dify** |
-| Knowledge | — | **M1 SPI + M2 RAGFlow** |
-| LearningLoop | — | **M1 SPI + M3 编排** |
+| Agent Probe | `AdminAgentProfileProbeController` + `AgentProfileProbeService` | ✅ external-runtime / knowledge-health / DifyKb per-profile health |
+| Eval | Admin Eval CRUD + 批量 invoke + publish 门禁 | ✅ AC43 |
+| AgentRuntime | `DifyAgentRuntimeAdapter` | ✅ M2 |
+| Knowledge | `RagflowKnowledgeRetrievalAdapter` · `DifyKbKnowledgeRetrievalAdapter` | ✅ M2 |
+| LearningLoop | `LearningPipelineAdapter` + suggest-cases | ✅ M3 AC44 · 自动发布可选 |
 
 **SPI 源码位置（契约）：**
 
