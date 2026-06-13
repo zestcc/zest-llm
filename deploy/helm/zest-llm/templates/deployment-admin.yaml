@@ -37,8 +37,12 @@ spec:
                   key: {{ .Values.mysql.secretPasswordKey | default "password" }}
             - name: SPRING_DATA_REDIS_HOST
               value: {{ .Values.redis.host | quote }}
+            - name: SPRING_DATA_REDIS_PORT
+              value: {{ .Values.redis.port | default 6379 | quote }}
             - name: ZEST_LLM_LITELLM_BASE_URL
               value: {{ .Values.litellm.baseUrl | quote }}
+{{- include "zest-llm.admin.jwtEnv" . }}
+{{- include "zest-llm.admin.ssoEnv" . }}
           livenessProbe:
             httpGet:
               path: {{ .Values.probes.admin.livenessPath }}

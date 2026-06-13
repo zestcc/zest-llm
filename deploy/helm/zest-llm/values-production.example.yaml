@@ -3,7 +3,7 @@
 #   helm upgrade --install zest-llm ./deploy/helm/zest-llm \
 #     -f deploy/helm/zest-llm/values-production.example.yaml \
 #     --set mysql.existingSecret=zest-llm-mysql \
-#     --set-file admin.sso.clientSecret=/path/to/sso-secret.txt  # 若 Chart 已支持
+#     --set admin.sso.existingSecret=zest-llm-sso
 
 replicaCount: 2
 

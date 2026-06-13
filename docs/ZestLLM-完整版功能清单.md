@@ -212,6 +212,7 @@ public AiChatResult aiChat(@AiInput("question") String question, @AiOutput AiCha
 |----|------|-----------|-------------|------|
 | `chat-basic` | 智能对话 | small | agent | native + LiteLLM |
 | `report-basic` | 报表解读 | medium | hybrid | knowledge + learningLoop |
+| `knowledge-qa` | 知识问答 | medium | agent | dify-kb + learningLoop |
 | `ops-monitor` | 运维诊断 | large | agent | MCP + Dify + RAG 引用 |
 
 Wizard 应用模板 → 创建/更新 Task + Profile 草稿（版本 `v-tpl-{slug}`，重复应用更新 DRAFT）。
@@ -341,6 +342,7 @@ bash deploy/scripts/verify-local.sh
 | Ingress | 可选，Admin + Demo `/demo` |
 | HPA | Admin 可选水平扩缩 |
 | Probes | Admin/Demo 存活与就绪探针 |
+| Admin env | JWT + SSO（`ZEST_LLM_ADMIN_*`，Secret 注入）；SSO 多副本须 Redis |
 
 ### 12.3 CI 门禁（`.github/workflows/zestflow-acceptance.yml`）
 
@@ -380,8 +382,8 @@ bash deploy/scripts/verify-local.sh
 | 控制面 API + UI | ✅ 齐备 | UI  polish、国际化 |
 | 本地一键启动/验收 | ✅ 66+ PASS | Gitee CI docker-e2e manual |
 | Docker small/medium E2E | ✅ CI 覆盖 | Large tier 专项验收 |
-| Helm 最小可部署 | ✅ Chart 已有 | 生产 values、多 AZ、密钥管理 |
-| Wizard / 场景模板 | ✅ 幂等草稿 + `knowledge-qa` 示例 | 更多行业模板 |
+| Helm 最小可部署 | ✅ Chart + **SSO/JWT env** + 生产 values | 多 AZ、ExternalSecrets |
+| Wizard / 场景模板 | ✅ 幂等草稿 + **`knowledge-qa` 内置模板** | 更多行业模板 |
 | Learning 闭环 | ✅ API + UI + 定时 Job + **可选自动 publish**（`zest.llm.learning.auto-publish.enabled` 默认 false） | 人工审核工作流 |
 | 知识检索适配器 | ✅ `ragflow` + **`dify-kb`** + `noop` | Large tier 联调验收 |
 | Admin SSO 登录页 | ✅ 可插拔 SPI + **Back-Channel Logout 会话吊销** | 生产 IdP 联调见 [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) |

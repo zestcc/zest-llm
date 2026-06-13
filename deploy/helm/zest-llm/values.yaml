@@ -46,6 +46,24 @@ redis:
   host: valkey
   port: 6379
 
+# Admin JWT / SSO（SSO 多副本须配 Redis，见 README）
+admin:
+  jwt:
+    secret: change-me-in-production-zest-llm-admin-jwt-secret-key
+    existingSecret: ""
+    secretKey: secret
+  sso:
+    enabled: false
+    provider: zest-sso
+    issuer: http://localhost:9000
+    discoveryUri: http://localhost:9000/api/public/.well-known/openid-configuration
+    clientId: zest-llm-admin
+    clientSecret: ""
+    existingSecret: ""
+    secretClientSecretKey: client-secret
+    redirectUri: http://127.0.0.1:8088/login/callback
+    postLogoutRedirectUri: http://127.0.0.1:8088/login
+
 litellm:
   enabled: false
   baseUrl: http://litellm:4000

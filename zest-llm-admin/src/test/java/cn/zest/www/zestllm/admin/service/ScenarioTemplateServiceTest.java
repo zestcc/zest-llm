@@ -66,7 +66,16 @@ class ScenarioTemplateServiceTest {
     @Test
     void listTemplates_loadsBundledTemplates() {
         List<?> templates = service.listTemplates();
-        assertTrue(templates.size() >= 3);
+        assertTrue(templates.size() >= 4);
+    }
+
+    @Test
+    void getTemplate_knowledgeQa_hasKnowledgeAndLearning() {
+        var tpl = service.getTemplate("knowledge-qa");
+        assertEquals("knowledge-qa", tpl.getId());
+        assertEquals("知识问答", tpl.getName());
+        assertTrue(tpl.isRequiresKnowledge());
+        assertEquals("medium", tpl.getRecommendedTier());
     }
 
     @Test
