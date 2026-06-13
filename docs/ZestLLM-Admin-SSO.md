@@ -140,7 +140,7 @@ Legacy 路径 `/api/admin/auth/oidc/*` 行为相同。
 |------|------|
 | `zest-llm-spi/.../adminsso/AdminSsoProvider.java` | SPI 接口 |
 | `zest-llm-admin/.../config/AdminSsoProperties.java` | 配置绑定 |
-| `zest-llm-admin/.../service/sso/` | 提供方、Registry、AuthService |
+| `zest-llm-admin/.../service/sso/` | 提供方、Registry、AuthService、**Back-Channel Logout 吊销** |
 | `zest-llm-admin-ui/src/views/LoginView.vue` | SSO 登录按钮 |
 | `application-local.example.yml` | 本地配置示例 |
 | `application-production.example.yml` | 生产 SSO 块 |

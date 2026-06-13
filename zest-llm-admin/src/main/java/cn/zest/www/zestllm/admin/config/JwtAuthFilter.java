@@ -1,10 +1,11 @@
 package cn.zest.www.zestllm.admin.config;
 
+import cn.zest.www.zestllm.admin.service.sso.AdminSessionRevocationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -16,10 +17,16 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final AdminSessionRevocationService sessionRevocationService;
+
+    public JwtAuthFilter(JwtTokenProvider jwtTokenProvider,
+                         @Autowired(required = false) AdminSessionRevocationService sessionRevocationService) {
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.sessionRevocationService = sessionRevocationService;
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
@@ -29,10 +36,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
             if (jwtTokenProvider.validateToken(token)) {
                 String subject = jwtTokenProvider.getSubject(token);
-                String role = jwtTokenProvider.getRole(token);
-                UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        subject, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
-                SecurityContextHolder.getContext().setAuthentication(authentication);
+                if (sessionRevocationService == null || !sessionRevocationService.isRevoked(subject)) {
+                    String role = jwtTokenProvider.getRole(token);
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            subject, null, List.of(new SimpleGrantedAuthority("ROLE_" + role)));
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
             }
         }
         filterChain.doFilter(request, response);

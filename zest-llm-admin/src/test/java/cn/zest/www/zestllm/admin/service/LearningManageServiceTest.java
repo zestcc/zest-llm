@@ -36,6 +36,8 @@ class LearningManageServiceTest {
     private LlmAiTaskDefRepo taskDefRepo;
     @Mock
     private LlmAgentProfileRepo agentProfileRepo;
+    @Mock
+    private LearningAutoPublishService learningAutoPublishService;
 
     @InjectMocks
     private LearningManageService learningManageService;

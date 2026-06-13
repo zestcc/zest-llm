@@ -381,9 +381,10 @@ bash deploy/scripts/verify-local.sh
 | 本地一键启动/验收 | ✅ 66+ PASS | Gitee CI docker-e2e manual |
 | Docker small/medium E2E | ✅ CI 覆盖 | Large tier 专项验收 |
 | Helm 最小可部署 | ✅ Chart 已有 | 生产 values、多 AZ、密钥管理 |
-| Wizard / 场景模板 | ✅ 幂等草稿 | 更多行业模板 |
-| Learning 闭环 | ✅ API + UI + 定时 Job（默认关） | 自动 publish |
-| Admin SSO 登录页 | ✅ 可插拔 SPI（ZestSSO/OIDC）+ PKCE + 本地账号并存 | 生产 IdP 联调见 [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) |
+| Wizard / 场景模板 | ✅ 幂等草稿 + `knowledge-qa` 示例 | 更多行业模板 |
+| Learning 闭环 | ✅ API + UI + 定时 Job + **可选自动 publish**（`zest.llm.learning.auto-publish.enabled` 默认 false） | 人工审核工作流 |
+| 知识检索适配器 | ✅ `ragflow` + **`dify-kb`** + `noop` | Large tier 联调验收 |
+| Admin SSO 登录页 | ✅ 可插拔 SPI + **Back-Channel Logout 会话吊销** | 生产 IdP 联调见 [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) |
 | 生产签字 / SLO | ❌ 未做 | 压测报告 + 变更流程 |
 
 ---

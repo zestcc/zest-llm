@@ -1,0 +1,27 @@
+# 知识问答场景 Profile（medium 栈 + Dify KB）
+
+```yaml
+apiVersion: zestllm/v1
+runtimeMode: agent
+providerRef: litellm-default
+model:
+  primary: gpt-4o-mini
+generation:
+  maxTokens: 2048
+  temperature: 0.3
+extensions:
+  runtimeBackend:
+    type: native
+  knowledge:
+    enabled: true
+    provider: dify-kb
+    datasetIds: [product-faq]
+    topK: 5
+    scoreThreshold: 0.65
+  learningLoop:
+    enabled: true
+    minPassRate: 0.8
+    probeBeforePublish: true
+```
+
+应用：`POST /api/admin/scenario-templates/apply` 模板 `knowledge-qa`。

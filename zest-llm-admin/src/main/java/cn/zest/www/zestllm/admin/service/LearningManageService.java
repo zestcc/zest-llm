@@ -32,6 +32,7 @@ public class LearningManageService {
     private final LlmLearningCycleRunRepo learningCycleRunRepo;
     private final LlmAiTaskDefRepo taskDefRepo;
     private final LlmAgentProfileRepo agentProfileRepo;
+    private final LearningAutoPublishService learningAutoPublishService;
 
     public List<EvalCaseSuggestion> suggestCases(TraceSampleQuery query) {
         return learningPipelineAdapter.suggestCasesFromTraces(query);
@@ -40,12 +41,14 @@ public class LearningManageService {
     public LearningCycleResult runCycle(String taskCode, String profileVersion, boolean dryRun) {
         AgentProfileDocument document = loadProfileDocument(taskCode, profileVersion);
         LearningLoopConfig loop = ProfileExtensions.learningLoop(document).orElseGet(LearningLoopConfig::new);
-        return learningPipelineAdapter.runCycle(LearningCycleRequest.builder()
+        LearningCycleResult result = learningPipelineAdapter.runCycle(LearningCycleRequest.builder()
                 .taskCode(taskCode)
                 .profileVersion(profileVersion)
                 .learningLoop(loop)
                 .dryRun(dryRun)
                 .build());
+        learningAutoPublishService.tryAutoPublish(taskCode, profileVersion, result, dryRun);
+        return result;
     }
 
     public Page<LearningCycleRunVO> pageCycles(String taskCode, int page, int size) {

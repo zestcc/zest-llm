@@ -16,6 +16,7 @@ import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
 import cn.zest.www.zestllm.infra.config.RagflowProperties;
 import cn.zest.www.zestllm.infra.gateway.LiteLLMGatewayAdapter;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
+import cn.zest.www.zestllm.infra.knowledge.DifyKbKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.knowledge.NoopKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.learning.NoopLearningPipelineAdapter;
@@ -140,6 +141,15 @@ public class LlmInfraAutoConfiguration {
                                                                      SecretResolver secretResolver,
                                                                      ObjectMapper objectMapper) {
         return new RagflowKnowledgeRetrievalAdapter(properties, secretResolver, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.knowledge-retrieval", havingValue = "dify-kb")
+    @ConditionalOnMissingBean(KnowledgeRetrievalAdapter.class)
+    public KnowledgeRetrievalAdapter difyKbKnowledgeRetrievalAdapter(DifyProperties properties,
+                                                                    SecretResolver secretResolver,
+                                                                    ObjectMapper objectMapper) {
+        return new DifyKbKnowledgeRetrievalAdapter(properties, secretResolver, objectMapper);
     }
 
     @Bean

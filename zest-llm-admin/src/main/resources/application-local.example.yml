@@ -20,6 +20,16 @@ zest:
       quota: db
       policy-cache: caffeine
       response-cache: noop
+    learning:
+      auto-publish:
+        enabled: false
+  sso:
+    client:
+      enabled: false
+      issuer: http://localhost:9000
+      client-id: zest-llm-admin
+      backchannel-logout-path: /api/admin/auth/sso/backchannel-logout
+      frontchannel-logout-path: /auth/frontchannel-logout
 
 zest-llm:
   admin:
@@ -52,7 +62,6 @@ zest-llm:
       zest-sso:
         use-logout-url-api: true
         logout-url-api-path: /api/public/logout-url
-    # legacy — 若未配置 sso.client-id 则自动合并到 sso.*
     oidc:
       enabled: false
     execution-archive:

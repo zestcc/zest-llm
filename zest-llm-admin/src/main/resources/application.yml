@@ -49,6 +49,13 @@ zest:
       control-plane-url: http://localhost:8088
       app-key: order-service
       auth-token: demo-token-123
+  sso:
+    client:
+      enabled: ${zest-llm.admin.sso.enabled:false}
+      issuer: ${zest-llm.admin.sso.issuer:http://localhost:9000}
+      client-id: ${zest-llm.admin.sso.client-id:zest-llm-admin}
+      backchannel-logout-path: /api/admin/auth/sso/backchannel-logout
+      frontchannel-logout-path: /auth/frontchannel-logout
 
 zest-llm:
   admin:
