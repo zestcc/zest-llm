@@ -42,6 +42,9 @@ zest-llm:
       schedule-enabled: false
       smoke-test-on-schedule: false
       alert-on-degraded: false
+    learning-cycle:
+      schedule-enabled: false
+      dry-run-on-schedule: true
 
 zestflow:
   executor:

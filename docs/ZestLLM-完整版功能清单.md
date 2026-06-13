@@ -378,8 +378,8 @@ bash deploy/scripts/verify-local.sh
 | Docker small/medium E2E | ✅ CI 覆盖 | Large tier 专项验收 |
 | Helm 最小可部署 | ✅ Chart 已有 | 生产 values、多 AZ、密钥管理 |
 | Wizard / 场景模板 | ✅ 幂等草稿 | 更多行业模板 |
-| Learning 闭环 | ✅ API + UI | 自动 Cycle 调度 |
-| Admin SSO 登录页 | ❌ 不做 | 单独立项 |
+| Learning 闭环 | ✅ API + UI + 定时 Job（默认关） | 自动 publish |
+| Admin SSO 登录页 | ⚠️ 骨架已有（ZestSSO 按钮 + 回调 + PKCE） | IdP 联调与生产配置 |
 | 生产签字 / SLO | ❌ 未做 | 压测报告 + 变更流程 |
 
 ---

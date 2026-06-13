@@ -47,3 +47,7 @@ zest-llm:
       alert-webhook-url: ${AGENT_PROBE_ALERT_WEBHOOK_URL:}
       alert-on-degraded: false
       alert-cooldown-minutes: 60
+    learning-cycle:
+      schedule-enabled: true
+      cron: "0 0 3 * * ?"
+      dry-run-on-schedule: true

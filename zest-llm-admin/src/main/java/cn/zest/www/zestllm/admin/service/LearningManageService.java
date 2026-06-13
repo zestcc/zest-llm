@@ -17,10 +17,12 @@ import cn.zest.www.zestllm.spi.profile.LearningLoopConfig;
 import cn.zest.www.zestllm.spi.profile.ProfileExtensions;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class LearningManageService {
@@ -51,6 +53,33 @@ public class LearningManageService {
         Page<LearningCycleRunVO> result = new Page<>(raw.getCurrent(), raw.getSize(), raw.getTotal());
         result.setRecords(raw.getRecords().stream().map(this::toVo).toList());
         return result;
+    }
+
+    /**
+     * 对已发布且 extensions.learningLoop.enabled 的作业执行闭环（供定时任务调用）。
+     */
+    public int runScheduledCycles(boolean dryRun) {
+        List<LlmAgentProfileDO> profiles = agentProfileRepo.findAllPublished();
+        int count = 0;
+        for (LlmAgentProfileDO profile : profiles) {
+            LlmAiTaskDefDO task = taskDefRepo.findById(profile.getTaskId()).orElse(null);
+            if (task == null) {
+                continue;
+            }
+            try {
+                AgentProfileDocument document = agentProfileResolver.parseProfile(profile.getProfileJson(), null);
+                LearningLoopConfig loop = ProfileExtensions.learningLoop(document).orElse(null);
+                if (loop == null || !loop.isEnabled()) {
+                    continue;
+                }
+                runCycle(task.getCode(), profile.getVersion(), dryRun);
+                count++;
+            } catch (Exception ex) {
+                log.warn("Scheduled learning cycle failed taskCode={} version={}",
+                        task.getCode(), profile.getVersion(), ex);
+            }
+        }
+        return count;
     }
 
     private AgentProfileDocument loadProfileDocument(String taskCode, String profileVersion) {
