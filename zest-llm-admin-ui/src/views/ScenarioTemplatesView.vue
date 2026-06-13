@@ -25,53 +25,25 @@
       </el-col>
     </el-row>
 
-    <el-dialog v-model="applyVisible" title="应用场景模板" width="480px" destroy-on-close>
-      <el-form :model="applyForm" label-width="100px">
-        <el-form-item label="模板">
-          <el-input :model-value="applyForm.templateName" disabled />
-        </el-form-item>
-        <el-form-item label="所属应用" required>
-          <el-input v-model="applyForm.appKey" placeholder="order-service" />
-        </el-form-item>
-        <el-form-item label="作业 Code" required>
-          <el-input v-model="applyForm.taskCode" />
-        </el-form-item>
-        <el-form-item label="立即发布">
-          <el-switch v-model="applyForm.publish" />
-        </el-form-item>
-        <el-form-item label="运行 Probe">
-          <el-switch v-model="applyForm.runProbe" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="applyVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitApply">创建</el-button>
-      </template>
-    </el-dialog>
+    <AiJobWizardDialog
+      v-model="applyVisible"
+      title="应用场景模板"
+      :initial-template-id="selectedTemplateId"
+      :show-template-select="false"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
-import { adminApi, type AiJobWizardResult, type ScenarioTemplateVO } from '../api/admin'
-
-const router = useRouter()
+import { adminApi, type ScenarioTemplateVO } from '../api/admin'
+import AiJobWizardDialog from '../components/AiJobWizardDialog.vue'
 
 const loading = ref(false)
-const submitting = ref(false)
 const templates = ref<ScenarioTemplateVO[]>([])
 const applyVisible = ref(false)
-const applyForm = ref({
-  templateId: '',
-  templateName: '',
-  appKey: 'order-service',
-  taskCode: '',
-  publish: false,
-  runProbe: true
-})
+const selectedTemplateId = ref('')
 
 async function load() {
   loading.value = true
@@ -84,45 +56,8 @@ async function load() {
 }
 
 function openApply(tpl: ScenarioTemplateVO) {
-  applyForm.value = {
-    templateId: tpl.id || '',
-    templateName: tpl.name || '',
-    appKey: 'order-service',
-    taskCode: tpl.taskCodeSuggestion || '',
-    publish: false,
-    runProbe: true
-  }
+  selectedTemplateId.value = tpl.id || ''
   applyVisible.value = true
-}
-
-async function submitApply() {
-  submitting.value = true
-  try {
-    const res = await adminApi.runAiJobWizard({
-      templateId: applyForm.value.templateId,
-      appKey: applyForm.value.appKey,
-      taskCode: applyForm.value.taskCode,
-      publish: applyForm.value.publish,
-      runProbe: applyForm.value.runProbe
-    })
-    const data = (res.data ?? res) as AiJobWizardResult
-    ElMessage.success(`向导完成：${data.taskCode} / ${data.profileVersion} Probe=${data.probeStatus}`)
-    applyVisible.value = false
-    if (data.nextUrl) {
-      try {
-        await ElMessageBox.confirm('是否前往智能体配置继续编辑？', '向导完成', {
-          confirmButtonText: '前往配置',
-          cancelButtonText: '留在此页',
-          type: 'success'
-        })
-        await router.push(data.nextUrl)
-      } catch {
-        /* 用户取消 */
-      }
-    }
-  } finally {
-    submitting.value = false
-  }
 }
 
 onMounted(load)

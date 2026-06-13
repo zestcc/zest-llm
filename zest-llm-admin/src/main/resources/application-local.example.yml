@@ -24,6 +24,14 @@ zest-llm:
   admin:
     jwt:
       secret: local-dev-jwt-secret-key-at-least-32-chars
+    oidc:
+      enabled: false
+      issuer: http://localhost:9000
+      audience: zest-llm-admin
+      jwks-uri: http://localhost:9000/oauth2/jwks
+      client-id: zest-llm-admin
+      client-secret: change-me-in-production
+      redirect-uri: http://localhost:5174/login/callback
     execution-archive:
       enabled: true
       retention-days: 90

@@ -135,6 +135,11 @@
             {{ loading ? '登录中…' : '登 录' }}
           </el-button>
         </el-form-item>
+        <el-form-item v-if="ssoEnabled">
+          <el-button class="btn-sso" :loading="ssoLoading" @click="handleSsoLogin">
+            ZestSSO 登录
+          </el-button>
+        </el-form-item>
       </el-form>
       <div class="login-footer">
         <el-tooltip content="本地开发默认账号：admin / admin123" placement="top">
@@ -149,7 +154,7 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { InfoFilled, Lock, User } from '@element-plus/icons-vue'
@@ -161,7 +166,31 @@ const formRef = ref<FormInstance>()
 const captchaRef = ref<InstanceType<typeof Captcha>>()
 const captchaCode = ref('')
 const loading = ref(false)
+const ssoLoading = ref(false)
+const ssoEnabled = ref(false)
 const form = reactive({ username: 'admin', password: 'admin123', captcha: '' })
+
+onMounted(() => {
+  adminApi.getOidcConfig().then((cfg) => {
+    ssoEnabled.value = !!cfg?.enabled
+  }).catch(() => {
+    ssoEnabled.value = false
+  })
+})
+
+async function handleSsoLogin() {
+  ssoLoading.value = true
+  try {
+    const res = await adminApi.getOidcAuthorize()
+    if (res?.authorizationUrl) {
+      window.location.href = res.authorizationUrl
+    }
+  } catch {
+    ElMessage.error('SSO 登录初始化失败')
+  } finally {
+    ssoLoading.value = false
+  }
+}
 
 const rules: FormRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -333,6 +362,12 @@ async function submit() {
   width: 100%;
   height: 44px;
   font-size: 16px;
+  border-radius: 8px;
+}
+
+.btn-sso {
+  width: 100%;
+  height: 44px;
   border-radius: 8px;
 }
 

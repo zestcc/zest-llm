@@ -13,6 +13,8 @@ public class LlmAdminUserDO {
     @TableId(type = IdType.ASSIGN_ID)
     private Long id;
     private String username;
+    private String ssoSubject;
+    private String ssoProvider;
     private String passwordHash;
     private String displayName;
     private String status;

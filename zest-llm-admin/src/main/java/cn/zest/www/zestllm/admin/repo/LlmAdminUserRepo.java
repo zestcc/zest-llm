@@ -29,6 +29,12 @@ public class LlmAdminUserRepo {
                 .eq(LlmAdminUserDO::getUsername, username)));
     }
 
+    public Optional<LlmAdminUserDO> findBySsoSubject(String provider, String subject) {
+        return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAdminUserDO>()
+                .eq(LlmAdminUserDO::getSsoProvider, provider)
+                .eq(LlmAdminUserDO::getSsoSubject, subject)));
+    }
+
     public void insert(LlmAdminUserDO entity) {
         mapper.insert(entity);
     }

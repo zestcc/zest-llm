@@ -79,7 +79,16 @@ powershell -File deploy/scripts/stress-test-prepare.ps1 -Concurrency 50 -Total 2
 
 **推荐单端口（演示/联调）**：`-EmbedUi` 将 UI 嵌入 `:8088`，无需 Vite dev server。
 
-**LiteLLM**：未加 `-WithLiteLLM` / `--with-litellm` 时 Dashboard 显示 Gateway DOWN 属预期；有 Docker 时可一键拉起 mock 网关。
+**LiteLLM**：未加 `-WithLiteLLM` / `--with-litellm` 时 Dashboard 显示 Gateway DOWN 属预期。
+
+- **有 Docker**：`-WithLiteLLM` 拉起 compose 中的 mock 网关。
+- **无 Docker**：先 `pip install "litellm[proxy]"`，再 `-WithLiteLLM`（自动走 `start-litellm-local.ps1` + `config-local.yaml` mock 模型，无需 API Key）。
+
+```powershell
+pip install "litellm[proxy]"
+powershell -File deploy/scripts/start-litellm-local.ps1          # 仅 LiteLLM mock
+powershell -File deploy/scripts/start-litellm-local.ps1 -RealModels  # 真实 config.yaml
+```
 
 ```powershell
 # Windows

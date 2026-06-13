@@ -1,12 +1,21 @@
 # Windows 本地启动 LiteLLM（无需 Docker）
-# 用法: powershell -File deploy/scripts/start-litellm-local.ps1 [-StopOnly]
+# 用法: powershell -File deploy/scripts/start-litellm-local.ps1 [-StopOnly] [-RealModels]
 param(
-    [switch]$StopOnly
+    [switch]$StopOnly,
+    [switch]$RealModels
 )
 
 $ErrorActionPreference = "Stop"
 $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
-$Config = Join-Path $Root "deploy\litellm\config.yaml"
+$ConfigLocal = Join-Path $Root "deploy\litellm\config-local.yaml"
+$ConfigDefault = Join-Path $Root "deploy\litellm\config.yaml"
+if ($RealModels) {
+    $Config = $ConfigDefault
+} elseif (Test-Path $ConfigLocal) {
+    $Config = $ConfigLocal
+} else {
+    $Config = $ConfigDefault
+}
 $EnvFile = Join-Path $Root "deploy\litellm\.env"
 $LogDir = Join-Path $Root "deploy\logs"
 $LogFile = Join-Path $LogDir "litellm-local.log"
@@ -100,11 +109,16 @@ if (Test-LiteLLMHealth $HealthUrl) {
 
 Write-Host "== Starting LiteLLM on :4000 ==" -ForegroundColor Cyan
 Write-Host "Config: $Config"
-if (-not $env:OPENAI_API_KEY -and -not $env:DEEPSEEK_API_KEY) {
-    Write-Host "WARN: DEEPSEEK_API_KEY not set — deepseek-* models will fail at invoke time." -ForegroundColor Yellow
-}
-if (-not $env:ALI_API_KEY) {
-    Write-Host "WARN: ALI_API_KEY not set — ali-* MaaS models will fail at invoke time." -ForegroundColor Yellow
+$usingMock = $Config -like "*config-local*"
+if (-not $usingMock) {
+    if (-not $env:DEEPSEEK_API_KEY) {
+        Write-Host "WARN: DEEPSEEK_API_KEY not set — deepseek-* models will fail at invoke time." -ForegroundColor Yellow
+    }
+    if (-not $env:ALI_API_KEY) {
+        Write-Host "WARN: ALI_API_KEY not set — ali-* MaaS models will fail at invoke time." -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "Mode: mock smoke (gpt-4o-mini / gpt-3.5-turbo). Use -RealModels for config.yaml upstream." -ForegroundColor Cyan
 }
 Write-Host "LiteLLM master_key (for ZestLLM): sk-zest-llm-demo"
 Write-Host ""
@@ -151,6 +165,10 @@ if (-not $ok) {
 }
 
 Write-Host "LiteLLM is up: http://127.0.0.1:4000" -ForegroundColor Green
-Write-Host "Models: deepseek-v4-*, ali-deepseek-v4-*, ali-qwen3.7-max"
+if ($usingMock) {
+    Write-Host "Models (mock): gpt-4o-mini, gpt-3.5-turbo — no API Key required for smoke tests"
+} else {
+    Write-Host "Models: deepseek-v4-*, ali-deepseek-v4-*, ali-qwen3.7-max (see deploy/litellm/.env)"
+}
 Write-Host "Log:  $LogFile"
 Write-Host "Stop: powershell -File deploy/scripts/start-litellm-local.ps1 -StopOnly"

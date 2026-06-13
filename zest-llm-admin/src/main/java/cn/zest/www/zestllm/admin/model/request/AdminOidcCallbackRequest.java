@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class AdminOidcExchangeRequest {
-    private String idToken;
+public class AdminOidcCallbackRequest {
+
+    private String code;
+    private String state;
 }

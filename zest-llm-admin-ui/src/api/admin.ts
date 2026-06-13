@@ -571,6 +571,22 @@ export const adminApi = {
     return http.post<AdminLoginVO>('/api/admin/auth/login', { username, password })
   },
 
+  getOidcConfig() {
+    return http.get<{ enabled: boolean; issuer: string; clientId: string }>('/api/admin/auth/oidc/config')
+  },
+
+  getOidcAuthorize() {
+    return http.get<{ authorizationUrl: string; state: string }>('/api/admin/auth/oidc/authorize')
+  },
+
+  oidcCallback(code: string, state: string) {
+    return http.post<AdminLoginVO>('/api/admin/auth/oidc/callback', { code, state })
+  },
+
+  getOidcLogoutUrl() {
+    return http.get<string | null>('/api/admin/auth/oidc/logout-url')
+  },
+
   listApps(page = 1, size = 20) {
     return http.get<PageResult<AppVO> | AppVO[]>('/api/admin/apps', { params: { page, size } })
   },

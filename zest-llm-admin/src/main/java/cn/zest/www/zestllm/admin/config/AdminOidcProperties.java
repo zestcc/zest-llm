@@ -11,8 +11,11 @@ public class AdminOidcProperties {
     private String audience;
     private String jwksUri;
     private String clientId;
-    /** 允许登录的 Admin 用户名 claim，默认 preferred_username */
+    private String clientSecret;
+    private String redirectUri = "http://localhost:5174/login/callback";
+    private String postLogoutRedirectUri = "http://localhost:5174/login";
+    private java.util.List<String> scopes = java.util.List.of("openid", "profile", "email", "roles", "tenant");
     private String usernameClaim = "preferred_username";
-    /** 允许登录的角色 claim 值映射为 ADMIN */
+    private String rolesClaim = "roles";
     private String defaultRole = "ADMIN";
 }

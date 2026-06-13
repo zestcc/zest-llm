@@ -1,0 +1,26 @@
+# 本地无 Docker 开发：mock 模型，无需真实 API Key 即可跑通 prepare/invoke 冒烟
+# 真实模型见 deploy/litellm/config.yaml + deploy/litellm/.env
+# 启动：powershell -File deploy/scripts/start-litellm-local.ps1
+
+model_list:
+  - model_name: gpt-4o-mini
+    litellm_params:
+      model: gpt-4o-mini
+      mock_response: "ZestLLM local mock: hello from gpt-4o-mini"
+
+  - model_name: gpt-3.5-turbo
+    litellm_params:
+      model: gpt-3.5-turbo
+      mock_response: "ZestLLM local mock: hello from gpt-3.5-turbo"
+
+  - model_name: deepseek-chat
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+
+general_settings:
+  master_key: sk-zest-llm-demo
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false

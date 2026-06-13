@@ -29,6 +29,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { adminApi } from '../api/admin'
 import { useRouter } from 'vue-router'
 import { ArrowDown, Expand, Fold } from '@element-plus/icons-vue'
 
@@ -50,8 +51,23 @@ const showFoldIcon = computed(() => {
 const username = computed(() => localStorage.getItem('zest-llm-user') || 'admin')
 
 function logout() {
+  const viaSso = localStorage.getItem('zest-llm-sso-login') === 'true'
   localStorage.removeItem('zest-llm-token')
   localStorage.removeItem('zest-llm-user')
+  localStorage.removeItem('zest-llm-role')
+  localStorage.removeItem('zest-llm-sso-login')
+  if (viaSso) {
+    adminApi.getOidcLogoutUrl()
+      .then((logoutUrl) => {
+        if (logoutUrl) {
+          window.location.href = logoutUrl
+        } else {
+          router.push('/login')
+        }
+      })
+      .catch(() => router.push('/login'))
+    return
+  }
   router.push('/login')
 }
 

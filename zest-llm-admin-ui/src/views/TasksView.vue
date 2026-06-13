@@ -3,7 +3,10 @@
     <div class="page-header">
       <div class="page-header-row">
         <p class="page-desc">管理 AI 作业定义，关联应用与 Prompt / 模型路由</p>
-        <el-button type="primary" @click="openCreate">新建作业</el-button>
+        <div class="header-actions">
+          <el-button @click="wizardVisible = true">从模板创建</el-button>
+          <el-button type="primary" @click="openCreate">新建作业</el-button>
+        </div>
       </div>
     </div>
 
@@ -106,17 +109,21 @@
         <el-button type="primary" :loading="submitting" @click="submitEdit">保存</el-button>
       </template>
     </el-dialog>
+
+    <AiJobWizardDialog v-model="wizardVisible" @success="onWizardSuccess" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { adminApi, normalizePage, type AiJobOverviewVO, type TaskVO } from '../api/admin'
+import { adminApi, normalizePage, type AiJobOverviewVO, type AiJobWizardResult, type TaskVO } from '../api/admin'
+import AiJobWizardDialog from '../components/AiJobWizardDialog.vue'
 
 const loading = ref(false)
 const overviewLoading = ref(false)
 const submitting = ref(false)
+const wizardVisible = ref(false)
 const tasks = ref<TaskVO[]>([])
 const overview = ref<AiJobOverviewVO[]>([])
 
@@ -220,8 +227,21 @@ async function submitEdit() {
   }
 }
 
+function onWizardSuccess(_result: AiJobWizardResult) {
+  loadOverview()
+  load()
+}
+
 onMounted(() => {
   loadOverview()
   load()
 })
 </script>
+
+<style scoped>
+.header-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+</style>

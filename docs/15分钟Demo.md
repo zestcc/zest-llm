@@ -2,9 +2,19 @@
 
 ## 前置
 
+**有 Docker（推荐全栈）**
+
 ```powershell
 powershell -File deploy/scripts/zest-stack-up.ps1 -Tier small
-# 或本地：mvn -pl zest-llm-admin spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+**无 Docker（Admin + mock LiteLLM）**
+
+```powershell
+pip install "litellm[proxy]"
+Copy-Item zest-llm-admin/src/main/resources/application-local.example.yml `
+          zest-llm-admin/src/main/resources/application-local.yml
+powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithLiteLLM
 ```
 
 Admin: http://localhost:8088 （admin / admin123）
@@ -14,7 +24,7 @@ Admin: http://localhost:8088 （admin / admin123）
 | 分钟 | 动作 | 验证 |
 |------|------|------|
 | 0–2 | 登录 → **平台能力 → 能力栈** | 看到 small Tier + SPI 健康 |
-| 2–5 | **场景模板** → 应用 `chat-basic` → 勾选 Probe | 生成 Profile 草稿 |
+| 2–5 | **场景模板** 或 **AI 作业 → 从模板创建** → 应用 `chat-basic` | 生成 Profile 草稿 |
 | 5–8 | **AI 作业 → 智能体配置** → 发布预览 → 发布 | Eval/Probe 门禁提示 |
 | 8–11 | Demo 调用 `GET /demo/order/methodA` 或 prepare | traceId 返回 |
 | 11–13 | **执行记录** + **自我改进**（Execution/Langfuse 样本） | suggest-cases 有数据 |

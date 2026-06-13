@@ -6,6 +6,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/login', component: LoginView, meta: { public: true } },
+    { path: '/login/callback', component: () => import('../views/SsoCallbackView.vue'), meta: { public: true } },
     {
       path: '/',
       component: AppLayout,
