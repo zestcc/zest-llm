@@ -75,11 +75,12 @@ class LearningAutoPublishServiceTest {
     }
 
     @Test
-    void tryAutoPublish_skipsWhenDryRun() {
+    void tryAutoPublish_skipsPublishWhenAuditOnly() {
         properties.setEnabled(true);
+        properties.setAuditOnly(true);
         LearningCycleResult result = LearningCycleResult.builder().publishAllowed(true).build();
 
-        service.tryAutoPublish("aiChat", "v2", result, true);
+        service.tryAutoPublish("aiChat", "v2", result, false);
 
         verify(publishService, never()).publish("aiChat", "v2", "learning-auto-publish");
     }

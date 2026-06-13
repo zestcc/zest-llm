@@ -25,6 +25,11 @@ public class LearningAutoPublishService {
         if (!shouldAutoPublish(result, dryRun)) {
             return;
         }
+        if (properties.isAuditOnly()) {
+            log.info("Learning auto-publish audit-only (skipped publish) taskCode={} version={}",
+                    taskCode, profileVersion);
+            return;
+        }
         try {
             publishService.publish(taskCode, profileVersion, "learning-auto-publish");
             log.info("Auto-published profile after learning cycle taskCode={} version={}", taskCode, profileVersion);

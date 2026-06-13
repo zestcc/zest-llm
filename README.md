@@ -176,6 +176,17 @@ Phase3 额外能力：FinOps 成本告警、Kafka Report profile、Flow 链 Admi
 
 自动化：`bash deploy/scripts/e2e-acceptance.sh` + `mvn test`
 
+## 完整版本地达标（Windows 无 Docker）
+
+| 项 | 结果 |
+|----|------|
+| 黑盒 | **67 PASS**（`full-acceptance.ps1`，含 AC54 knowledge-qa） |
+| 编排 | `powershell -File deploy/scripts/production-acceptance.ps1 -SkipWhiteBox` → `PhaseFailed=0` |
+| 推进状态 | [docs/完整版推进状态.md](docs/完整版推进状态.md) |
+
+**生产 Docker 签字**（P95≤500ms）：无 Linux 测试机时在 Gitee **手动触发 `docker-e2e`**，见 [docs/Gitee-docker-e2e-触发指南.md](docs/Gitee-docker-e2e-触发指南.md)。  
+Compose 镜像国内加速：`deploy/env.compose.example` → `deploy/.env`。
+
 ## API 文档
 
 - Swagger：<http://localhost:8088/swagger-ui.html>

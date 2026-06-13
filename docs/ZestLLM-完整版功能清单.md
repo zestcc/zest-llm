@@ -384,7 +384,7 @@ bash deploy/scripts/verify-local.sh
 | Docker small/medium E2E | ✅ CI 覆盖 | Large tier 专项验收 |
 | Helm 最小可部署 | ✅ Chart + **SSO/JWT env** + 生产 values | 多 AZ、ExternalSecrets |
 | Wizard / 场景模板 | ✅ 幂等草稿 + **`knowledge-qa` 内置模板** | 更多行业模板 |
-| Learning 闭环 | ✅ API + UI + 定时 Job + **可选自动 publish**（`zest.llm.learning.auto-publish.enabled` 默认 false） | 人工审核工作流 |
+| Learning 闭环 | ✅ API + UI + 定时 Job + **可选自动 publish**（`enabled` 默认 false；`audit-only` 人工复核） | 生产启用前审批流 |
 | 知识检索适配器 | ✅ `ragflow` + **`dify-kb`** + `noop` | Large tier 联调验收 |
 | Admin SSO 登录页 | ✅ 可插拔 SPI + **Back-Channel Logout 会话吊销** | 生产 IdP 联调见 [ZestLLM-Admin-SSO.md](./ZestLLM-Admin-SSO.md) |
 | 生产签字 / SLO | ❌ 未做 | 压测报告 + 变更流程 |

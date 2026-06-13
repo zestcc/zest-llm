@@ -64,6 +64,8 @@ Windows：
 
 ```powershell
 powershell -File deploy/scripts/sso-smoke.ps1 -AdminUrl http://localhost:8088 -SsoBase http://localhost:9000
+powershell -File deploy/scripts/sso-local-preflight.ps1 -VerifyDb   # 浏览器登录后
+powershell -File deploy/scripts/sso-db-verify.ps1                   # 需 MYSQL_PASSWORD
 ```
 
 ---

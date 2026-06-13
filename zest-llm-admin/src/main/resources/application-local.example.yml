@@ -23,6 +23,7 @@ zest:
     learning:
       auto-publish:
         enabled: false
+        audit-only: false   # enabled=true 时 true=仅审计不 publish（人工复核阶段）
   sso:
     client:
       enabled: false
@@ -46,6 +47,7 @@ zest-llm:
       client-id: zest-llm-admin
       client-secret: change-me-in-production
       redirect-uri: http://localhost:5174/login/callback
+      # 内嵌 UI（-EmbedUi）时改为: http://127.0.0.1:8088/login/callback
       post-logout-redirect-uri: http://localhost:5174/login
       scopes:
         - openid
