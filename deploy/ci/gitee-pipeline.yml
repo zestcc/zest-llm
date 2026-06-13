@@ -37,7 +37,7 @@ docker-e2e:
         sleep 10
       done
       exit 1
-    - bash deploy/scripts/e2e-acceptance.sh
+    - bash deploy/scripts/production-acceptance.sh
   only:
     - main
     - master

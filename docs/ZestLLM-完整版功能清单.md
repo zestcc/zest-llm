@@ -365,7 +365,9 @@ bash deploy/scripts/verify-local.sh
 
 完整条目：[产品验收标准.md](./产品验收标准.md)。
 
-**本地完整版达标线**：`mvn test` SUCCESS + `full-acceptance.ps1` **59 PASS**（含 DEMO-01/02）。
+**本地完整版达标线**：`production-acceptance.ps1` 四阶段全绿（含 **61+ PASS** 黑盒 + CHAIN/REGISTRY）。
+
+**生产签字达标线**：`production-acceptance.sh`（Docker）四阶段 + 签字表 GATE-* 全 PASS。
 
 ---
 

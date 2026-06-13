@@ -123,7 +123,19 @@ bash deploy/scripts/start-local-full.sh --stop-only
 
 进程通过 `deploy/logs/pids/*.pid` 管理，停止脚本不会误杀同端口其他服务。
 
-**Gitee CI**：`deploy/ci/gitee-pipeline.yml`（`mvn test` 自动门禁；Docker E2E 为 manual 阶段）。
+**Gitee CI**：`deploy/ci/gitee-pipeline.yml`（`mvn test` 自动门禁；Docker 四阶段 `production-acceptance.sh` 为 manual 阶段）。
+
+**生产级验收（四阶段：白盒→黑盒→链路→压测）**：
+
+```powershell
+powershell -File deploy/scripts/production-acceptance.ps1
+```
+
+```bash
+bash deploy/scripts/production-acceptance.sh   # Docker 全栈
+```
+
+详见 [docs/生产级全量测试计划.md](docs/生产级全量测试计划.md)。
 
 ## 业务接入
 

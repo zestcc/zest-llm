@@ -205,6 +205,47 @@ if (Test-Reachable $DemoUrl) {
     Assert-Skip "DEMO-02" "Demo not running on $DemoUrl (start with -WithDemo)"
 }
 
+# --- CHAIN 全链路（prepare → invoke → execution 审计）---
+Write-Report "--- CHAIN ---"
+try {
+    $prepC = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/prepare" -Method POST `
+        -Body '{"appKey":"order-service","code":"aiChat","inputs":{"question":"chain-test"}}' `
+        -ContentType "application/json" -Headers @{ Authorization = "Bearer demo-token-123" } -TimeoutSec 30
+    $traceId = $prepC.traceId; if (-not $traceId -and $prepC.data) { $traceId = $prepC.data.traceId }
+    $invC = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/invoke" -Method POST `
+        -Body '{"appKey":"order-service","code":"aiChat","inputs":{"question":"chain-test-invoke"}}' `
+        -ContentType "application/json" -Headers @{ Authorization = "Bearer demo-token-123" } -TimeoutSec 90
+    $invTrace = $invC.traceId; if (-not $invTrace -and $invC.data) { $invTrace = $invC.data.traceId }
+    Assert-Pass "CHAIN-01" ($null -ne $traceId -and $null -ne $invTrace) "prepare+invoke traceIds"
+    if ($invTrace) {
+        Start-Sleep -Seconds 1
+        $exC = Invoke-AdminGet "/api/admin/executions/$invTrace"
+        $exJson = $exC | ConvertTo-Json -Compress
+        Assert-Pass "CHAIN-02" ($exJson.Contains($invTrace)) "execution audit after invoke"
+    } else {
+        Assert-Pass "CHAIN-02" $false "no invoke traceId"
+    }
+} catch {
+    Assert-Pass "CHAIN-01" $false "chain: $($_.Exception.Message)"
+    Assert-Pass "CHAIN-02" $false "chain execution: $($_.Exception.Message)"
+}
+
+# --- REGISTRY ZestFlow Hub ---
+Write-Report "--- REGISTRY ---"
+try {
+    $regBody = '{"executorId":"acceptance-test@127.0.0.1:29999","appCode":"acceptance","appName":"acceptance","host":"127.0.0.1","port":29999}'
+    $reg = Invoke-RestMethod -Uri "$AdminUrl/api/zestflow/registry/register" -Method POST `
+        -Body $regBody -ContentType "application/json" -TimeoutSec 15
+    $regJson = $reg | ConvertTo-Json -Compress
+    Assert-Pass "REGISTRY-01" ($regJson.Contains("success") -or $reg.code -eq 200 -or $reg.success) "executor register hub"
+    $peers = Invoke-RestMethod -Uri "$AdminUrl/api/zestflow/registry/peers" -TimeoutSec 10
+    $peerJson = $peers | ConvertTo-Json -Compress
+    Assert-Pass "REGISTRY-02" ($peerJson.Length -gt 2) "registry peers list"
+} catch {
+    Assert-Pass "REGISTRY-01" $false "registry: $($_.Exception.Message)"
+    Assert-Pass "REGISTRY-02" $false "registry peers: $($_.Exception.Message)"
+}
+
 # --- FUNC Probe write (admin) ---
 Write-Report "--- FUNC-PROBE ---"
 try {
