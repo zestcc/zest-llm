@@ -1,4 +1,4 @@
-# ZestLLM 生产级全量验收编排（Windows / 本地无 Docker 友好）
+﻿# ZestLLM 生产级全量验收编排（Windows / 本地无 Docker 友好）
 # 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 四阶段：白盒 → 黑盒 → 链路 → 压测（+ SSO 冒烟）
 param(
@@ -78,11 +78,13 @@ Invoke-Phase -Name "WHITEBOX mvn test" -Skip:$SkipWhiteBox -Block {
 }
 
 # --- Phase 2: 黑盒 ---
+$script:PhaseFailedBeforeBlackBox = $script:PhaseFailed
 Invoke-Phase -Name "BLACKBOX full-acceptance" -Skip:$SkipBlackBox -Block {
     & (Join-Path $PSScriptRoot "full-acceptance.ps1") `
         -AdminUrl $AdminUrl -DemoUrl $DemoUrl `
         -PerfP95MaxMs $PerfP95MaxMs
 }
+$script:BlackBoxGatePass = (-not $SkipBlackBox) -and ($script:PhaseFailed -eq $script:PhaseFailedBeforeBlackBox)
 
 # --- Phase 2b: SSO 冒烟（enabled=false 时脚本内 SKIP）---
 Invoke-Phase -Name "SSO sso-smoke" -Skip:$SkipSso -Block {
@@ -109,11 +111,11 @@ Invoke-Phase -Name "STRESS prepare" -Skip:$SkipStress -Block {
 Write-Master "======== PRODUCTION GATES ========"
 $gates = @(
     @{ Id = "GATE-WB"; Label = "白盒 mvn test 0 FAIL"; Pass = (-not $SkipWhiteBox -and $script:PhaseFailed -eq 0) -or $SkipWhiteBox }
-    @{ Id = "GATE-BB"; Label = "黑盒 full-acceptance 0 FAIL"; Pass = (-not $SkipBlackBox) }
+    @{ Id = "GATE-BB"; Label = "黑盒 full-acceptance 0 FAIL"; Pass = $script:BlackBoxGatePass }
     @{ Id = "GATE-SSO"; Label = "SSO config/authorize 冒烟"; Pass = (-not $SkipSso) }
     @{ Id = "GATE-CH"; Label = "链路 demo-walkthrough PASS"; Pass = (-not $SkipChain) }
     @{ Id = "GATE-ST"; Label = "压测 P95<=${StressP95MaxMs}ms 成功率>=95%"; Pass = (-not $SkipStress) }
-    @{ Id = "GATE-P0"; Label = "P0 安全/鉴权/探测 (见 full-acceptance SEC/PROBE)"; Pass = (-not $SkipBlackBox) }
+    @{ Id = "GATE-P0"; Label = "P0 安全/鉴权/探测 (见 full-acceptance SEC/PROBE)"; Pass = $script:BlackBoxGatePass }
 )
 
 foreach ($g in $gates) {

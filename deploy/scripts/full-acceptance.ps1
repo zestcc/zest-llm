@@ -1,4 +1,4 @@
-# ZestLLM 生产级全量验收（Windows / 本地 Admin 优先）
+﻿# ZestLLM 生产级全量验收（Windows / 本地 Admin 优先）
 # 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 维度：功能 / 安全 / 性能冒烟 / 可靠性 / 兼容性 / RBAC
 param(
@@ -445,7 +445,8 @@ try {
     $stj = $st | ConvertTo-Json -Depth 4 -Compress
     if ($st.data) { $stj = ($st.data | ConvertTo-Json -Depth 4 -Compress) }
     Assert-Pass "AC46" ($stj.Contains("chat-basic") -or $stj.Contains("name")) "scenario-templates list"
-    Assert-Pass "AC54" ($stj.Contains("knowledge-qa") -and $stj.Contains("知识问答")) "knowledge-qa template listed"
+    $kqa = @($st.data | Where-Object { $_.id -eq "knowledge-qa" })
+    Assert-Pass "AC54" ($kqa.Count -eq 1 -and $kqa[0].requiresKnowledge -eq $true) "knowledge-qa template listed"
 } catch {
     Assert-Pass "AC46" $false "scenario-templates: $($_.Exception.Message)"
     Assert-Pass "AC54" $false "knowledge-qa template: $($_.Exception.Message)"
