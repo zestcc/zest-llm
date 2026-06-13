@@ -1,5 +1,5 @@
-# ZestLLM Admin SSO 联调冒烟脚本（Windows PowerShell）
-# 用法：powershell -File deploy/scripts/sso-smoke.ps1 -AdminUrl http://localhost:8088 -SsoBase http://localhost:9000
+# ZestLLM Admin SSO smoke (Windows PowerShell)
+# Usage: powershell -File deploy/scripts/sso-smoke.ps1 -AdminUrl http://localhost:8088 -SsoBase http://localhost:9000
 
 param(
     [string]$AdminUrl = "http://localhost:8088",
@@ -16,32 +16,43 @@ Write-Host "`n[1] OIDC Discovery" -ForegroundColor Yellow
 try {
     $discovery = Invoke-RestMethod -Uri "$SsoBase/api/public/.well-known/openid-configuration" -Method Get -TimeoutSec 10
     if (-not $discovery.authorization_endpoint) {
-        throw "Discovery 缺少 authorization_endpoint"
+        throw "Discovery missing authorization_endpoint"
     }
     Write-Host "OK authorization_endpoint=$($discovery.authorization_endpoint)"
 } catch {
-    Write-Host "WARN ZestSSO 未启动或 Discovery 不可达: $_" -ForegroundColor DarkYellow
+    Write-Host "WARN ZestSSO not reachable: $_" -ForegroundColor DarkYellow
 }
 
 Write-Host "`n[2] Admin SSO Config" -ForegroundColor Yellow
-$config = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/config" -Method Get -TimeoutSec 10
-$cfg = $config.data
-if (-not $cfg) { $cfg = $config }
+$cfg = $null
+try {
+    $config = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/config" -Method Get -TimeoutSec 10
+    $cfg = $config.data; if (-not $cfg) { $cfg = $config }
+} catch {
+    Write-Host "WARN /sso/config unavailable, fallback /oidc/config: $_" -ForegroundColor DarkYellow
+    $config = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/oidc/config" -Method Get -TimeoutSec 10
+    $cfg = $config.data; if (-not $cfg) { $cfg = $config }
+}
 if (-not $cfg.enabled) {
-    Write-Host "SKIP zest-llm.admin.sso.enabled=false，跳过 authorize 步骤" -ForegroundColor DarkYellow
+    Write-Host "SKIP sso.enabled=false, skip authorize" -ForegroundColor DarkYellow
 } else {
-    Write-Host "OK provider=$($cfg.provider) displayName=$($cfg.displayName)"
+    Write-Host "OK provider=$($cfg.provider) displayName=$($cfg.displayName) enabled=$($cfg.enabled)"
 }
 
 Write-Host "`n[3] Admin SSO Authorize (PKCE)" -ForegroundColor Yellow
-if ($cfg.enabled) {
-    $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/authorize" -Method Get -TimeoutSec 10
+if ($cfg -and $cfg.enabled) {
+    try {
+        $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/authorize" -Method Get -TimeoutSec 10
+    } catch {
+        Write-Host "WARN /sso/authorize unavailable, fallback /oidc/authorize: $_" -ForegroundColor DarkYellow
+        $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/oidc/authorize" -Method Get -TimeoutSec 10
+    }
     $authData = $auth.data
     if (-not $authData) { $authData = $auth }
     if ($authData.authorizationUrl -and $authData.state) {
         Write-Host "OK state=$($authData.state)"
     } else {
-        throw "authorize 响应不完整"
+        throw "authorize response incomplete"
     }
 }
 
@@ -51,5 +62,5 @@ $oidcData = $oidcCfg.data
 if (-not $oidcData) { $oidcData = $oidcCfg }
 Write-Host "OK provider=$($oidcData.provider) enabled=$($oidcData.enabled)"
 
-Write-Host "`n== 完成 ==" -ForegroundColor Green
-Write-Host "手工步骤：浏览器打开登录页 -> SSO 登录 -> 检查 llm_admin_user.sso_subject 已写入"
+Write-Host "`n== Done ==" -ForegroundColor Green
+Write-Host "Manual: browser login -> SSO -> verify llm_admin_user.sso_subject"

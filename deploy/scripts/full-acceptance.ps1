@@ -113,18 +113,34 @@ try {
 
 # --- SSO ---
 Write-Report "--- SSO ---"
+function Get-SsoPublicConfig {
+    param([string]$Url)
+    try {
+        $r = Invoke-RestMethod -Uri "$Url/api/admin/auth/sso/config" -Method Get -TimeoutSec 10
+        $d = $r.data; if (-not $d) { $d = $r }
+        return $d
+    } catch {
+        $r = Invoke-RestMethod -Uri "$Url/api/admin/auth/oidc/config" -Method Get -TimeoutSec 10
+        $d = $r.data; if (-not $d) { $d = $r }
+        return $d
+    }
+}
 try {
-    $ssoCfg = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/config" -Method Get -TimeoutSec 10
-    $ssoData = $ssoCfg.data
-    if (-not $ssoData) { $ssoData = $ssoCfg }
-    Assert-Pass "SSO-01" ($null -ne $ssoData.provider) "config returns provider=$($ssoData.provider)"
+    $ssoData = Get-SsoPublicConfig $AdminUrl
+    $hasProvider = ($null -ne $ssoData.provider -and "$($ssoData.provider)".Length -gt 0) `
+        -or ($null -ne $ssoData.clientId -and "$($ssoData.clientId)".Length -gt 0)
+    Assert-Pass "SSO-01" $hasProvider "config returns provider or clientId (sso/oidc alias)"
     if (-not $ssoData.enabled) {
         Assert-Pass "SSO-02" ($ssoData.enabled -eq $false) "registry disabled returns enabled=false"
         Assert-Skip "SEC-SSO" "SSO disabled — skip authorize smoke"
     } else {
         Assert-Pass "SSO-02" ($ssoData.enabled -eq $true) "SSO enabled"
         try {
-            $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/authorize" -Method Get -TimeoutSec 10
+            try {
+                $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/sso/authorize" -Method Get -TimeoutSec 10
+            } catch {
+                $auth = Invoke-RestMethod -Uri "$AdminUrl/api/admin/auth/oidc/authorize" -Method Get -TimeoutSec 10
+            }
             $authData = $auth.data
             if (-not $authData) { $authData = $auth }
             Assert-Pass "SEC-SSO" ($null -ne $authData.authorizationUrl) "authorize URL generated"

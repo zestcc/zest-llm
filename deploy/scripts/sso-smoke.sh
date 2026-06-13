@@ -29,7 +29,15 @@ fi
 # --- [2] Admin SSO Config ---
 echo ""
 echo "[2] Admin SSO Config"
-config_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/sso/config")
+config_json=""
+if config_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/sso/config" 2>/dev/null); then
+  :
+elif config_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/oidc/config" 2>/dev/null); then
+  echo "WARN /sso/config 不可用，回退 /oidc/config"
+else
+  echo "FAIL Admin SSO config 不可达" >&2
+  exit 1
+fi
 enabled=$(echo "$config_json" | grep -o '"enabled"[[:space:]]*:[[:space:]]*true' || true)
 provider=$(echo "$config_json" | grep -o '"provider"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 || true)
 
@@ -45,7 +53,15 @@ fi
 echo ""
 echo "[3] Admin SSO Authorize (PKCE)"
 if [ "$SSO_ENABLED" = true ]; then
-  auth_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/sso/authorize")
+  auth_json=""
+  if auth_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/sso/authorize" 2>/dev/null); then
+    :
+  elif auth_json=$(curl -sf --max-time 10 "$ADMIN_URL/api/admin/auth/oidc/authorize" 2>/dev/null); then
+    echo "WARN /sso/authorize 不可用，回退 /oidc/authorize"
+  else
+    echo "FAIL authorize 不可达（sso.enabled=true）" >&2
+    exit 1
+  fi
   if echo "$auth_json" | grep -q '"authorizationUrl"' && echo "$auth_json" | grep -q '"state"'; then
     state=$(echo "$auth_json" | grep -o '"state"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1)
     echo "OK $state"

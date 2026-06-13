@@ -89,7 +89,7 @@ if ($WithMcpMock) {
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1")
 }
 
-# repackage 前释放 JAR 锁（旧 Admin/Demo 进程未停会导致 mvn package 失败）
+# Stop Admin/Demo before rebuild to release JAR lock (mvn package fails if still running)
 if (-not $SkipBuild -or $EmbedUi) {
     Write-Host "== Stopping Admin/Demo before rebuild ==" -ForegroundColor Cyan
     Stop-FromPidFile $AdminPidFile "Admin"
