@@ -1,8 +1,12 @@
 package cn.zest.www.zestllm.admin.service;
 
+import cn.zest.www.zestllm.admin.model.entity.LlmAgentProfileDO;
+import cn.zest.www.zestllm.admin.model.entity.LlmAiTaskDefDO;
 import cn.zest.www.zestllm.admin.model.entity.LlmGatewayModelDO;
 import cn.zest.www.zestllm.admin.model.request.CreateGatewayModelRequest;
 import cn.zest.www.zestllm.admin.model.request.CreateProviderPresetRequest;
+import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
+import cn.zest.www.zestllm.admin.model.request.IntegrationImportAgentProfilesRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportGatewayModelsRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportProviderPresetsRequest;
 import cn.zest.www.zestllm.admin.model.vo.GatewayModelVO;
@@ -10,6 +14,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
+import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -103,5 +108,53 @@ class IntegrationImportServiceTest {
         assertThat(result.isDryRun()).isTrue();
         assertThat(result.getCreated()).isEqualTo(1);
         verify(modelRegistryManageService, never()).upsertForImport(any());
+    }
+
+    @Test
+    void importAgentProfiles_dryRunWouldUpdateWhenVersionExists() {
+        ImportAgentProfileRequest item = new ImportAgentProfileRequest();
+        item.setTaskCode("aiChat");
+        item.setVersion("v1");
+        item.setProfileJson("{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":1024,\"temperature\":0.7,\"timeoutMs\":30000}}");
+
+        IntegrationImportAgentProfilesRequest request = new IntegrationImportAgentProfilesRequest();
+        request.setDryRun(true);
+        request.setItems(List.of(item));
+
+        LlmAiTaskDefDO task = new LlmAiTaskDefDO();
+        task.setId(1L);
+        when(taskDefRepo.findByCode("aiChat")).thenReturn(Optional.of(task));
+        when(agentProfileRepo.findByTaskIdAndVersion(1L, "v1")).thenReturn(Optional.of(new LlmAgentProfileDO()));
+        when(agentProfileResolver.parseProfile(any(), any())).thenReturn(new AgentProfileDocument());
+
+        var result = integrationImportService.importAgentProfiles(request);
+
+        assertThat(result.isDryRun()).isTrue();
+        assertThat(result.getUpdated()).isEqualTo(1);
+        assertThat(result.getCreated()).isZero();
+        verify(agentProfileManageService, never()).importProfile(any());
+    }
+
+    @Test
+    void importAgentProfiles_dryRunWouldCreateWhenVersionMissing() {
+        ImportAgentProfileRequest item = new ImportAgentProfileRequest();
+        item.setTaskCode("aiChat");
+        item.setVersion("v9");
+        item.setProfileJson("{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":1024,\"temperature\":0.7,\"timeoutMs\":30000}}");
+
+        IntegrationImportAgentProfilesRequest request = new IntegrationImportAgentProfilesRequest();
+        request.setDryRun(true);
+        request.setItems(List.of(item));
+
+        LlmAiTaskDefDO task = new LlmAiTaskDefDO();
+        task.setId(1L);
+        when(taskDefRepo.findByCode("aiChat")).thenReturn(Optional.of(task));
+        when(agentProfileRepo.findByTaskIdAndVersion(1L, "v9")).thenReturn(Optional.empty());
+        when(agentProfileResolver.parseProfile(any(), any())).thenReturn(new AgentProfileDocument());
+
+        var result = integrationImportService.importAgentProfiles(request);
+
+        assertThat(result.getCreated()).isEqualTo(1);
+        assertThat(result.getUpdated()).isZero();
     }
 }

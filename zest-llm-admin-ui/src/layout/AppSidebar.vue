@@ -27,6 +27,7 @@
         <el-menu-item index="/capability-stack">能力栈</el-menu-item>
         <el-menu-item index="/scenario-templates">场景模板</el-menu-item>
         <el-menu-item index="/adapters">适配器健康</el-menu-item>
+        <el-menu-item index="/integration">集成概览</el-menu-item>
         <el-menu-item index="/learning">自我改进</el-menu-item>
       </el-sub-menu>
 

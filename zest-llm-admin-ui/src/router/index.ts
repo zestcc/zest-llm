@@ -30,7 +30,8 @@ const router = createRouter({
         { path: 'registry', component: () => import('../views/RegistryView.vue'), meta: { title: '方法注册' } },
         { path: 'audit-logs', component: () => import('../views/AuditLogsView.vue'), meta: { title: '审计日志' } },
         { path: 'ops', component: () => import('../views/OpsView.vue'), meta: { title: '运维中心' } },
-        { path: 'adapters', component: () => import('../views/AdaptersView.vue'), meta: { title: '适配器健康' } }
+        { path: 'adapters', component: () => import('../views/AdaptersView.vue'), meta: { title: '适配器健康' } },
+        { path: 'integration', component: () => import('../views/IntegrationView.vue'), meta: { title: '集成概览' } }
       ]
     }
   ]

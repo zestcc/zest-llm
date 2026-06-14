@@ -12,5 +12,7 @@ public class EvalGateSummaryVO {
     private int passedCases;
     private double minPassRate;
     private boolean passed;
+    private boolean probePassed;
+    private String publishBlockedReason;
     private String message;
 }

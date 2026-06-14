@@ -228,7 +228,9 @@ public AiChatResult aiChat(@AiInput("question") String question, @AiOutput AiCha
 | 集成概览 | `GET /api/admin/integration/overview` |
 | LiteLLM Sync | `POST /api/admin/integration/sync-litellm` |
 | LiteLLM Sync 状态 | `GET /api/admin/integration/sync-litellm/status` |
+| Webhook 投递历史 | `GET /api/admin/integration/webhook/deliveries` |
 | Features | `GET /api/admin/meta/features` → `integrationSuiteApi` |
+| Admin UI 集成页 | `/integration` — 概览 / 同步表 / Import dry-run |
 
 详见 [ZestLLM-Integration-Suite.md](./ZestLLM-Integration-Suite.md)。
 
@@ -241,6 +243,9 @@ public AiChatResult aiChat(@AiInput("question") String question, @AiOutput AiCha
 | **small** | `zest-stack-up.ps1 -Tier small` | MySQL + LiteLLM + mock + Admin + Demo + MCP |
 | **medium** | `-Tier medium` | + Valkey + Langfuse |
 | **large** | `-Tier large` | + Kafka report + Dify/RAGFlow integration profile |
+
+Large compose 干跑（不启动容器）：`bash deploy/scripts/validate-large-tier-compose.sh`  
+Sidecar 全量验收：`bash deploy/scripts/run-integration-acceptance.sh`（需 Linux Docker + large profile）
 
 详见 [Zest-Stack完整实现方案.md](./Zest-Stack完整实现方案.md)。
 

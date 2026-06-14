@@ -464,4 +464,32 @@ echo "== AC62: integration suite features =="
 FEAT62=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/meta/features")
 echo "$FEAT62" | grep -q "integrationSuiteApi" && echo "PASS AC62" || { echo "FAIL AC62: $FEAT62"; exit 1; }
 
+echo "== AC63: integration overview =="
+OV63=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/integration/overview")
+echo "$OV63" | grep -q "gatewayModels" && echo "$OV63" | grep -q "secretRefCount" \
+  && echo "PASS AC63" || { echo "FAIL AC63: $OV63"; exit 1; }
+
+echo "== AC64: integration import dry-run =="
+DRY64=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"dryRun":true,"items":[{"modelName":"deepseek-v4-flash","upstreamModel":"deepseek/deepseek-v4-flash"}]}' \
+  "$ADMIN_URL/api/admin/integration/import/gateway-models")
+echo "$DRY64" | grep -q '"dryRun":true' && echo "$DRY64" | grep -q "updated" \
+  && echo "PASS AC64" || { echo "FAIL AC64: $DRY64"; exit 1; }
+
+echo "== AC65: litellm sync status =="
+SS65=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/integration/sync-litellm/status")
+echo "$SS65" | grep -q "liteLLMReachable" && echo "$SS65" | grep -q "models" \
+  && echo "PASS AC65" || { echo "FAIL AC65: $SS65"; exit 1; }
+
+echo "== AC66: agent-profile import dry-run would-update =="
+DRY66=$(curl -s -X POST -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"dryRun":true,"items":[{"taskCode":"aiChat","version":"v1","profileJson":"{\"apiVersion\":\"zestllm/v1\",\"runtimeMode\":\"agent\",\"providerRef\":\"litellm-default\",\"model\":{\"primary\":\"gpt-4o-mini\"},\"generation\":{\"maxTokens\":1024,\"temperature\":0.7,\"timeoutMs\":30000}}"}]}' \
+  "$ADMIN_URL/api/admin/integration/import/agent-profiles")
+echo "$DRY66" | grep -q '"dryRun":true' && echo "$DRY66" | grep -q "updated" \
+  && echo "PASS AC66" || { echo "FAIL AC66: $DRY66"; exit 1; }
+
+echo "== AC67: webhook delivery history =="
+WH67=$(curl -s -H "Authorization: Bearer $TOKEN" "$ADMIN_URL/api/admin/integration/webhook/deliveries?page=1&size=10")
+echo "$WH67" | grep -q "records" && echo "PASS AC67" || { echo "FAIL AC67: $WH67"; exit 1; }
+
 echo "== All automated E2E checks passed =="

@@ -1,6 +1,10 @@
 # ZestLLM 本地完整版一键启动（Windows，无 Docker 友好）
 # 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
-# 用法: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
+# 用法:
+#   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
+#   powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
+# 推荐一键（Demo + LiteLLM + Admin + UI dev）:
+#   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
 param(
     [switch]$WithLiteLLM,
     [switch]$WithDemo,
@@ -176,5 +180,6 @@ if ($WithMcpMock) { Write-Host "  MCP mock:            http://127.0.0.1:9090/mcp
 Write-Host "  Logs:                $LogDir"
 Write-Host ""
 Write-Host "Verify: powershell -File deploy/scripts/verify-local.ps1"
+Write-Host "Accept: powershell -File deploy/scripts/full-acceptance.ps1"
 Write-Host "Demo:   powershell -File deploy/scripts/demo-walkthrough.ps1"
 Write-Host "Stop:   powershell -File deploy/scripts/start-local-full.ps1 -StopOnly"

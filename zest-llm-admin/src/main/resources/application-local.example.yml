@@ -1,5 +1,8 @@
 # Local dev — copy to application-local.yml
-# 一键启动: powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM]
+# 一键启动（Demo + LiteLLM）:
+#   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
+# 一键启动（仅 Admin）:
+#   powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM]
 # 禁止 H2：仅使用 MySQL 8
 spring:
   datasource:

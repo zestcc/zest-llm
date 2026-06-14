@@ -29,7 +29,7 @@ echo "== Step 2: wait for health =="
 bash "$SCRIPT_DIR/wait-stack-ready.sh"
 
 echo ""
-echo "== Step 3: production acceptance (TIER=production) =="
+echo "== Step 3: production acceptance (TIER=production, AC1-67) =="
 export TIER=production
 export ADMIN_URL="${ADMIN_URL:-http://localhost:8088}"
 export SKIP_IT="${SKIP_IT:-0}"

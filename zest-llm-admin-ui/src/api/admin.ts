@@ -259,8 +259,51 @@ export interface AdminFeatures {
   learningApi?: boolean
   capabilityStackApi?: boolean
   scenarioTemplateApi?: boolean
+  integrationSuiteApi?: boolean
   integrationAdaptersEnabled?: boolean
   schemaReady?: Record<string, boolean>
+}
+
+export interface IntegrationOverviewVO {
+  gatewayModels?: { total?: number; synced?: number; failed?: number; pending?: number }
+  secretRefCount?: number
+  liteLLMReachable?: boolean
+  adaptersUp?: number
+  adaptersDown?: number
+}
+
+export interface LiteLLMSyncStatusVO {
+  liteLLMReachable?: boolean
+  liteLLMBaseUrl?: string
+  total?: number
+  synced?: number
+  failed?: number
+  pending?: number
+  models?: { modelName?: string; upstreamModel?: string; syncStatus?: string; lastSyncAt?: string }[]
+}
+
+export interface IntegrationImportResultVO {
+  dryRun?: boolean
+  created?: number
+  updated?: number
+  skipped?: number
+  errors?: string[]
+}
+
+export interface IntegrationWebhookDeliveryVO {
+  id?: number
+  eventType?: string
+  taskCode?: string
+  profileVersion?: string
+  webhookUrl?: string
+  payloadHash?: string
+  status?: string
+  attemptCount?: number
+  maxAttempts?: number
+  lastError?: string
+  deadLetter?: boolean
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface StackTierVO {
@@ -1036,6 +1079,36 @@ export const adminApi = {
 
   exportCapabilityStack(tier = 'small') {
     return http.get<Record<string, string>>('/api/admin/capability-stack/export', { params: { tier } })
+  },
+
+  getIntegrationOverview() {
+    return http.get<IntegrationOverviewVO>('/api/admin/integration/overview')
+  },
+
+  getLiteLLMSyncStatus() {
+    return http.get<LiteLLMSyncStatusVO>('/api/admin/integration/sync-litellm/status')
+  },
+
+  syncLiteLLM() {
+    return http.post<{ synced?: number; failed?: number }>('/api/admin/integration/sync-litellm')
+  },
+
+  importGatewayModels(body: Record<string, unknown>) {
+    return http.post<IntegrationImportResultVO>('/api/admin/integration/import/gateway-models', body)
+  },
+
+  importProviderPresets(body: Record<string, unknown>) {
+    return http.post<IntegrationImportResultVO>('/api/admin/integration/import/provider-presets', body)
+  },
+
+  listIntegrationWebhookDeliveries(taskCode?: string, page = 1, size = 20) {
+    return http.get<PageResult<IntegrationWebhookDeliveryVO>>('/api/admin/integration/webhook/deliveries', {
+      params: { taskCode, page, size }
+    })
+  },
+
+  retryIntegrationWebhookDelivery(id: number) {
+    return http.post<IntegrationWebhookDeliveryVO>(`/api/admin/integration/webhook/deliveries/${id}/retry`)
   }
 }
 

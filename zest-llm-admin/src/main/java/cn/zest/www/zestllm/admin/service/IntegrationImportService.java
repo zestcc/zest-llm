@@ -89,8 +89,11 @@ public class IntegrationImportService {
         for (ImportAgentProfileRequest item : request.getItems()) {
             try {
                 if (request.isDryRun()) {
-                    previewAgentProfile(item);
-                    created++;
+                    if (previewAgentProfileWouldUpdate(item)) {
+                        updated++;
+                    } else {
+                        created++;
+                    }
                 } else {
                     agentProfileManageService.importProfile(item);
                     created++;
@@ -145,17 +148,16 @@ public class IntegrationImportService {
                 .created(created).updated(updated).skipped(skipped).errors(errors).build();
     }
 
-    private void previewAgentProfile(ImportAgentProfileRequest item) {
+    /** @return true when dry-run import would conflict with an existing profile version */
+    private boolean previewAgentProfileWouldUpdate(ImportAgentProfileRequest item) {
         if (!StringUtils.hasText(item.getTaskCode())) {
             throw new BusinessException("TASK_REQUIRED", "taskCode is required");
         }
         agentProfileResolver.parseProfile(item.getProfileJson(), null);
         Optional<LlmAiTaskDefDO> task = taskDefRepo.findByCode(item.getTaskCode());
         String version = StringUtils.hasText(item.getVersion()) ? item.getVersion() : "v-preview";
-        if (task.isPresent()
-                && agentProfileRepo.findByTaskIdAndVersion(task.get().getId(), version).isPresent()) {
-            throw new BusinessException("PROFILE_EXISTS", "Version exists: " + version);
-        }
+        return task.isPresent()
+                && agentProfileRepo.findByTaskIdAndVersion(task.get().getId(), version).isPresent();
     }
 
     private IntegrationImportResultVO emptyResult(boolean dryRun, List<String> errors) {

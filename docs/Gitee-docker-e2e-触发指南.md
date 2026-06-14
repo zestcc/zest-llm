@@ -18,7 +18,7 @@
   1. `validate-large-tier-compose.sh`（Large compose 干跑）
   2. `preload-stack-images.sh`（预拉镜像）
   3. `zest-stack-up.sh small` + `wait-stack-ready.sh`
-  4. `production-acceptance.sh`（含 **GATE-SSO**、P95≤500ms、AC1–56）
+  4. `production-acceptance.sh`（含 **GATE-SSO**、P95≤500ms、AC1–67）
 
 **B 整合栈（可选，需 large + integration profile）**：在 Runner 上单独执行  
 `bash deploy/scripts/run-integration-acceptance.sh`（见 `docs/B整合栈Demo指南.md`）。  

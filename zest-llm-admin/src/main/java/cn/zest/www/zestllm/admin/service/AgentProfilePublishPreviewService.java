@@ -64,19 +64,30 @@ public class AgentProfilePublishPreviewService {
                     .evalGateSummary(EvalGateSummaryVO.builder()
                             .enabled(false)
                             .passed(true)
+                            .probePassed(probe.isReady())
+                            .publishBlockedReason(probe.isReady() ? null : "probe not ready")
                             .message("learning loop disabled")
                             .build())
                     .build();
         }
 
         LearningCycleResult cycle = learningPipelineAdapter.validateForPublish(taskCode, version, document);
+        boolean evalPassed = cycle.getPassRate() >= loop.getMinPassRate();
+        String blockedReason = null;
+        if (!evalPassed) {
+            blockedReason = "eval pass rate below threshold";
+        } else if (loop.isProbeBeforePublish() && !cycle.isProbePassed()) {
+            blockedReason = "probe before publish failed";
+        }
         EvalGateSummaryVO evalGate = EvalGateSummaryVO.builder()
                 .enabled(true)
                 .passRate(cycle.getPassRate())
                 .totalCases(cycle.getTotalCases())
                 .passedCases(cycle.getPassedCases())
                 .minPassRate(loop.getMinPassRate())
-                .passed(cycle.getPassRate() >= loop.getMinPassRate())
+                .passed(evalPassed && cycle.isProbePassed())
+                .probePassed(cycle.isProbePassed())
+                .publishBlockedReason(blockedReason)
                 .message(cycle.getMessage())
                 .build();
         return PublishPreviewVO.builder()

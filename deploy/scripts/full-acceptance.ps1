@@ -595,6 +595,26 @@ try {
     Assert-Pass "AC65" $false "litellm sync status: $($_.Exception.Message)"
 }
 
+try {
+    $prof66 = '{"apiVersion":"zestllm/v1","runtimeMode":"agent","providerRef":"litellm-default","model":{"primary":"gpt-4o-mini"},"generation":{"maxTokens":1024,"temperature":0.7,"timeoutMs":30000}}'
+    $body66 = @{ dryRun = $true; items = @(@{ taskCode = "aiChat"; version = "v1"; profileJson = $prof66 }) } | ConvertTo-Json -Depth 5 -Compress
+    $dry66 = Invoke-AdminPost "/api/admin/integration/import/agent-profiles" $body66
+    $dry66j = $dry66 | ConvertTo-Json -Compress
+    if ($dry66.data) { $dry66j = ($dry66.data | ConvertTo-Json -Compress) }
+    Assert-Pass "AC66" ($dry66j.Contains('"dryRun":true') -and $dry66j.Contains("updated")) "agent-profile import dry-run would-update"
+} catch {
+    Assert-Pass "AC66" $false "agent-profile dry-run: $($_.Exception.Message)"
+}
+
+try {
+    $wh67 = Invoke-AdminGet "/api/admin/integration/webhook/deliveries?page=1&size=10"
+    $wh67j = $wh67 | ConvertTo-Json -Depth 6 -Compress
+    if ($wh67.data) { $wh67j = ($wh67.data | ConvertTo-Json -Depth 6 -Compress) }
+    Assert-Pass "AC67" ($wh67j.Contains("records") -or $wh67j.Contains("total")) "webhook delivery history"
+} catch {
+    Assert-Pass "AC67" $false "webhook deliveries: $($_.Exception.Message)"
+}
+
 # --- Summary ---
 Write-Report "--- SUMMARY ---"
 Write-Report "PASSED=$script:Passed FAILED=$script:Failed SKIPPED=$script:Skipped"
