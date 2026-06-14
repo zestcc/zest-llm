@@ -3,6 +3,7 @@ package cn.zest.www.zestllm.infra.knowledge;
 import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
 import cn.zest.www.zestllm.infra.plugin.ExternalAdapterDescriptor;
 import cn.zest.www.zestllm.infra.plugin.ExternalAdapterRegistry;
+import cn.zest.www.zestllm.plugin.noop.NoopKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.model.HealthStatus;

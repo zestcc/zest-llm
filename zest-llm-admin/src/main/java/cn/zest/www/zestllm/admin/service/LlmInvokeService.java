@@ -25,7 +25,7 @@ import cn.zest.www.zestllm.common.error.LlmErrorCode;
 
 import cn.zest.www.zestllm.common.error.ZestLlmException;
 
-import cn.zest.www.zestllm.infra.cache.ValkeyResponseCacheAdapter;
+import cn.zest.www.zestllm.plugin.cache.valkey.ValkeyResponseCacheAdapter;
 
 import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayAuthApplier;
 import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayApiProtocol;

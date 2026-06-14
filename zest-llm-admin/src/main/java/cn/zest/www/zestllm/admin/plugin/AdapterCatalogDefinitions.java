@@ -122,7 +122,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry noopObservability() {
         return entry("noop", "空可观测", "observability", "不写入外部 Trace 系统", "Zest", "1.0",
                 "zest.llm.adapters.observability", true, true, List.of(), List.of(),
-                "zest.llm.adapters.observability: noop", "zest-llm-infra",
+                "zest.llm.adapters.observability: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "选择 noop", "开发/PoC 可保持默认 noop", "CONFIG", "配置项",
                         "zest.llm.adapters.observability", null, null, true)));
     }
@@ -173,7 +173,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry noopAgentRuntime() {
         return entry("noop", "空 Agent Runtime", "agent-runtime", "禁用外部 Runtime 委托", "Zest", "1.0",
                 "zest.llm.adapters.agent-runtime", true, true, List.of(), List.of(),
-                "zest.llm.adapters.agent-runtime: noop", "zest-llm-infra",
+                "zest.llm.adapters.agent-runtime: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "选择 noop", "仅 Admin 配置场景使用", "CONFIG", "配置项",
                         "zest.llm.adapters.agent-runtime", null, null, true)));
     }
@@ -282,7 +282,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry noopKnowledge() {
         return entry("noop", "空知识检索", "knowledge-retrieval", "不调用外部 RAG", "Zest", "1.0",
                 "zest.llm.adapters.knowledge-retrieval", true, true, List.of(), List.of("chat-basic"),
-                "zest.llm.adapters.knowledge-retrieval: noop", "zest-llm-infra",
+                "zest.llm.adapters.knowledge-retrieval: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "保持 noop", "纯对话场景默认即可", "CONFIG", "配置项",
                         "zest.llm.adapters.knowledge-retrieval", null, null, true)));
     }
@@ -290,7 +290,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry noopLearning() {
         return entry("noop", "空学习流水线", "learning-pipeline", "关闭 Eval 自动闭环", "Zest", "1.0",
                 "zest.llm.adapters.learning-pipeline", true, true, List.of(), List.of(),
-                "zest.llm.adapters.learning-pipeline: noop", "zest-llm-infra",
+                "zest.llm.adapters.learning-pipeline: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "默认 noop", "需要自我改进时再启用 zest-eval", "CONFIG", "配置项",
                         "zest.llm.adapters.learning-pipeline", null, null, true)));
     }
@@ -298,7 +298,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry handlebarsPrompt() {
         return entry("handlebars", "Handlebars 模板", "prompt-renderer", "Prompt 变量渲染", "Zest", "1.0",
                 "zest.llm.adapters.prompt-renderer", true, true, List.of(), List.of("chat-basic"),
-                "zest.llm.adapters.prompt-renderer: handlebars", "zest-llm-infra",
+                "zest.llm.adapters.prompt-renderer: handlebars", "zest-llm-plugin-prompt-handlebars",
                 steps(step("default", 1, "默认已启用", "一般无需修改", "CONFIG", "配置项",
                         "zest.llm.adapters.prompt-renderer", null, null, true)));
     }
@@ -306,7 +306,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry caffeinePolicyCache() {
         return entry("caffeine", "Caffeine 策略缓存", "policy-cache", "进程内路由策略缓存", "Zest", "1.0",
                 "zest.llm.adapters.policy-cache", true, true, List.of(), List.of(),
-                "zest.llm.adapters.policy-cache: caffeine", "zest-llm-infra",
+                "zest.llm.adapters.policy-cache: caffeine", "zest-llm-plugin-cache-caffeine",
                 steps(step("default", 1, "单机默认", "中小部署推荐 caffeine", "CONFIG", "配置项",
                         "zest.llm.adapters.policy-cache", null, null, true)));
     }
@@ -315,7 +315,7 @@ public final class AdapterCatalogDefinitions {
         return entry("valkey", "Valkey/Redis 策略缓存", "policy-cache", "多实例共享策略缓存", "Zest", "1.0",
                 "zest.llm.adapters.policy-cache", true, true, List.of("Redis/Valkey"),
                 List.of(),
-                "zest.llm.adapters.policy-cache: valkey", "zest-llm-infra",
+                "zest.llm.adapters.policy-cache: valkey", "zest-llm-plugin-cache-valkey",
                 steps(
                         step("redis", 1, "准备 Redis", "配置 spring.data.redis 连接", "CONFIG", "Redis", "spring.data.redis.host", null, null, true),
                         step("select", 2, "选择 valkey", "zest.llm.adapters.policy-cache=valkey", "CONFIG", "配置项",
@@ -326,28 +326,28 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry noopQuota() {
         return entry("noop", "空配额", "quota", "不启用配额限流", "Zest", "1.0",
                 "zest.llm.adapters.quota", true, true, List.of(), List.of(),
-                "zest.llm.adapters.quota: noop", "zest-llm-infra",
+                "zest.llm.adapters.quota: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "默认 noop", "生产可在应用管理配置 quota", "NAVIGATE", "应用管理", "/apps", null, null, true)));
     }
 
     private static AdapterCatalogEntry noopAudit() {
         return entry("noop", "空审计", "audit", "审计仅写本地日志", "Zest", "1.0",
                 "zest.llm.adapters.audit", true, true, List.of(), List.of(),
-                "zest.llm.adapters.audit: noop", "zest-llm-infra",
+                "zest.llm.adapters.audit: noop", "zest-llm-plugin-noop-adapters",
                 steps(step("select", 1, "默认 noop", "可查看 Admin 审计日志", "NAVIGATE", "审计日志", "/audit-logs", null, null, true)));
     }
 
     private static AdapterCatalogEntry jsonSchemaValidator() {
         return entry("json", "JSON Schema 校验", "output-schema-validator", "结构化输出校验", "Zest", "1.0",
                 "zest.llm.adapters.output-schema-validator", true, true, List.of(), List.of("report-basic"),
-                "zest.llm.adapters.output-schema-validator: json", "zest-llm-infra",
+                "zest.llm.adapters.output-schema-validator: json", "zest-llm-plugin-schema-json",
                 steps(step("default", 1, "默认 json", "Prompt 版本可附 outputSchema", "NAVIGATE", "Prompt 管理", "/prompts", null, null, true)));
     }
 
     private static AdapterCatalogEntry keywordModeration() {
         return entry("keyword-blocklist", "关键词护栏", "content-moderation", "简单关键词拦截", "Zest", "1.0",
                 "zest.llm.adapters.content-moderation", true, true, List.of(), List.of(),
-                "zest.llm.adapters.content-moderation: keyword-blocklist", "zest-llm-infra",
+                "zest.llm.adapters.content-moderation: keyword-blocklist", "zest-llm-plugin-guardrails-keyword",
                 steps(step("default", 1, "默认启用", "可在配置中切换 noop", "CONFIG", "配置项",
                         "zest.llm.adapters.content-moderation", null, null, true)));
     }
@@ -355,7 +355,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry syncReportChannel() {
         return entry("sync", "同步上报", "report-channel", "执行结果同步写入", "Zest", "1.0",
                 "zest.llm.adapters.report-channel", true, true, List.of(), List.of(),
-                "zest.llm.adapters.report-channel: sync", "zest-llm-infra",
+                "zest.llm.adapters.report-channel: sync", "zest-llm-plugin-report-sync",
                 steps(step("default", 1, "默认 sync", "Starter 同步回调业务", "DOC", "集成文档", null, null,
                         "docs/ZestLLM-Integration-Suite.md", true)));
     }
@@ -364,7 +364,7 @@ public final class AdapterCatalogDefinitions {
         return entry("kafka", "Kafka 上报", "report-channel", "异步 Kafka 执行报告", "Apache", "1.0",
                 "zest.llm.adapters.report-channel", true, true, List.of("Kafka 集群"),
                 List.of(),
-                "zest.llm.adapters.report-channel: kafka", "zest-llm-infra",
+                "zest.llm.adapters.report-channel: kafka", "zest-llm-plugin-report-kafka",
                 steps(
                         step("kafka", 1, "配置 Kafka", "spring.kafka.bootstrap-servers", "CONFIG", "Kafka",
                                 "spring.kafka.bootstrap-servers", null, null, true),
@@ -376,7 +376,7 @@ public final class AdapterCatalogDefinitions {
     private static AdapterCatalogEntry httpAlertWebhook() {
         return entry("http", "HTTP 告警 Webhook", "alert-webhook", "Probe 失败 HTTP 通知", "Zest", "1.0",
                 "zest.llm.adapters.alert-webhook", true, true, List.of(), List.of("ops-monitor"),
-                "zest.llm.adapters.alert-webhook: http", "zest-llm-infra",
+                "zest.llm.adapters.alert-webhook: http", "zest-llm-plugin-alert-http",
                 steps(step("ops", 1, "运维中心配置", "在运维中心填写 webhook URL", "NAVIGATE", "运维中心", "/ops", null, null, true)));
     }
 
@@ -387,7 +387,7 @@ public final class AdapterCatalogDefinitions {
                 List.of("MCP Server 可访问"),
                 List.of("generic-agent-mcp", "ops-monitor"),
                 "内置 HttpMcpToolAdapter，Profile 引用 llm_mcp_server",
-                "zest-llm-infra",
+                "zest-llm-plugin-tool-mcp-http",
                 steps(
                         step("register-mcp", 1, "注册 MCP Server", "Admin 录入 MCP baseUrl 与密钥",
                                 "NAVIGATE", "智能体配置 MCP", "/agent-config", null, null, true),

@@ -8,7 +8,7 @@ import cn.zest.www.zestllm.admin.service.auth.RuntimeAuthService;
 import cn.zest.www.zestllm.admin.util.FallbackModelsParser;
 import cn.zest.www.zestllm.common.error.LlmErrorCode;
 import cn.zest.www.zestllm.common.error.ZestLlmException;
-import cn.zest.www.zestllm.infra.cache.CaffeinePolicyCacheAdapter;
+import cn.zest.www.zestllm.plugin.cache.caffeine.CaffeinePolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.model.PromptTemplate;

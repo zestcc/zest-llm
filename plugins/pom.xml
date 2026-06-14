@@ -23,5 +23,15 @@
         <module>knowledge-http</module>
         <module>knowledge-ragflow</module>
         <module>knowledge-dify-kb</module>
+        <module>noop-adapters</module>
+        <module>prompt-handlebars</module>
+        <module>cache-caffeine</module>
+        <module>cache-valkey</module>
+        <module>guardrails-keyword</module>
+        <module>schema-json</module>
+        <module>report-sync</module>
+        <module>report-kafka</module>
+        <module>alert-http</module>
+        <module>tool-mcp-http</module>
     </modules>
 </project>

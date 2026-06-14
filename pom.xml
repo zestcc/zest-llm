@@ -178,6 +178,56 @@
                 <version>${zest-llm.version}</version>
             </dependency>
             <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-noop-adapters</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-prompt-handlebars</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-cache-caffeine</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-cache-valkey</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-guardrails-keyword</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-schema-json</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-report-sync</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-report-kafka</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-alert-http</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-tool-mcp-http</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>

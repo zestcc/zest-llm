@@ -61,7 +61,7 @@ public class CustomKnowledgeAdapter implements KnowledgeRetrievalAdapter {
 3. **集成 Setup 清单**（`/api/admin/adapters/catalog/setup-guide`）跟踪整体进度
 
 
-## 内置插件模块（Phase 3）
+## 内置插件模块（Phase 3 + Phase 4）
 
 | Maven artifact | SPI | adapterId / 配置 |
 |----------------|-----|------------------|
@@ -74,6 +74,16 @@ public class CustomKnowledgeAdapter implements KnowledgeRetrievalAdapter {
 | `zest-llm-plugin-agent-runtime-dify` | agent-runtime | `dify` · `zest.llm.adapters.agent-runtime` |
 | `zest-llm-plugin-dify-common` | （共享配置） | `zest.llm.dify.*`（供 dify-kb / dify runtime 共用） |
 | `zest-llm-plugin-knowledge-echo-sample` | knowledge-retrieval | `echo-kb`（外置 JAR 样本） |
+| `zest-llm-plugin-noop-adapters` | 多 SPI noop | observability / agent-runtime / knowledge / learning / quota / audit / alert / moderation / response-cache |
+| `zest-llm-plugin-prompt-handlebars` | prompt-renderer | `handlebars` · `zest.llm.adapters.prompt-renderer` |
+| `zest-llm-plugin-cache-caffeine` | policy-cache | `caffeine` · `zest.llm.adapters.policy-cache` |
+| `zest-llm-plugin-cache-valkey` | policy-cache / response-cache | `valkey` · `zest.llm.adapters.policy-cache` / `response-cache` |
+| `zest-llm-plugin-guardrails-keyword` | content-moderation | `keyword-blocklist` · `zest.llm.adapters.content-moderation` |
+| `zest-llm-plugin-schema-json` | output-schema-validator | `json` · `zest.llm.adapters.output-schema-validator` |
+| `zest-llm-plugin-report-sync` | report-channel | `sync` · `zest.llm.adapters.report-channel` |
+| `zest-llm-plugin-report-kafka` | report-channel | `kafka` · `zest.llm.adapters.report-channel` |
+| `zest-llm-plugin-alert-http` | alert-webhook | `http` · `zest.llm.adapters.alert-webhook` |
+| `zest-llm-plugin-tool-mcp-http` | mcp-tool | 内置 `HttpMcpToolAdapter`（Profile 级 MCP Server） |
 
 以上模块由 `zest-llm-infra` 依赖并随 Admin 一体发布；切换 SPI 仍见下文 Admin 插件中心说明。
 
