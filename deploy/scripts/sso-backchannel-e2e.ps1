@@ -1,7 +1,7 @@
 # ZestLLM Back-Channel Logout E2E
 param(
     [string]$SsoUrl = "http://localhost:9000",
-    [string]$LlmUrl = "http://localhost:8088",
+    [string]$LlmUrl = "http://localhost:8090",
     [string]$Username = "admin",
     [string]$Password = "admin123"
 )

@@ -1,4 +1,5 @@
 # Local dev — copy to application-local.yml
+# ZestSSO 联调默认端口：Admin :8090，UI :5176（与 zest-sso V20 一致）
 # 一键启动（Demo + LiteLLM）:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
 # 一键启动（仅 Admin）:
@@ -13,6 +14,12 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration/zestllm
+  autoconfigure:
+    exclude:
+      - cn.zest.www.zestllm.infra.config.LlmRoutingAutoConfiguration
+
+server:
+  port: 8090
 
 zest:
   llm:
@@ -20,9 +27,16 @@ zest:
       base-url: http://localhost:4000
       api-key: sk-zest-llm-demo
     adapters:
-      quota: db
+      model-gateway: litellm
+      prompt-renderer: handlebars
+      observability: noop
       policy-cache: caffeine
       response-cache: noop
+      quota: db
+      output-schema-validator: json
+      audit: noop
+      report-channel: sync
+      learning-pipeline: zest-eval
       # medium tier RAG（ZestStory zestStoryRag）
       knowledge-retrieval: ${ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL:http-knowledge}
     http-knowledge:
@@ -35,7 +49,7 @@ zest:
         audit-only: false   # enabled=true 时 true=仅审计不 publish（人工复核阶段）
   sso:
     client:
-      enabled: false
+      enabled: true
       issuer: http://localhost:9000
       client-id: zest-llm-admin
       backchannel-logout-path: /api/admin/auth/sso/backchannel-logout
@@ -49,7 +63,7 @@ zest-llm:
     jwt:
       secret: local-dev-jwt-secret-key-at-least-32-chars
     sso:
-      enabled: false
+      enabled: true
       provider: zest-sso
       display-name: ZestSSO
       issuer: http://localhost:9000
@@ -58,9 +72,9 @@ zest-llm:
       jwks-uri: http://localhost:9000/oauth2/jwks
       client-id: zest-llm-admin
       client-secret: change-me-in-production
-      redirect-uri: http://localhost:5174/login/callback
-      # 内嵌 UI（-EmbedUi）时改为: http://127.0.0.1:8088/login/callback
-      post-logout-redirect-uri: http://localhost:5174/login
+      redirect-uri: http://localhost:5176/login/callback
+      # 内嵌 UI（-EmbedUi）时改为: http://127.0.0.1:8090/login/callback
+      post-logout-redirect-uri: http://localhost:5176/login
       scopes:
         - openid
         - profile
