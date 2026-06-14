@@ -60,7 +60,7 @@ public class AdapterEnablementChecker {
             case "report-channel" -> adapterProperties.getReportChannel();
             case "content-moderation" -> adapterProperties.getContentModeration();
             case "alert-webhook" -> adapterProperties.getAlertWebhook();
-            case "mcp-tool" -> "http-mcp";
+            case "mcp-tool" -> adapterProperties.getMcpTool();
             default -> "";
         };
     }

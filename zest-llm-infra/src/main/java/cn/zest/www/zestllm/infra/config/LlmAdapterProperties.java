@@ -23,4 +23,6 @@ public class LlmAdapterProperties {
     private String knowledgeRetrieval = "noop";
     /** zest-eval | noop */
     private String learningPipeline = "noop";
+    /** http-mcp | noop（路线图） */
+    private String mcpTool = "http-mcp";
 }

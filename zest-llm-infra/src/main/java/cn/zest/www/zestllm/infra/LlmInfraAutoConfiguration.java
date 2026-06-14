@@ -14,6 +14,7 @@ import cn.zest.www.zestllm.spi.tool.McpToolAdapter;
 import cn.zest.www.zestllm.infra.plugin.ExternalAdapterLoader;
 import cn.zest.www.zestllm.infra.plugin.ExternalAdapterRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -46,6 +47,7 @@ public class LlmInfraAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnBean(McpToolAdapter.class)
     @ConditionalOnMissingBean
     public ToolOrchestrator toolOrchestrator(McpToolAdapter mcpToolAdapter,
                                              SecretResolver secretResolver,
@@ -54,6 +56,7 @@ public class LlmInfraAutoConfiguration {
     }
 
     @Bean
+    @ConditionalOnBean(ToolOrchestrator.class)
     @ConditionalOnMissingBean
     public FunctionCallLoop functionCallLoop(ToolOrchestrator toolOrchestrator, ObjectMapper objectMapper) {
         return new FunctionCallLoop(toolOrchestrator, objectMapper);

@@ -386,7 +386,12 @@ public final class AdapterCatalogDefinitions {
                 "Zest", "1.0", "zest.llm.adapters.mcp-tool", true, true,
                 List.of("MCP Server 可访问"),
                 List.of("generic-agent-mcp", "ops-monitor"),
-                "内置 HttpMcpToolAdapter，Profile 引用 llm_mcp_server",
+                """
+                        zest:
+                          llm:
+                            adapters:
+                              mcp-tool: http-mcp
+                        """,
                 "zest-llm-plugin-tool-mcp-http",
                 steps(
                         step("register-mcp", 1, "注册 MCP Server", "Admin 录入 MCP baseUrl 与密钥",
