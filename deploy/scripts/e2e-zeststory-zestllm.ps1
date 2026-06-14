@@ -19,13 +19,27 @@
 #   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1          # 全栈自启
 #   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart
 #
-param([switch]$SkipStart)
+param(
+    [switch]$SkipStart,
+    [string]$AdminUrl = ""
+)
 $ErrorActionPreference = "Stop"
 $Pass = 0; $Fail = 0; $Skip = 0
 function Write-E2E([string]$Id, [bool]$Ok, [string]$Msg) {
     if ($Ok) { Write-Host "PASS $Id $Msg" -ForegroundColor Green; $script:Pass++ }
     else { Write-Host "FAIL $Id $Msg" -ForegroundColor Red; $script:Fail++ }
 }
+
+$Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
+$PortFile = Join-Path $Root "deploy\logs\pids\admin-local.port"
+if (-not $AdminUrl) {
+    if (Test-Path $PortFile) {
+        $AdminUrl = "http://127.0.0.1:$((Get-Content $PortFile -Raw).Trim())"
+    } else {
+        $AdminUrl = "http://127.0.0.1:8088"
+    }
+}
+Write-Host "AdminUrl=$AdminUrl"
 
 if (-not $SkipStart) {
     & (Join-Path $PSScriptRoot "start-local-full.ps1") -StopOnly | Out-Null
@@ -42,21 +56,22 @@ $h = @{ Authorization = "Bearer $token" }
 try {
     $body = (@{
         appKey = "zeststory"; code = "zestStoryInvoke"
-        inputs = @{ systemPrompt = "novel assistant"; userMessage = "write one opening line" }
+        inputs = @{ systemPrompt = "novel assistant"; userMessage = "write one opening line"; taskType = "invoke" }
     } | ConvertTo-Json -Compress -Depth 5)
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
-    $r = Invoke-RestMethod -Uri "http://127.0.0.1:8088/v1/llm/invoke" -Method POST -Headers $h -Body $bytes -ContentType "application/json; charset=utf-8" -TimeoutSec 120
+    $r = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/invoke" -Method POST -Headers $h -Body $bytes -ContentType "application/json; charset=utf-8" -TimeoutSec 120
     $ans = $r.output.answer
-    Write-E2E "E2E-01" ($r.status -eq "SUCCESS" -and $ans) "zestStoryInvoke trace=$($r.traceId) ans=$($ans.Substring(0,[Math]::Min(40,$ans.Length)))"
+    $ansPreview = if ($ans) { $ans.Substring(0, [Math]::Min(40, $ans.Length)) } else { "(empty)" }
+    Write-E2E "E2E-01" ($r.status -eq "SUCCESS" -and $ans) "zestStoryInvoke trace=$($r.traceId) ans=$ansPreview"
 } catch { Write-E2E "E2E-01" $false $_.Exception.Message }
 
 try {
     $body = (@{
         appKey = "zeststory"; code = "zestStoryRag"
-        inputs = @{ systemPrompt = "novel assistant"; userMessage = "continue from lore" }
+        inputs = @{ systemPrompt = "novel assistant"; userMessage = "continue from lore"; taskType = "rag" }
     } | ConvertTo-Json -Compress -Depth 5)
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($body)
-    $r = Invoke-RestMethod -Uri "http://127.0.0.1:8088/v1/llm/invoke" -Method POST -Headers $h -Body $bytes -ContentType "application/json; charset=utf-8" -TimeoutSec 120
+    $r = Invoke-RestMethod -Uri "$AdminUrl/v1/llm/invoke" -Method POST -Headers $h -Body $bytes -ContentType "application/json; charset=utf-8" -TimeoutSec 120
     Write-E2E "RAG-01" ($r.status -eq "SUCCESS") "zestStoryRag trace=$($r.traceId)"
 } catch { Write-E2E "RAG-01" $false $_.Exception.Message }
 

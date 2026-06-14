@@ -2,7 +2,7 @@
 # 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 用法:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
-#   powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-WithAlertMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
+#   powershell -File deploy/scripts/start-local-full.ps1 [-AdminPort 8089] [-WithLiteLLM] ...
 # 生产形态（内嵌 UI + Webhook mock）:
 #   powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithAlertMock
 # 推荐一键（Demo + LiteLLM + Admin + UI dev）:
@@ -14,7 +14,8 @@ param(
     [switch]$WithAlertMock,
     [switch]$EmbedUi,
     [switch]$SkipBuild,
-    [switch]$StopOnly
+    [switch]$StopOnly,
+    [int]$AdminPort = 0
 )
 
 $ErrorActionPreference = "Stop"
@@ -31,7 +32,22 @@ $AdminLog = Join-Path $LogDir "admin-local.log"
 $AdminErrLog = Join-Path $LogDir "admin-local.err.log"
 $UiLog = Join-Path $LogDir "admin-ui-dev.log"
 $AdminPidFile = Join-Path $PidDir "admin-local.pid"
+$AdminPortFile = Join-Path $PidDir "admin-local.port"
 $UiPidFile = Join-Path $PidDir "admin-ui-dev.pid"
+
+function Test-PortListening([int]$Port) {
+    return $null -ne (Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1)
+}
+
+function Resolve-AdminPort([int]$Requested) {
+    if ($Requested -gt 0) { return $Requested }
+    if (-not (Test-PortListening 8088)) { return 8088 }
+    Write-Host "Port 8088 busy — trying alternate ports" -ForegroundColor Yellow
+    foreach ($p in 8089, 8092, 8093, 8094) {
+        if (-not (Test-PortListening $p)) { return $p }
+    }
+    throw "No free port in 8088,8089,8092-8094 for Admin (use -AdminPort or free 8088)"
+}
 
 function Stop-FromPidFile([string]$PidFile, [string]$Label) {
     if (-not (Test-Path $PidFile)) { return }
@@ -63,6 +79,7 @@ function Wait-HttpOk([string]$Url, [int]$Retries = 60) {
 if ($StopOnly) {
     Stop-FromPidFile $AdminPidFile "Admin"
     Stop-FromPidFile $UiPidFile "Admin UI dev"
+    Remove-Item $AdminPortFile -Force -ErrorAction SilentlyContinue
     & (Join-Path $PSScriptRoot "start-litellm-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-demo-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1") -StopOnly
@@ -137,20 +154,24 @@ Stop-FromPidFile $AdminPidFile "Admin"
 Stop-FromPidFile $UiPidFile "Admin UI dev"
 Start-Sleep -Seconds 1
 
-Write-Host "== Starting Admin (:8088) ==" -ForegroundColor Cyan
+$AdminPort = Resolve-AdminPort $AdminPort
+$AdminBase = "http://127.0.0.1:$AdminPort"
+$AdminPort | Set-Content $AdminPortFile -Encoding ascii
+
+Write-Host "== Starting Admin (:$AdminPort) ==" -ForegroundColor Cyan
 if ($WithAlertMock) {
     $env:ZEST_INTEGRATION_WEBHOOK_URL = "http://127.0.0.1:8090/webhook"
     Write-Host "  ZEST_INTEGRATION_WEBHOOK_URL=$($env:ZEST_INTEGRATION_WEBHOOK_URL)" -ForegroundColor DarkGray
 }
 $adminProc = Start-Process -FilePath "java" `
-    -ArgumentList @("-jar", $Jar, "--spring.profiles.active=local") `
+    -ArgumentList @("-jar", $Jar, "--spring.profiles.active=local", "--server.port=$AdminPort") `
     -WorkingDirectory $AdminDir `
     -RedirectStandardOutput $AdminLog `
     -RedirectStandardError $AdminErrLog `
     -PassThru -WindowStyle Hidden
 $adminProc.Id | Set-Content $AdminPidFile
 
-if (-not (Wait-HttpOk "http://127.0.0.1:8088/swagger-ui.html")) {
+if (-not (Wait-HttpOk "$AdminBase/swagger-ui.html")) {
     Get-Content $AdminLog -Tail 40
     throw "Admin failed to start — see $AdminLog"
 }
@@ -179,10 +200,10 @@ if ($WithDemo) {
 Write-Host ""
 Write-Host "ZestLLM local stack is up." -ForegroundColor Green
 if ($EmbedUi) {
-    Write-Host "  Admin (embedded UI): http://127.0.0.1:8088  (login admin / admin123)"
+    Write-Host "  Admin (embedded UI): $AdminBase  (login admin / admin123)"
 } else {
     Write-Host "  Admin UI (dev):      http://localhost:5174  (login admin / admin123)"
-    Write-Host "  Admin API:           http://127.0.0.1:8088"
+    Write-Host "  Admin API:           $AdminBase"
 }
 Write-Host "  ZestFlow CP:         http://127.0.0.1:20552"
 if ($WithLiteLLM) { Write-Host "  LiteLLM:             http://127.0.0.1:4000" }

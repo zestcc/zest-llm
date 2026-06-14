@@ -324,7 +324,7 @@ zest-llm:
 | 6 | 上线 `zestStoryRag`（http-knowledge） | V25 seed + ZestStory `use-rag-task: true` | ✅ |
 | 7 | Publish Preview + 人工发布流程 | Admin API + ZestStory `ZestLlmPublishPreviewService` | ✅ |
 | 8 | Webhook → ZestStory | `ZEST_INTEGRATION_WEBHOOK_URL` → `/api/integrations/zestllm/webhook` | ✅ |
-| 9 | 压测 prepare P95 | middleware `stress-test-prepare.ps1`（可选） | ☐ 非阻塞 |
+| 9 | 压测 prepare P95 | middleware `stress-test-prepare.ps1`（可选） | ✅ P95=629ms / 200×200（:8089 本地 2026-06-14） |
 | 10 | Profile SSOT + 文档 | V27 prompt seed + zestory 接入报告 | ✅ |
 
 **本地 Webhook 示例**（`application-local.example.yml`）：
