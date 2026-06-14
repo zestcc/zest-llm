@@ -32,7 +32,7 @@ import java.util.UUID;
 @Service
 @Primary
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = "zest.llm.adapters.learning-pipeline", havingValue = "zest-eval", matchIfMissing = true)
+@ConditionalOnProperty(name = "zest.llm.adapters.learning-pipeline", havingValue = "zest-eval")
 public class ZestEvalLearningPipelineAdapter implements LearningPipelineAdapter {
 
     private final EvalRunService evalRunService;

@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 
 @AutoConfiguration
 @ConditionalOnClass(StringRedisTemplate.class)
+@ConditionalOnExpression("'${zest.llm.adapters.policy-cache:}' == 'valkey' || '${zest.llm.adapters.response-cache:}' == 'valkey'")
 public class CacheValkeyAutoConfiguration {
 
     @Bean

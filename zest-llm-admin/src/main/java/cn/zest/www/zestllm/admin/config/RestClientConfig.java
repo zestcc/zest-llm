@@ -1,6 +1,7 @@
 package cn.zest.www.zestllm.admin.config;
 
 import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.MediaType;
@@ -18,6 +19,7 @@ public class RestClientConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "zest.llm.adapters.model-gateway", havingValue = "litellm", matchIfMissing = true)
     public RestClient liteLlmRestClient(LiteLLMProperties properties) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofMillis(properties.getConnectTimeoutMs()));
