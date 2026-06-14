@@ -1,6 +1,6 @@
 package cn.zest.www.zestllm.admin.service;
 
-import cn.zest.www.zestllm.infra.config.LangfuseProperties;
+import cn.zest.www.zestllm.plugin.observability.langfuse.LangfuseProperties;
 import cn.zest.www.zestllm.spi.learning.EvalCaseSuggestion;
 import cn.zest.www.zestllm.spi.learning.TraceSampleQuery;
 import com.fasterxml.jackson.databind.ObjectMapper;

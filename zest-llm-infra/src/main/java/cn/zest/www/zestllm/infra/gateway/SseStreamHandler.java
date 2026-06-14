@@ -1,5 +1,7 @@
 package cn.zest.www.zestllm.infra.gateway;
 
+import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayApiProtocol;
+import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayAuthApplier;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;

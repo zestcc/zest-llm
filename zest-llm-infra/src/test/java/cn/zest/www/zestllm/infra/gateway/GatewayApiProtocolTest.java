@@ -1,5 +1,6 @@
 package cn.zest.www.zestllm.infra.gateway;
 
+import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayApiProtocol;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 
@@ -24,7 +25,7 @@ class GatewayApiProtocolTest {
         var content = objectMapper.readTree("""
                 [{"type":"text","text":"hello world"}]
                 """);
-        assertEquals("hello world", LiteLLMGatewayAdapter.extractAnthropicText(content));
+        assertEquals("hello world", GatewayApiProtocol.extractAnthropicText(content));
     }
 
     @Test

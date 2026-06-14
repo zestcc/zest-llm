@@ -27,8 +27,8 @@ import cn.zest.www.zestllm.common.error.ZestLlmException;
 
 import cn.zest.www.zestllm.infra.cache.ValkeyResponseCacheAdapter;
 
-import cn.zest.www.zestllm.infra.gateway.GatewayAuthApplier;
-import cn.zest.www.zestllm.infra.gateway.GatewayApiProtocol;
+import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayAuthApplier;
+import cn.zest.www.zestllm.plugin.gateway.litellm.GatewayApiProtocol;
 import cn.zest.www.zestllm.infra.gateway.SseStreamHandler;
 
 import cn.zest.www.zestllm.infra.guardrails.GuardrailsEnforcer;
@@ -39,7 +39,7 @@ import cn.zest.www.zestllm.infra.tool.ToolLoopParams;
 
 import cn.zest.www.zestllm.infra.tool.ToolOrchestrator;
 
-import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;
 import cn.zest.www.zestllm.spi.cache.CachedResponse;
 import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;

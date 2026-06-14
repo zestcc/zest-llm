@@ -15,7 +15,7 @@ import cn.zest.www.zestllm.admin.repo.LlmMcpServerRepo;
 import cn.zest.www.zestllm.admin.repo.LlmModelRouteRepo;
 import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
-import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
 import cn.zest.www.zestllm.infra.tool.ToolOrchestrator;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.cache.CachedPolicy;

@@ -39,6 +39,9 @@ zest:
       output-schema-validator: json
       audit: noop
       report-channel: sync
+    plugins:
+      external-dir: ${ZEST_LLM_PLUGIN_DIR:./deploy/plugins}
+      scan-on-startup: true
     litellm:
       base-url: http://localhost:4000
       api-key: ${LITELLM_API_KEY:sk-zest-llm-demo}

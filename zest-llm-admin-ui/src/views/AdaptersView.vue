@@ -27,6 +27,7 @@
             配置项 · {{ item.configured }}
           </p>
           <p class="adapter-msg">{{ item.message || '等待探测…' }}</p>
+          <el-button link type="primary" @click.stop="goCatalog(item.key)">插件中心</el-button>
         </div>
       </el-col>
     </el-row>
@@ -39,6 +40,7 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import {
   Connection,
   DataAnalysis,
@@ -59,6 +61,11 @@ interface AdapterCard extends AdapterHealthVO {
 
 const loading = ref(false)
 const adapters = ref<AdapterCard[]>([])
+const router = useRouter()
+
+function goCatalog(spiType: string) {
+  router.push({ path: '/plugin-catalog', query: { spiType } })
+}
 
 const SPI_META: Record<string, { title: string; icon: typeof Connection }> = {
   'model-gateway': { title: 'Model Gateway', icon: Connection },

@@ -29,6 +29,7 @@
         <module>zest-llm-flow-adapter</module>
         <module>zest-llm-admin</module>
         <module>zest-llm-demo</module>
+        <module>plugins</module>
     </modules>
 
     <properties>
@@ -129,6 +130,32 @@
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-impl</artifactId>
                 <version>${jjwt.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-gateway-litellm</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-observability-langfuse</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-agent-runtime-native</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-knowledge-echo-sample</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-knowledge-http</artifactId>
+                <version>${zest-llm.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>

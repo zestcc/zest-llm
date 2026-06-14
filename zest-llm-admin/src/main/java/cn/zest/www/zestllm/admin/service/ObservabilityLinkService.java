@@ -2,7 +2,7 @@ package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.config.AdminObservabilityProperties;
 import cn.zest.www.zestllm.admin.model.vo.ObservabilityConfigVO;
-import cn.zest.www.zestllm.infra.config.LangfuseProperties;
+import cn.zest.www.zestllm.plugin.observability.langfuse.LangfuseProperties;
 import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

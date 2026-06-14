@@ -2,7 +2,7 @@ package cn.zest.www.zestllm.admin.service;
 
 import cn.zest.www.zestllm.admin.model.entity.LlmGatewayModelDO;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
-import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

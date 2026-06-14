@@ -4,7 +4,7 @@ import cn.zest.www.zestllm.admin.model.entity.LlmGatewayModelDO;
 import cn.zest.www.zestllm.admin.model.vo.LiteLLMSyncResultVO;
 import cn.zest.www.zestllm.admin.model.vo.LiteLLMSyncStatusVO;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
-import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

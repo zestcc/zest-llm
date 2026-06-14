@@ -1,6 +1,6 @@
 package cn.zest.www.zestllm.admin.config;
 
-import cn.zest.www.zestllm.infra.config.LiteLLMProperties;
+import cn.zest.www.zestllm.plugin.gateway.litellm.LiteLLMProperties;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

@@ -31,6 +31,12 @@ const router = createRouter({
         { path: 'audit-logs', component: () => import('../views/AuditLogsView.vue'), meta: { title: '审计日志' } },
         { path: 'ops', component: () => import('../views/OpsView.vue'), meta: { title: '运维中心' } },
         { path: 'adapters', component: () => import('../views/AdaptersView.vue'), meta: { title: '适配器健康' } },
+        { path: 'plugin-catalog', component: () => import('../views/PluginCatalogView.vue'), meta: { title: '插件中心' } },
+        {
+          path: 'plugin-catalog/:catalogKey',
+          component: () => import('../views/PluginDetailView.vue'),
+          meta: { title: '插件详情' }
+        },
         { path: 'integration', component: () => import('../views/IntegrationView.vue'), meta: { title: '集成概览' } }
       ]
     }

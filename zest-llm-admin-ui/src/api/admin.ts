@@ -99,6 +99,90 @@ export interface AdapterHealthVO {
   message?: string
 }
 
+export interface AdapterIntegrationStepVO {
+  stepId: string
+  order: number
+  title: string
+  description: string
+  actionType: string
+  actionLabel?: string
+  actionTarget?: string
+  commandExample?: string
+  docUrl?: string
+  required: boolean
+}
+
+export interface AdapterCatalogItemVO {
+  catalogKey: string
+  pluginId: string
+  pluginName: string
+  spiType: string
+  description?: string
+  vendor?: string
+  version?: string
+  loadStatus: string
+  active: boolean
+  installed: boolean
+  builtIn: boolean
+  external?: boolean
+  healthUp: boolean
+  healthMessage?: string
+}
+
+export interface AdapterCatalogPageVO {
+  profile?: string
+  summary?: Record<string, number>
+  plugins: AdapterCatalogItemVO[]
+  activeDefaults?: Record<string, string>
+  runtimeOverrides?: Record<string, string>
+  externalDir?: string
+  externalPlugins?: Record<string, unknown>[]
+}
+
+export interface AdapterCatalogDetailVO {
+  catalogKey: string
+  pluginId: string
+  pluginName: string
+  spiType: string
+  description?: string
+  vendor?: string
+  version?: string
+  configProperty?: string
+  configExample?: string
+  mavenArtifact?: string
+  builtIn: boolean
+  installed: boolean
+  active: boolean
+  loadStatus: string
+  configuredValue?: string
+  pendingValue?: string
+  restartRequired?: boolean
+  healthUp: boolean
+  healthMessage?: string
+  prerequisites?: string[]
+  relatedTemplates?: string[]
+  integrationSteps?: AdapterIntegrationStepVO[]
+  runtimeOverrides?: Record<string, string>
+}
+
+export interface IntegrationSetupStepVO {
+  stepId: string
+  title: string
+  description: string
+  status: string
+  required: boolean
+  navigateTo?: string
+  hint?: string
+}
+
+export interface IntegrationSetupChecklistVO {
+  totalSteps: number
+  completedSteps: number
+  progressPercent: number
+  readyForProduction: boolean
+  steps: IntegrationSetupStepVO[]
+}
+
 export interface TenantVO {
   id?: number
   tenantCode: string
@@ -1109,6 +1193,40 @@ export const adminApi = {
 
   retryIntegrationWebhookDelivery(id: number) {
     return http.post<IntegrationWebhookDeliveryVO>(`/api/admin/integration/webhook/deliveries/${id}/retry`)
+  },
+
+  getAdapterCatalog(spiType?: string) {
+    return http.get<AdapterCatalogPageVO>('/api/admin/adapters/catalog', {
+      params: { spiType: spiType || undefined }
+    })
+  },
+
+  getAdapterCatalogDetail(catalogKey: string) {
+    return http.get<AdapterCatalogDetailVO>(
+      `/api/admin/adapters/catalog/${encodeURIComponent(catalogKey)}`
+    )
+  },
+
+  adapterCatalogHealthCheck(catalogKey: string) {
+    return http.post<AdapterCatalogDetailVO>(
+      `/api/admin/adapters/catalog/${encodeURIComponent(catalogKey)}/health-check`
+    )
+  },
+
+  setDefaultAdapter(spiType: string, pluginId: string) {
+    return http.put<Record<string, string>>(`/api/admin/adapters/catalog/defaults/${spiType}`, {
+      pluginId
+    })
+  },
+
+  getIntegrationSetupGuide() {
+    return http.get<IntegrationSetupChecklistVO>('/api/admin/adapters/setup-guide')
+  },
+
+  rescanExternalAdapters() {
+    return http.post<{ loaded: number; externalPlugins: Record<string, unknown>[]; message: string }>(
+      '/api/admin/adapters/catalog/external/rescan'
+    )
   }
 }
 
