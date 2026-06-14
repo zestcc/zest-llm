@@ -69,6 +69,10 @@ public class CustomKnowledgeAdapter implements KnowledgeRetrievalAdapter {
 | `zest-llm-plugin-observability-langfuse` | observability | `langfuse` · `zest.llm.adapters.observability` |
 | `zest-llm-plugin-agent-runtime-native` | agent-runtime | `native` · `zest.llm.adapters.agent-runtime` |
 | `zest-llm-plugin-knowledge-http` | knowledge-retrieval | `http-knowledge` · `zest.llm.adapters.knowledge-retrieval` |
+| `zest-llm-plugin-knowledge-ragflow` | knowledge-retrieval | `ragflow` · `zest.llm.adapters.knowledge-retrieval` |
+| `zest-llm-plugin-knowledge-dify-kb` | knowledge-retrieval | `dify-kb` · `zest.llm.adapters.knowledge-retrieval` |
+| `zest-llm-plugin-agent-runtime-dify` | agent-runtime | `dify` · `zest.llm.adapters.agent-runtime` |
+| `zest-llm-plugin-dify-common` | （共享配置） | `zest.llm.dify.*`（供 dify-kb / dify runtime 共用） |
 | `zest-llm-plugin-knowledge-echo-sample` | knowledge-retrieval | `echo-kb`（外置 JAR 样本） |
 
 以上模块由 `zest-llm-infra` 依赖并随 Admin 一体发布；切换 SPI 仍见下文 Admin 插件中心说明。

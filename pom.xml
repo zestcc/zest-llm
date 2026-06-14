@@ -158,6 +158,26 @@
                 <version>${zest-llm.version}</version>
             </dependency>
             <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-dify-common</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-knowledge-ragflow</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-knowledge-dify-kb</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-agent-runtime-dify</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.jsonwebtoken</groupId>
                 <artifactId>jjwt-jackson</artifactId>
                 <version>${jjwt.version}</version>

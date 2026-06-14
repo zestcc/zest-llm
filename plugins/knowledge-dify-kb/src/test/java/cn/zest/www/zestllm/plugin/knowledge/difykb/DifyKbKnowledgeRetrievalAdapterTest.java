@@ -1,6 +1,6 @@
-package cn.zest.www.zestllm.infra.knowledge;
+package cn.zest.www.zestllm.plugin.knowledge.difykb;
 
-import cn.zest.www.zestllm.infra.config.DifyProperties;
+import cn.zest.www.zestllm.plugin.dify.common.DifyProperties;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveResult;
 import cn.zest.www.zestllm.spi.profile.KnowledgeRefConfig;

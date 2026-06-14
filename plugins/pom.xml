@@ -14,10 +14,14 @@
     <name>zest-llm-plugins</name>
     <description>Built-in and external adapter plugin modules</description>
     <modules>
+        <module>dify-common</module>
         <module>knowledge-echo-sample</module>
         <module>gateway-litellm</module>
         <module>observability-langfuse</module>
         <module>agent-runtime-native</module>
+        <module>agent-runtime-dify</module>
         <module>knowledge-http</module>
+        <module>knowledge-ragflow</module>
+        <module>knowledge-dify-kb</module>
     </modules>
 </project>

@@ -1,6 +1,6 @@
-package cn.zest.www.zestllm.infra.runtime;
+package cn.zest.www.zestllm.plugin.runtime.dify;
 
-import cn.zest.www.zestllm.infra.config.DifyProperties;
+import cn.zest.www.zestllm.plugin.dify.common.DifyProperties;
 import cn.zest.www.zestllm.spi.model.ChatResponse;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.spi.profile.RuntimeBackendConfig;
@@ -19,9 +19,6 @@ import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
 
-/**
- * Dify Agent Runtime（对标 Dify Chat API / Workflow API）。
- */
 @Slf4j
 @RequiredArgsConstructor
 public class DifyAgentRuntimeAdapter implements AgentRuntimeAdapter {
@@ -43,20 +40,7 @@ public class DifyAgentRuntimeAdapter implements AgentRuntimeAdapter {
         long start = System.currentTimeMillis();
         try {
             RestClient client = buildClient(baseUrl, apiKey, backend);
-            ObjectNode body = objectMapper.createObjectNode();
-            body.put("query", request.getUserMessage() != null ? request.getUserMessage() : "ping");
-            body.put("response_mode", "blocking");
-            body.put("user", request.getTaskCode() != null ? request.getTaskCode() : "zestllm");
-            if (StringUtils.hasText(backend.getExternalAppId())) {
-                body.put("conversation_id", "");
-            }
-            String uri = StringUtils.hasText(backend.getExternalAppId())
-                    ? "/v1/chat-messages"
-                    : "/v1/chat-messages";
-            ObjectNode headers = objectMapper.createObjectNode();
-            if (StringUtils.hasText(backend.getExternalAppId())) {
-                // Dify app-specific endpoint uses Authorization + app in URL for some versions
-            }
+            String uri = "/v1/chat-messages";
             String raw = client.post()
                     .uri(uri)
                     .header("Authorization", "Bearer " + apiKey)

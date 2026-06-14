@@ -1,4 +1,4 @@
-package cn.zest.www.zestllm.infra.config;
+package cn.zest.www.zestllm.plugin.dify.common;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

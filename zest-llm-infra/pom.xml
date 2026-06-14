@@ -33,6 +33,22 @@
         </dependency>
         <dependency>
             <groupId>cn.zest.www</groupId>
+            <artifactId>zest-llm-plugin-dify-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.zest.www</groupId>
+            <artifactId>zest-llm-plugin-knowledge-ragflow</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.zest.www</groupId>
+            <artifactId>zest-llm-plugin-knowledge-dify-kb</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.zest.www</groupId>
+            <artifactId>zest-llm-plugin-agent-runtime-dify</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>cn.zest.www</groupId>
             <artifactId>zest-llm-common</artifactId>
         </dependency>
         <dependency>

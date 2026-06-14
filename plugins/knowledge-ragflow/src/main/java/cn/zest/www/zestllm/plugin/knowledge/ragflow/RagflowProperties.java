@@ -1,4 +1,4 @@
-package cn.zest.www.zestllm.infra.config;
+package cn.zest.www.zestllm.plugin.knowledge.ragflow;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;

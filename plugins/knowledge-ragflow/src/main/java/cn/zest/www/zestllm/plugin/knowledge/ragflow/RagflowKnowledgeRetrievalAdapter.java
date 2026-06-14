@@ -1,6 +1,5 @@
-package cn.zest.www.zestllm.infra.knowledge;
+package cn.zest.www.zestllm.plugin.knowledge.ragflow;
 
-import cn.zest.www.zestllm.infra.config.RagflowProperties;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveResult;

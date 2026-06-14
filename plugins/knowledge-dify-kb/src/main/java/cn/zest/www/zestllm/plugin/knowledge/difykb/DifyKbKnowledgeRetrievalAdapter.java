@@ -1,6 +1,6 @@
-package cn.zest.www.zestllm.infra.knowledge;
+package cn.zest.www.zestllm.plugin.knowledge.difykb;
 
-import cn.zest.www.zestllm.infra.config.DifyProperties;
+import cn.zest.www.zestllm.plugin.dify.common.DifyProperties;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveRequest;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrieveResult;
@@ -22,9 +22,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Dify 知识库检索（对标 Dify Dataset Retrieve API）。
- */
 @Slf4j
 @RequiredArgsConstructor
 public class DifyKbKnowledgeRetrievalAdapter implements KnowledgeRetrievalAdapter {

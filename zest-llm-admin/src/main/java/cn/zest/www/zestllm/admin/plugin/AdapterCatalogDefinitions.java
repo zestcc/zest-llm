@@ -157,7 +157,7 @@ public final class AdapterCatalogDefinitions {
                             dify:
                               base-url: http://127.0.0.1/v1
                         """,
-                "zest-llm-infra",
+                "zest-llm-plugin-agent-runtime-dify",
                 steps(
                         step("prep-dify", 1, "准备 Dify 应用", "创建 Dify 应用并获取 API Key，写入 Secret",
                                 "NAVIGATE", "密钥管理", "/integration", null, null, true),
@@ -253,7 +253,7 @@ public final class AdapterCatalogDefinitions {
                             ragflow:
                               base-url: http://127.0.0.1:9380
                         """,
-                "zest-llm-infra",
+                "zest-llm-plugin-knowledge-ragflow",
                 steps(
                         step("prep", 1, "部署 RAGFlow", "安装 RAGFlow 并创建 Dataset",
                                 "DOC", "RAGFlow 文档", null, null, "https://ragflow.io/docs", true),
@@ -270,7 +270,7 @@ public final class AdapterCatalogDefinitions {
                 "zest.llm.adapters.knowledge-retrieval", true, true,
                 List.of("Dify 知识库 Dataset"),
                 List.of("generic-hybrid-rag"),
-                "zest.llm.adapters.knowledge-retrieval: dify-kb", "zest-llm-infra",
+                "zest.llm.adapters.knowledge-retrieval: dify-kb", "zest-llm-plugin-knowledge-dify-kb",
                 steps(
                         step("prep", 1, "创建 Dify Dataset", "在 Dify 上传文档并记录 Dataset ID",
                                 "DOC", "Dify KB", null, null, "https://docs.dify.ai", true),
