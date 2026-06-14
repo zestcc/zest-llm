@@ -297,7 +297,7 @@ ZestStory 提供接收 URL，ZestLLM 配置：
 zest-llm:
   admin:
     integration:
-      webhook-url: https://zeststory.internal/hooks/zestllm/publish
+      webhook-url: http://127.0.0.1:8080/api/integrations/zestllm/webhook
 ```
 
 事件体：`event`（`PROFILE_PUBLISH_SUCCESS` / `FAILED`）、`taskCode`、`version`、`success`、`message`。  
@@ -317,15 +317,25 @@ zest-llm:
 | 4 | Starter 或 HTTP 打通一次 invoke | 端到端 answer + traceId |
 | 5 | 接入 Admin 执行记录 / Langfuse 链接（可选） | 可观测 |
 
-### Week 2 — 检索与治理
+### Week 2 — 检索与治理 ✅ 已完成（2026-06-14）
 
-| # | 任务 | 产出 |
-|---|------|------|
-| 6 | 上线 `zestStoryRag`（http-knowledge 或 RAGFlow） | knowledgePrefetch 有内容 |
-| 7 | Publish Preview + 人工发布流程 | 409 门禁可解释 |
-| 8 | Webhook 通知 ZestStory 配置中心 | 发布自动刷新 |
-| 9 | 压测 prepare P95（`stress-test-prepare.ps1`） | 性能基线 |
-| 10 | 文档：ZestStory 内维护 Profile 变更说明 | 运维可接手 |
+| # | 任务 | 产出 | 状态 |
+|---|------|------|------|
+| 6 | 上线 `zestStoryRag`（http-knowledge） | V25 seed + ZestStory `use-rag-task: true` | ✅ |
+| 7 | Publish Preview + 人工发布流程 | Admin API + ZestStory `ZestLlmPublishPreviewService` | ✅ |
+| 8 | Webhook → ZestStory | `ZEST_INTEGRATION_WEBHOOK_URL` → `/api/integrations/zestllm/webhook` | ✅ |
+| 9 | 压测 prepare P95 | middleware `stress-test-prepare.ps1`（可选） | ☐ 非阻塞 |
+| 10 | Profile SSOT + 文档 | V27 prompt seed + zestory 接入报告 | ✅ |
+
+**本地 Webhook 示例**（`application-local.example.yml`）：
+
+```yaml
+zest-llm:
+  admin:
+    integration:
+      webhook-url: http://127.0.0.1:8080/api/integrations/zestllm/webhook
+# 或环境变量：ZEST_INTEGRATION_WEBHOOK_URL
+```
 
 ---
 
@@ -379,8 +389,8 @@ zest-llm:
 | 项 | 状态 |
 |----|------|
 | ZestLLM middleware 本地验收 | ✅ 已完成（2026-06-14） |
-| ZestStory 代码接入（zestory 仓库） | ✅ 见 `D:\project\zest\zestory` · V25 seed |
-| 跨仓 E2E（E2E-01/02 + RAG-01） | ✅ Windows 本地 3 PASS / 0 FAIL（2026-06-14） |
+| ZestStory 产品化（Webhook/RAG/SSOT/Status） | ✅ zestory 仓库 Week2 落地 |
+| 跨仓 E2E（E2E-01/02 + RAG-01 + WH-01） | ✅ `e2e-zeststory-zestllm.ps1` |
 | Docker 生产签字 | ☐ 可选，Linux 环境后续补 |
 
 **建议**：将本文复制为 ZestStory 仓库 `docs/integration/ZestLLM-接入报告.md`，并在首期 PR 中完成 §8 Week1 任务 1–4 作为 DoD。

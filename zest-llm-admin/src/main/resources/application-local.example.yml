@@ -23,6 +23,12 @@ zest:
       quota: db
       policy-cache: caffeine
       response-cache: noop
+      # medium tier RAG（ZestStory zestStoryRag）
+      knowledge-retrieval: ${ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL:http-knowledge}
+    http-knowledge:
+      base-url: ${ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL:http://127.0.0.1:8091}
+      retrieve-path: /v1/retrieve
+      health-path: /health
     learning:
       auto-publish:
         enabled: false
@@ -37,6 +43,9 @@ zest:
 
 zest-llm:
   admin:
+    integration:
+      # 本地 ZestStory Webhook 接收端（亦可通过环境变量 ZEST_INTEGRATION_WEBHOOK_URL 覆盖）
+      webhook-url: http://127.0.0.1:8080/api/integrations/zestllm/webhook
     jwt:
       secret: local-dev-jwt-secret-key-at-least-32-chars
     sso:

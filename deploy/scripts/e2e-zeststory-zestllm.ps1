@@ -1,6 +1,6 @@
 # ZestStory × ZestLLM 联调 + RAG 冒烟（Windows）
 #
-# 用例：E2E-01 zestStoryInvoke · RAG-01 zestStoryRag · E2E-02 zestory zestllmReady · DOCKER-01（Linux CI）
+# 用例：E2E-01 zestStoryInvoke · RAG-01 zestStoryRag · E2E-02 zestory zestllmReady · WH-01 webhook smoke · DOCKER-01（Linux CI）
 #
 # 前置（ZestLLM 侧，-SkipStart 时须已运行）：
 #   powershell -File deploy/scripts/start-kb-mock-local.ps1
@@ -63,6 +63,18 @@ try {
 try {
     $st = Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/status" -TimeoutSec 5
     Write-E2E "E2E-02" ($st.data.llm.zestllmReady -eq $true) "zestory zestllmReady"
+    try {
+        $whBody = (@{
+            event = "PROFILE_PUBLISH_SUCCESS"; taskCode = "zestStoryInvoke"; version = "v1"
+            success = $true; message = "e2e smoke"
+        } | ConvertTo-Json -Compress)
+        Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/zestllm/webhook" -Method POST `
+            -Body $whBody -ContentType "application/json" -TimeoutSec 5 | Out-Null
+        $st2 = Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/status" -TimeoutSec 5
+        Write-E2E "WH-01" ($st2.data.llm.lastWebhook.available -eq $true) "zestory webhook receiver"
+    } catch {
+        Write-E2E "WH-01" $false $_.Exception.Message
+    }
 } catch {
     Write-Host "SKIP E2E-02 zestory not running" -ForegroundColor Yellow
     $Skip++
