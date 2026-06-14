@@ -18,6 +18,17 @@ model_list:
       model: deepseek/deepseek-chat
       api_key: os.environ/DEEPSEEK_API_KEY
 
+  # V25 zestStory dogfood（本地 mock；model 用中性名避免 LiteLLM 误路由 DeepSeek 上游）
+  - model_name: deepseek-v4-flash
+    litellm_params:
+      model: zest-mock-flash
+      mock_response: "ZestLLM local mock: zestStory flash reply"
+
+  - model_name: deepseek-v4-pro
+    litellm_params:
+      model: zest-mock-pro
+      mock_response: "ZestLLM local mock: zestStory pro fallback reply"
+
 general_settings:
   master_key: sk-zest-llm-demo
 

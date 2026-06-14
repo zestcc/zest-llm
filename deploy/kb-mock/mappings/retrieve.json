@@ -1,0 +1,19 @@
+{
+  "request": {
+    "method": "POST",
+    "urlPath": "/v1/retrieve"
+  },
+  "response": {
+    "status": 200,
+    "headers": { "Content-Type": "application/json" },
+    "jsonBody": {
+      "chunks": [
+        {
+          "content": "主角在黑暗王朝末年起义，旧设定：双月当空。",
+          "score": 0.92,
+          "datasetId": "zeststory-kb"
+        }
+      ]
+    }
+  }
+}
