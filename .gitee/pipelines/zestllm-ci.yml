@@ -9,6 +9,9 @@ stages:
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository"
+  DOCKER_HOST: tcp://docker:2375
+  DOCKER_TLS_CERTDIR: ""
+  DOCKER_DRIVER: overlay2
 
 build-and-test:
   stage: build
@@ -29,29 +32,41 @@ build-and-test:
     expire_in: 7 days
 
 # docker-e2e：发布前手动触发；打 release tag 后建议在 Gitee 流水线再次手动跑本 job 留档签字证据。
+# DOCKER-01 = production-acceptance.sh 全绿（含 ZestStory E2E-01/RAG-01）
 docker-e2e:
   stage: e2e-manual
   image: docker:24
   services:
-    - docker:24-dind
+    - name: docker:24-dind
+      alias: docker
+      command: ["--tls=false"]
   when: manual
   allow_failure: false
   script:
     - apk add --no-cache bash curl git openjdk17 maven
     - cd "$CI_PROJECT_DIR"
     - mkdir -p deploy/test-reports
+    - docker info
+    - bash -n deploy/scripts/production-acceptance.sh
+    - bash -n deploy/scripts/e2e-zeststory-zestllm.sh
+    - bash -n deploy/scripts/run-production-signoff.sh
     # Large Tier compose 干跑（不启动容器），与 small 栈签字互补
     - bash deploy/scripts/validate-large-tier-compose.sh 2>&1 | tee deploy/test-reports/validate-large-tier-compose.log
     - bash deploy/scripts/preload-stack-images.sh 2>&1 | tee deploy/test-reports/preload-stack-images.log
     - bash deploy/scripts/zest-stack-up.sh small
     - bash deploy/scripts/wait-stack-ready.sh
-    # production-acceptance: 白盒 → e2e → sso-smoke → journeys → loadtest（含 GATE-SSO）
+    # ZestStory 冒烟（E2E-01/RAG-01）；DOCKER-01 由 production-acceptance 汇总
+    - ADMIN_URL=http://localhost:8088 bash deploy/scripts/e2e-zeststory-zestllm.sh 2>&1 | tee deploy/test-reports/e2e-zeststory-ci.log
+    # production-acceptance: 白盒 → ZestStory → e2e → sso-smoke → journeys → loadtest（含 GATE-SSO + DOCKER-01）
     - TIER=production SKIP_IT=1 bash deploy/scripts/production-acceptance.sh 2>&1 | tee deploy/test-reports/ci-docker-e2e.log
     - grep -E 'PASS GATE-SSO|SKIP GATE-SSO' deploy/test-reports/ci-docker-e2e.log
+    - grep -E 'PASS DOCKER-01|ALL PRODUCTION ACCEPTANCE PASSED' deploy/test-reports/ci-docker-e2e.log
   artifacts:
     paths:
       - deploy/test-reports/ci-docker-e2e.log
+      - deploy/test-reports/e2e-zeststory-ci.log
       - deploy/test-reports/validate-large-tier-compose.log
+      - deploy/test-reports/preload-stack-images.log
       - deploy/test-reports/production-*.txt
       - deploy/test-reports/signoff-*.txt
       - deploy/test-reports/mvn-test-latest.log

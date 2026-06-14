@@ -79,6 +79,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
       ZEST_LLM_JWT_SECRET: ${ZEST_LLM_JWT_SECRET:-change-me-in-production-zest-llm-admin-jwt-secret-key}
+      ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL: ${ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL:-http-knowledge}
+      ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL: ${ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL:-http://kb-mock:8080}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
     depends_on:
@@ -91,6 +93,8 @@ services:
       mcp-mock:
         condition: service_healthy
       alert-mock:
+        condition: service_healthy
+      kb-mock:
         condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8088/swagger-ui.html >/dev/null || exit 1"]
@@ -139,6 +143,19 @@ services:
     container_name: zest-llm-alert-mock
     volumes:
       - ./alert-mock/mappings:/home/wiremock/mappings:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/__admin/health >/dev/null || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  kb-mock:
+    image: ${WIREMOCK_IMAGE:-wiremock/wiremock:3.3.1}
+    container_name: zest-llm-kb-mock
+    ports:
+      - "8091:8080"
+    volumes:
+      - ./kb-mock/mappings:/home/wiremock/mappings:ro
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8080/__admin/health >/dev/null || exit 1"]
       interval: 5s

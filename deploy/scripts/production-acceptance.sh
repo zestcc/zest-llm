@@ -41,6 +41,10 @@ else
   fi
 fi
 
+log "======== PHASE: ZestStory smoke E2E-01/RAG-01 ========"
+ADMIN_URL="$ADMIN_URL" bash deploy/scripts/e2e-zeststory-zestllm.sh 2>&1 | tee -a "$MASTER"
+log "PASS ZestStory smoke"
+
 log "======== PHASE: BLACKBOX e2e-acceptance AC1-67 ========"
 ADMIN_URL="$ADMIN_URL" bash deploy/scripts/e2e-acceptance.sh 2>&1 | tee -a "$MASTER"
 log "PASS BLACKBOX e2e"
@@ -73,5 +77,7 @@ else
 fi
 log "PASS GATE-CH run-journeys"
 log "PASS GATE-ST P95<=${P95_MAX}ms"
+log "PASS GATE-ZS ZestStory E2E-01/RAG-01"
+log "PASS DOCKER-01 Linux Docker production acceptance"
 log "MasterReport=$MASTER"
 log "=== ALL PRODUCTION ACCEPTANCE PASSED ==="

@@ -27,6 +27,11 @@ zest:
       report-channel: sync
       content-moderation: keyword-blocklist
       alert-webhook: http
+      knowledge-retrieval: http-knowledge
+    http-knowledge:
+      base-url: http://kb-mock:8080
+      retrieve-path: /v1/retrieve
+      health-path: /health
     langfuse:
       enabled: false
 

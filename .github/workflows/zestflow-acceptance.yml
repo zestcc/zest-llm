@@ -5,6 +5,7 @@ on:
     branches: [main, master, develop]
   pull_request:
     branches: [main, master, develop]
+  workflow_dispatch:
 
 jobs:
   build-and-test:
@@ -33,13 +34,31 @@ jobs:
   docker-e2e:
     runs-on: ubuntu-latest
     needs: build-and-test
+    if: github.event_name == 'workflow_dispatch'
+    env:
+      DOCKER_HOST: tcp://localhost:2375
+      DOCKER_TLS_CERTDIR: ""
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+        ports:
+          - 2375:2375
     steps:
       - uses: actions/checkout@v4
-      - name: Start stack
+      - name: Verify Docker
+        run: docker info
+      - name: Syntax check scripts
         run: |
-          cd deploy
-          docker compose up -d --build mysql valkey litellm mcp-mock admin demo
+          bash -n deploy/scripts/production-acceptance.sh
+          bash -n deploy/scripts/e2e-zeststory-zestllm.sh
+      - name: Validate large tier compose
+        run: bash deploy/scripts/validate-large-tier-compose.sh
+      - name: Start stack
+        run: bash deploy/scripts/zest-stack-up.sh small
       - name: Wait for health
         run: bash deploy/scripts/wait-stack-ready.sh
-      - name: Production sign-off (four phases)
+      - name: ZestStory smoke (E2E-01/RAG-01)
+        run: bash deploy/scripts/e2e-zeststory-zestllm.sh
+      - name: Production sign-off (DOCKER-01)
         run: TIER=production SKIP_IT=1 bash deploy/scripts/production-acceptance.sh
