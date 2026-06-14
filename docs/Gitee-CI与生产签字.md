@@ -81,6 +81,14 @@ powershell -File deploy/scripts/production-acceptance.ps1 -Tier local
 
 local Tier 阈值：P95≤800ms（压测≤1200ms），**不能替代** Docker 生产签字。
 
+**ZestStory 跨仓 E2E**（非生产签字，联调门禁）：ZestLLM + ZestStory 均已启动后：
+
+```powershell
+powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart
+```
+
+期望 E2E-01 / RAG-01 / E2E-02 PASS；DOCKER-01 仅 Linux CI。详见 `docs/ZestStory-ZestLLM-接入报告.md` §5.2。
+
 ## 6. 故障排查
 
 | 现象 | 处理 |

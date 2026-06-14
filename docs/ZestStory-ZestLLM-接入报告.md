@@ -123,7 +123,35 @@ powershell -File deploy/scripts/full-acceptance.ps1
 
 **前置**：MySQL 8 本地 `:3306`，库 `zest_llm`（Flyway 自动迁移至 V24+）。
 
-### 5.2 Linux + RAGFlow（第二期）
+### 5.2 跨仓 E2E（ZestStory + ZestLLM，Windows 已验证 2026-06-14）
+
+```powershell
+# 终端 1 — ZestLLM + KB mock
+cd zest-llm
+powershell -File deploy/scripts/start-kb-mock-local.ps1
+$env:ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL = "http-knowledge"
+$env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL = "http://127.0.0.1:8091"
+powershell -File deploy/scripts/start-local-full.ps1 -WithLiteLLM -SkipBuild
+
+# 终端 2 — ZestStory（MySQL + Redis 本地 :3306/:6379）
+cd ..\zestory
+mvn -pl zestory-admin spring-boot:run
+
+# 终端 3 — 冒烟
+cd ..\zest-llm
+powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart
+```
+
+| 用例 | 说明 | 期望 |
+|------|------|------|
+| E2E-01 | Admin `/v1/llm/invoke` · `zestStoryInvoke` | PASS |
+| RAG-01 | Admin `/v1/llm/invoke` · `zestStoryRag` + http-knowledge | PASS |
+| E2E-02 | ZestStory `GET /api/integrations/status` · `llm.zestllmReady` | PASS |
+| DOCKER-01 | `production-acceptance.sh` | Linux CI / 有 Docker 时 |
+
+`zestory.llm.zestllm.use-rag-task` 默认 `false`（普通创作走 `zestStoryInvoke`）；检索增强场景可设为 `true` 走 `zestStoryRag`。
+
+### 5.3 Linux + RAGFlow（第二期）
 
 ```bash
 bash deploy/scripts/zest-stack-up.sh large
@@ -352,6 +380,7 @@ zest-llm:
 |----|------|
 | ZestLLM middleware 本地验收 | ✅ 已完成（2026-06-14） |
 | ZestStory 代码接入（zestory 仓库） | ✅ 见 `D:\project\zest\zestory` · V25 seed |
+| 跨仓 E2E（E2E-01/02 + RAG-01） | ✅ Windows 本地 3 PASS / 0 FAIL（2026-06-14） |
 | Docker 生产签字 | ☐ 可选，Linux 环境后续补 |
 
 **建议**：将本文复制为 ZestStory 仓库 `docs/integration/ZestLLM-接入报告.md`，并在首期 PR 中完成 §8 Week1 任务 1–4 作为 DoD。

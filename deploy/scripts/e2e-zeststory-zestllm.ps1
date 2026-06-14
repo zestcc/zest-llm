@@ -1,4 +1,24 @@
 # ZestStory × ZestLLM 联调 + RAG 冒烟（Windows）
+#
+# 用例：E2E-01 zestStoryInvoke · RAG-01 zestStoryRag · E2E-02 zestory zestllmReady · DOCKER-01（Linux CI）
+#
+# 前置（ZestLLM 侧，-SkipStart 时须已运行）：
+#   powershell -File deploy/scripts/start-kb-mock-local.ps1
+#   $env:ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL='http-knowledge'
+#   $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL='http://127.0.0.1:8091'
+#   powershell -File deploy/scripts/start-local-full.ps1 -WithLiteLLM -SkipBuild
+#
+# 前置（ZestStory 侧，E2E-02 需要 :8080）：
+#   MySQL 8 :3306 — 库 zestory_admin_business / zestory_admin_log（Flyway 自动建表）
+#   Redis :6379（可选，默认 127.0.0.1:6379）
+#   ZestLLM Admin :8088 已启动（见上）
+#   cd ..\zestory && mvn -pl zestory-admin spring-boot:run
+#   配置见 zestory-admin/.../application.yml（provider=zestllm，token=zeststory-runtime-dev-token）
+#
+# 运行：
+#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1          # 全栈自启
+#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart
+#
 param([switch]$SkipStart)
 $ErrorActionPreference = "Stop"
 $Pass = 0; $Fail = 0; $Skip = 0
