@@ -29,6 +29,8 @@ import cn.zest.www.zestllm.spi.secret.SecretResolver;
 import cn.zest.www.zestllm.spi.tool.McpToolAdapter;
 import cn.zest.www.zestllm.infra.knowledge.RagflowKnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.infra.observability.NoopObservabilityAdapter;
+import cn.zest.www.zestllm.infra.plugin.ExternalAdapterLoader;
+import cn.zest.www.zestllm.infra.plugin.ExternalAdapterRegistry;
 import cn.zest.www.zestllm.infra.prompt.HandlebarsPromptRenderer;
 import cn.zest.www.zestllm.infra.quota.NoopQuotaAdapter;
 import cn.zest.www.zestllm.infra.guardrails.KeywordBlocklistModerationAdapter;
@@ -257,6 +259,19 @@ public class LlmInfraAutoConfiguration {
     @ConditionalOnMissingBean
     public FunctionCallLoop functionCallLoop(ToolOrchestrator toolOrchestrator, ObjectMapper objectMapper) {
         return new FunctionCallLoop(toolOrchestrator, objectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExternalAdapterRegistry externalAdapterRegistry() {
+        return new ExternalAdapterRegistry();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ExternalAdapterLoader externalAdapterLoader(LlmPluginProperties pluginProperties,
+                                                       ExternalAdapterRegistry registry) {
+        return new ExternalAdapterLoader(pluginProperties, registry);
     }
 
     @Bean
