@@ -8,19 +8,17 @@
 #   $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL='http://127.0.0.1:8091'
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithLiteLLM -SkipBuild
 #
-# 前置（ZestStory 侧，E2E-02 需要 :8080）：
-#   MySQL 8 :3306 — 库 zestory_admin_business / zestory_admin_log（Flyway 自动建表）
-#   Redis :6379（可选，默认 127.0.0.1:6379）
-#   ZestLLM Admin :8088 已启动（见上）
-#   cd ..\zestory && mvn -pl zestory-admin spring-boot:run
-#   配置见 zestory-admin/.../application.yml（provider=zestllm，token=zeststory-runtime-dev-token）
+# 前置（ZestStory 侧，E2E-02/WH-01 需要 :8080）：
+#   powershell -File deploy/scripts/start-zestory-local.ps1   # 自动读 admin-local.port
+#   或：$env:ZESTLLM_CONTROL_PLANE_URL='http://127.0.0.1:8089'; mvn -pl zestory-admin spring-boot:run
 #
 # 运行：
-#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1          # 全栈自启
-#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart
+#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -WithZestStory
+#   powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart -WithZestStory
 #
 param(
     [switch]$SkipStart,
+    [switch]$WithZestStory,
     [string]$AdminUrl = ""
 )
 $ErrorActionPreference = "Stop"
@@ -32,6 +30,7 @@ function Write-E2E([string]$Id, [bool]$Ok, [string]$Msg) {
 
 $Root = Split-Path (Split-Path $PSScriptRoot -Parent) -Parent
 $PortFile = Join-Path $Root "deploy\logs\pids\admin-local.port"
+$ZestoryPortFile = Join-Path $Root "deploy\logs\pids\zestory-local.port"
 if (-not $AdminUrl) {
     if (Test-Path $PortFile) {
         $AdminUrl = "http://127.0.0.1:$((Get-Content $PortFile -Raw).Trim())"
@@ -39,7 +38,11 @@ if (-not $AdminUrl) {
         $AdminUrl = "http://127.0.0.1:8088"
     }
 }
-Write-Host "AdminUrl=$AdminUrl"
+$ZestoryBase = "http://127.0.0.1:8080"
+if (Test-Path $ZestoryPortFile) {
+    $ZestoryBase = "http://127.0.0.1:$((Get-Content $ZestoryPortFile -Raw).Trim())"
+}
+Write-Host "AdminUrl=$AdminUrl ZestoryUrl=$ZestoryBase"
 
 if (-not $SkipStart) {
     & (Join-Path $PSScriptRoot "start-local-full.ps1") -StopOnly | Out-Null
@@ -48,6 +51,10 @@ if (-not $SkipStart) {
     $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL = "http://127.0.0.1:8091"
     & (Join-Path $PSScriptRoot "start-local-full.ps1") -WithLiteLLM -SkipBuild
     Start-Sleep -Seconds 10
+}
+
+if ($WithZestStory) {
+    & (Join-Path $PSScriptRoot "start-zestory-local.ps1") -AdminUrl $AdminUrl
 }
 
 $token = "zeststory-runtime-dev-token"
@@ -76,16 +83,16 @@ try {
 } catch { Write-E2E "RAG-01" $false $_.Exception.Message }
 
 try {
-    $st = Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/status" -TimeoutSec 5
+    $st = Invoke-RestMethod -Uri "$ZestoryBase/api/integrations/status" -TimeoutSec 5
     Write-E2E "E2E-02" ($st.data.llm.zestllmReady -eq $true) "zestory zestllmReady"
     try {
         $whBody = (@{
             event = "PROFILE_PUBLISH_SUCCESS"; taskCode = "zestStoryInvoke"; version = "v1"
             success = $true; message = "e2e smoke"
         } | ConvertTo-Json -Compress)
-        Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/zestllm/webhook" -Method POST `
+        Invoke-RestMethod -Uri "$ZestoryBase/api/integrations/zestllm/webhook" -Method POST `
             -Body $whBody -ContentType "application/json" -TimeoutSec 5 | Out-Null
-        $st2 = Invoke-RestMethod -Uri "http://127.0.0.1:8080/api/integrations/status" -TimeoutSec 5
+        $st2 = Invoke-RestMethod -Uri "$ZestoryBase/api/integrations/status" -TimeoutSec 5
         Write-E2E "WH-01" ($st2.data.llm.lastWebhook.available -eq $true) "zestory webhook receiver"
     } catch {
         Write-E2E "WH-01" $false $_.Exception.Message

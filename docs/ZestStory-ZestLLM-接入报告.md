@@ -390,7 +390,7 @@ zest-llm:
 |----|------|
 | ZestLLM middleware 本地验收 | ✅ 已完成（2026-06-14） |
 | ZestStory 产品化（Webhook/RAG/SSOT/Status） | ✅ zestory 仓库 Week2 落地 |
-| 跨仓 E2E（E2E-01/02 + RAG-01 + WH-01） | ✅ `e2e-zeststory-zestllm.ps1` |
+| 跨仓 E2E（E2E-01/02 + RAG-01 + WH-01） | ✅ 4 PASS / 1 SKIP（Admin :8089 · ZestStory :8095） |
 | Docker 生产签字 | ☐ 可选，Linux 环境后续补 |
 
 **建议**：将本文复制为 ZestStory 仓库 `docs/integration/ZestLLM-接入报告.md`，并在首期 PR 中完成 §8 Week1 任务 1–4 作为 DoD。
