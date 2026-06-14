@@ -2,13 +2,16 @@
 # 编码：请用 UTF-8 with BOM 保存本文件，避免中文注释与下一行代码被 PowerShell 误解析。
 # 用法:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
-#   powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
+#   powershell -File deploy/scripts/start-local-full.ps1 [-WithLiteLLM] [-WithDemo] [-WithMcpMock] [-WithAlertMock] [-EmbedUi] [-SkipBuild] [-StopOnly]
+# 生产形态（内嵌 UI + Webhook mock）:
+#   powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithAlertMock
 # 推荐一键（Demo + LiteLLM + Admin + UI dev）:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
 param(
     [switch]$WithLiteLLM,
     [switch]$WithDemo,
     [switch]$WithMcpMock,
+    [switch]$WithAlertMock,
     [switch]$EmbedUi,
     [switch]$SkipBuild,
     [switch]$StopOnly
@@ -63,6 +66,7 @@ if ($StopOnly) {
     & (Join-Path $PSScriptRoot "start-litellm-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-demo-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1") -StopOnly
+    & (Join-Path $PSScriptRoot "start-alert-mock-local.ps1") -StopOnly
     Write-Host "Stopped local stack (PID files)." -ForegroundColor Green
     exit 0
 }
@@ -92,6 +96,10 @@ if ($WithLiteLLM) {
 
 if ($WithMcpMock) {
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1")
+}
+
+if ($WithAlertMock) {
+    & (Join-Path $PSScriptRoot "start-alert-mock-local.ps1")
 }
 
 # Stop Admin/Demo before rebuild to release JAR lock (mvn package fails if still running)
@@ -130,6 +138,10 @@ Stop-FromPidFile $UiPidFile "Admin UI dev"
 Start-Sleep -Seconds 1
 
 Write-Host "== Starting Admin (:8088) ==" -ForegroundColor Cyan
+if ($WithAlertMock) {
+    $env:ZEST_INTEGRATION_WEBHOOK_URL = "http://127.0.0.1:8090/webhook"
+    Write-Host "  ZEST_INTEGRATION_WEBHOOK_URL=$($env:ZEST_INTEGRATION_WEBHOOK_URL)" -ForegroundColor DarkGray
+}
 $adminProc = Start-Process -FilePath "java" `
     -ArgumentList @("-jar", $Jar, "--spring.profiles.active=local") `
     -WorkingDirectory $AdminDir `
@@ -177,9 +189,10 @@ if ($WithLiteLLM) { Write-Host "  LiteLLM:             http://127.0.0.1:4000" }
 else { Write-Host '  LiteLLM:             not started (use -WithLiteLLM for mock gateway)' }
 if ($WithDemo) { Write-Host '  Demo: http://127.0.0.1:8081/demo/order/methodA?orderId=1&question=hi' }
 if ($WithMcpMock) { Write-Host "  MCP mock:            http://127.0.0.1:9090/mcp" }
+if ($WithAlertMock) { Write-Host "  Webhook mock:        http://127.0.0.1:8090/webhook" }
 Write-Host "  Logs:                $LogDir"
 Write-Host ""
-Write-Host "Verify: powershell -File deploy/scripts/verify-local.ps1"
+Write-Host "Verify embedded UI + webhook: powershell -File deploy/scripts/verify-embedded-ui-and-webhook.ps1"
 Write-Host "Accept: powershell -File deploy/scripts/full-acceptance.ps1"
 Write-Host "Demo:   powershell -File deploy/scripts/demo-walkthrough.ps1"
 Write-Host "Stop:   powershell -File deploy/scripts/start-local-full.ps1 -StopOnly"

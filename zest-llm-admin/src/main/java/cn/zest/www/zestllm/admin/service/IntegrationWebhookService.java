@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
@@ -27,6 +29,7 @@ public class IntegrationWebhookService {
     private final ObjectMapper objectMapper;
     private final LlmIntegrationWebhookDeliveryRepo deliveryRepo;
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void notifyPublishResult(String taskCode, String version, boolean success, String message, String operator) {
         if (!StringUtils.hasText(properties.getWebhookUrl())) {
             return;
@@ -42,6 +45,7 @@ public class IntegrationWebhookService {
         deliverWithRetry(body, taskCode, version, (String) body.get("event"), null);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void redeliver(LlmIntegrationWebhookDeliveryDO row, Map<String, Object> body) {
         deliverWithRetry(body, row.getTaskCode(), row.getProfileVersion(), row.getEventType(), row);
     }
