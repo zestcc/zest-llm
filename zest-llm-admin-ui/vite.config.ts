@@ -1,6 +1,25 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { existsSync, readFileSync } from 'fs'
 import { resolve } from 'path'
+
+function resolveAdminApiTarget(): string {
+  const envPort = process.env.VITE_ADMIN_PORT
+  if (envPort && /^\d+$/.test(envPort)) {
+    return `http://127.0.0.1:${envPort}`
+  }
+  const portFile = resolve(__dirname, '../deploy/logs/pids/admin-local.port')
+  if (existsSync(portFile)) {
+    const port = parseInt(readFileSync(portFile, 'utf8').trim(), 10)
+    if (port > 0) {
+      return `http://127.0.0.1:${port}`
+    }
+  }
+  return 'http://127.0.0.1:8088'
+}
+
+const devPort = parseInt(process.env.VITE_DEV_PORT || '5174', 10)
+const adminTarget = resolveAdminApiTarget()
 
 export default defineConfig({
   plugins: [vue()],
@@ -25,10 +44,12 @@ export default defineConfig({
     }
   },
   server: {
-    port: 5176,
+    host: '127.0.0.1',
+    port: devPort,
+    strictPort: true,
     proxy: {
-      '/api': 'http://127.0.0.1:8090',
-      '/v1': 'http://127.0.0.1:8090'
+      '/api': adminTarget,
+      '/v1': adminTarget
     }
   }
 })

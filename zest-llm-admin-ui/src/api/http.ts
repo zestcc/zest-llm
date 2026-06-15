@@ -1,6 +1,7 @@
 import axios, { type AxiosInstance, type AxiosRequestConfig, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 import router from '../router'
+import { clearAuthSession, isTokenExpired } from '../utils/auth'
 
 export interface ApiResult<T = unknown> {
   code: number
@@ -35,6 +36,35 @@ function getErrorMessage(data: unknown): string {
   return '请求失败'
 }
 
+function getErrorCode(data: unknown): string | undefined {
+  if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const code = (data as Record<string, unknown>).errorCode
+    return typeof code === 'string' ? code : undefined
+  }
+  return undefined
+}
+
+function redirectToLogin(message: string, skipToast: boolean): void {
+  clearAuthSession()
+  if (router.currentRoute.value.path !== '/login') {
+    router.push('/login')
+  }
+  if (!skipToast) {
+    ElMessage.error(message)
+  }
+}
+
+function shouldTreat403AsAuthFailure(
+  token: string | null,
+  errorCode: string | undefined,
+  method: string
+): boolean {
+  if (!token || isTokenExpired(token)) {
+    return true
+  }
+  return errorCode === 'ACCESS_DENIED' && method === 'get'
+}
+
 instance.interceptors.response.use(
   (response: AxiosResponse) => {
     const body = response.data
@@ -54,13 +84,14 @@ instance.interceptors.response.use(
   (error) => {
     const skipToast = Boolean((error.config as AxiosRequestConfig & { skipErrorToast?: boolean })?.skipErrorToast)
     if (error.response?.status === 401) {
-      localStorage.removeItem('zest-llm-token')
-      localStorage.removeItem('zest-llm-user')
-      if (router.currentRoute.value.path !== '/login') {
-        router.push('/login')
-      }
-      if (!skipToast) {
-        ElMessage.error(getErrorMessage(error.response?.data) || '登录已过期，请重新登录')
+      redirectToLogin(getErrorMessage(error.response?.data) || '登录已过期，请重新登录', skipToast)
+    } else if (error.response?.status === 403) {
+      const token = localStorage.getItem('zest-llm-token')
+      const method = (error.config?.method || 'get').toLowerCase()
+      if (shouldTreat403AsAuthFailure(token, getErrorCode(error.response?.data), method)) {
+        redirectToLogin(getErrorMessage(error.response?.data) || '登录已过期，请重新登录', skipToast)
+      } else if (!skipToast) {
+        ElMessage.error(getErrorMessage(error.response?.data) || '无访问权限')
       }
     } else if (!skipToast) {
       if (error.response?.data) {

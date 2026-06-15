@@ -1,5 +1,6 @@
 # Local dev — copy to application-local.yml
-# ZestSSO 联调默认端口：Admin :8090，UI :5176（与 zest-sso V20 一致）
+# 本地默认端口：Admin :8088（start-local-full.ps1 可改），UI dev :5174（Vite 代理到 Admin）
+# ZestSSO 联调时可将 Admin 改为 :8090，并同步 VITE_ADMIN_PORT / redirect-uri
 # 一键启动（Demo + LiteLLM）:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
 # 一键启动（仅 Admin）:
@@ -19,7 +20,7 @@ spring:
       - cn.zest.www.zestllm.infra.config.LlmRoutingAutoConfiguration
 
 server:
-  port: 8090
+  port: 8088
 
 zest:
   llm:
@@ -72,9 +73,9 @@ zest-llm:
       jwks-uri: http://localhost:9000/oauth2/jwks
       client-id: zest-llm-admin
       client-secret: change-me-in-production
-      redirect-uri: http://localhost:5176/login/callback
-      # 内嵌 UI（-EmbedUi）时改为: http://127.0.0.1:8090/login/callback
-      post-logout-redirect-uri: http://localhost:5176/login
+      redirect-uri: http://localhost:5174/login/callback
+      # 内嵌 UI（-EmbedUi）时改为: http://127.0.0.1:8088/login/callback
+      post-logout-redirect-uri: http://localhost:5174/login
       scopes:
         - openid
         - profile

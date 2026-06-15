@@ -76,6 +76,33 @@ function Wait-HttpOk([string]$Url, [int]$Retries = 60) {
     return $false
 }
 
+function Test-HttpBodyMatches([string]$Url, [string]$Pattern) {
+    try {
+        $html = (Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3).Content
+        return $html -match $Pattern
+    } catch {
+        return $false
+    }
+}
+
+function Wait-AdminUiDev([string]$Url, [int]$Retries = 60) {
+    for ($i = 1; $i -le $Retries; $i++) {
+        if (Test-HttpBodyMatches $Url 'ZestLLM Admin') { return $true }
+        Start-Sleep -Seconds 2
+    }
+    return $false
+}
+
+function Warn-IfWrongAppOnPort([int]$Port, [string]$Label) {
+    if (-not (Test-PortListening $Port)) { return }
+    $url = "http://localhost:$Port/"
+    if (Test-HttpBodyMatches $url 'vitepress') {
+        Write-Host "WARN: Port $Port serves VitePress (zest/website), not $Label. Stop it or Admin UI dev will fail (strictPort)." -ForegroundColor Yellow
+    } elseif (-not (Test-HttpBodyMatches $url 'ZestLLM Admin')) {
+        Write-Host "WARN: Port $Port is in use by another app (not $Label)." -ForegroundColor Yellow
+    }
+}
+
 if ($StopOnly) {
     Stop-FromPidFile $AdminPidFile "Admin"
     Stop-FromPidFile $UiPidFile "Admin UI dev"
@@ -177,16 +204,19 @@ if (-not (Wait-HttpOk "$AdminBase/swagger-ui.html")) {
 }
 
 if (-not $EmbedUi) {
-    Write-Host "== Starting Admin UI dev (:5174) ==" -ForegroundColor Cyan
+    $UiDevPort = 5174
+    Warn-IfWrongAppOnPort $UiDevPort "ZestLLM Admin UI dev"
+    Write-Host "== Starting Admin UI dev (:$UiDevPort, API -> :$AdminPort) ==" -ForegroundColor Cyan
     $uiProc = Start-Process -FilePath "cmd.exe" `
-        -ArgumentList @("/c", "npm run dev > `"$UiLog`" 2>&1") `
+        -ArgumentList @("/c", "set VITE_ADMIN_PORT=$AdminPort&& npm run dev > `"$UiLog`" 2>&1") `
         -WorkingDirectory $UiDir `
         -PassThru -WindowStyle Hidden
     $uiProc.Id | Set-Content $UiPidFile
 
-    if (-not (Wait-HttpOk "http://localhost:5174/")) {
+    $uiUrl = "http://localhost:$UiDevPort/"
+    if (-not (Wait-AdminUiDev $uiUrl)) {
         Get-Content $UiLog -Tail 30
-        throw "Admin UI dev failed — see $UiLog"
+        throw "Admin UI dev failed — see $UiLog (expected ZestLLM Admin on :$UiDevPort, API proxy -> :$AdminPort)"
     }
 }
 

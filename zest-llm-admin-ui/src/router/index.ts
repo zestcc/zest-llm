@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
 import AppLayout from '../layout/AppLayout.vue'
+import { clearAuthSession, isTokenExpired } from '../utils/auth'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -45,9 +46,13 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('zest-llm-token')
-  if (!to.meta.public && !token) {
+  const tokenInvalid = !token || isTokenExpired(token)
+  if (tokenInvalid && token) {
+    clearAuthSession()
+  }
+  if (!to.meta.public && tokenInvalid) {
     next('/login')
-  } else if (to.path === '/login' && token) {
+  } else if (to.path === '/login' && token && !isTokenExpired(token)) {
     next('/dashboard')
   } else {
     next()
