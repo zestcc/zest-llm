@@ -13,6 +13,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
 import cn.zest.www.zestllm.spi.cache.PolicyCacheAdapter;
 import cn.zest.www.zestllm.spi.cache.ResponseCacheAdapter;
 import cn.zest.www.zestllm.spi.learning.LearningCycleResult;
+import cn.zest.www.zestllm.spi.learning.LearningPipelineAdapter;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.profile.LearningLoopConfig;
 import cn.zest.www.zestllm.spi.profile.ProfileExtensions;
@@ -35,7 +36,7 @@ public class AgentProfilePublishService {
     private final AuditService auditService;
     private final AgentProfileResolver agentProfileResolver;
     private final ProfileExtensionsValidator profileExtensionsValidator;
-    private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
+    private final LearningPipelineAdapter learningPipelineAdapter;
     private final AgentProfileProbeService agentProfileProbeService;
     private final IntegrationWebhookService integrationWebhookService;
 

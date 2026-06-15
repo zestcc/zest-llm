@@ -140,6 +140,7 @@ public class ZestEvalLearningPipelineAdapter implements LearningPipelineAdapter 
         return HealthStatus.builder().up(true).message("zest-eval learning pipeline").build();
     }
 
+    @Override
     public LearningCycleResult validateForPublish(String taskCode, String version, AgentProfileDocument document) {
         LearningLoopConfig loop = ProfileExtensions.learningLoop(document).orElse(null);
         if (loop == null || !loop.isEnabled()) {

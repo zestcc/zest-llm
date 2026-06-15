@@ -5,12 +5,19 @@ import cn.zest.www.zestllm.admin.model.vo.AdapterCatalogDetailVO;
 import cn.zest.www.zestllm.admin.model.vo.AdapterCatalogItemVO;
 import cn.zest.www.zestllm.admin.model.vo.AdapterCatalogPageVO;
 import cn.zest.www.zestllm.admin.model.vo.AdapterHealthVO;
+import cn.zest.www.zestllm.admin.model.vo.AdapterConfigRefVO;
+import cn.zest.www.zestllm.admin.model.vo.AdapterDocLinkVO;
 import cn.zest.www.zestllm.admin.model.vo.AdapterIntegrationStepVO;
+import cn.zest.www.zestllm.admin.model.vo.AdapterTroubleshootingItemVO;
+import cn.zest.www.zestllm.admin.plugin.AdapterTroubleshootingItem;
 import cn.zest.www.zestllm.admin.plugin.AdapterCatalogDefinitions;
 import cn.zest.www.zestllm.admin.plugin.AdapterCatalogEntry;
-import cn.zest.www.zestllm.admin.plugin.AdapterEnablementChecker;
+import cn.zest.www.zestllm.admin.plugin.AdapterConfigRef;
+import cn.zest.www.zestllm.admin.plugin.AdapterDocLink;
 import cn.zest.www.zestllm.admin.plugin.AdapterIntegrationStep;
 import cn.zest.www.zestllm.admin.plugin.AdapterLoadStatus;
+import cn.zest.www.zestllm.admin.plugin.AdapterPluginGuide;
+import cn.zest.www.zestllm.admin.plugin.AdapterEnablementChecker;
 import cn.zest.www.zestllm.infra.config.LlmAdapterProperties;
 import cn.zest.www.zestllm.infra.config.LlmPluginProperties;
 import cn.zest.www.zestllm.infra.plugin.ExternalAdapterRegistry;
@@ -80,7 +87,7 @@ public class AdapterCatalogService {
         String pending = adapterConfigService.pendingPluginId(entry.getSpiType());
         boolean restartRequired = pending != null && !pending.equals(readYamlValue(entry.getSpiType()));
 
-        return AdapterCatalogDetailVO.builder()
+        AdapterCatalogDetailVO.AdapterCatalogDetailVOBuilder builder = AdapterCatalogDetailVO.builder()
                 .catalogKey(entry.catalogKey())
                 .pluginId(entry.getPluginId())
                 .pluginName(entry.getPluginName())
@@ -103,8 +110,9 @@ public class AdapterCatalogService {
                 .prerequisites(entry.getPrerequisites())
                 .relatedTemplates(entry.getRelatedTemplates())
                 .integrationSteps(toSteps(entry.getIntegrationSteps()))
-                .runtimeOverrides(adapterConfigService.listOverrides())
-                .build();
+                .runtimeOverrides(adapterConfigService.listOverrides());
+        applyGuide(builder, entry.getGuide());
+        return builder.build();
     }
 
     public AdapterCatalogDetailVO healthCheck(String catalogKey) {
@@ -127,6 +135,7 @@ public class AdapterCatalogService {
         AdapterLoadStatus loadStatus = resolveLoadStatus(entry, active);
         AdapterHealthVO health = active ? resolveHealth(entry.getSpiType()) : inactiveHealth(entry);
 
+        AdapterPluginGuide guide = entry.getGuide();
         return AdapterCatalogItemVO.builder()
                 .catalogKey(entry.catalogKey())
                 .pluginId(entry.getPluginId())
@@ -142,6 +151,8 @@ public class AdapterCatalogService {
                 .external(isExternal(entry))
                 .healthUp(health.isUp())
                 .healthMessage(health.getMessage())
+                .tagline(guide != null ? guide.getTagline() : null)
+                .recommendedTier(guide != null ? guide.getRecommendedTier() : null)
                 .build();
     }
 
@@ -198,6 +209,63 @@ public class AdapterCatalogService {
                         .commandExample(step.getCommandExample())
                         .docUrl(step.getDocUrl())
                         .required(step.isRequired())
+                        .hints(step.getHints())
+                        .verificationCriteria(step.getVerificationCriteria())
+                        .build())
+                .toList();
+    }
+
+    private void applyGuide(AdapterCatalogDetailVO.AdapterCatalogDetailVOBuilder builder, AdapterPluginGuide guide) {
+        if (guide == null) {
+            return;
+        }
+        builder.tagline(guide.getTagline())
+                .overview(guide.getOverview())
+                .useCases(guide.getUseCases())
+                .whenNotToUse(guide.getWhenNotToUse())
+                .recommendedTier(guide.getRecommendedTier())
+                .architectureFlow(guide.getArchitectureFlow())
+                .configRefs(toConfigRefs(guide.getConfigRefs()))
+                .troubleshooting(toTroubleshooting(guide.getTroubleshooting()))
+                .relatedPlugins(guide.getRelatedPlugins())
+                .docLinks(toDocLinks(guide.getDocLinks()));
+    }
+
+    private List<AdapterConfigRefVO> toConfigRefs(List<AdapterConfigRef> refs) {
+        if (refs == null) {
+            return List.of();
+        }
+        return refs.stream()
+                .map(ref -> AdapterConfigRefVO.builder()
+                        .key(ref.getKey())
+                        .description(ref.getDescription())
+                        .required(ref.isRequired())
+                        .example(ref.getExample())
+                        .envVar(ref.getEnvVar())
+                        .build())
+                .toList();
+    }
+
+    private List<AdapterTroubleshootingItemVO> toTroubleshooting(List<AdapterTroubleshootingItem> items) {
+        if (items == null) {
+            return List.of();
+        }
+        return items.stream()
+                .map(item -> AdapterTroubleshootingItemVO.builder()
+                        .problem(item.getProblem())
+                        .solution(item.getSolution())
+                        .build())
+                .toList();
+    }
+
+    private List<AdapterDocLinkVO> toDocLinks(List<AdapterDocLink> links) {
+        if (links == null) {
+            return List.of();
+        }
+        return links.stream()
+                .map(link -> AdapterDocLinkVO.builder()
+                        .label(link.getLabel())
+                        .url(link.getUrl())
                         .build())
                 .toList();
     }

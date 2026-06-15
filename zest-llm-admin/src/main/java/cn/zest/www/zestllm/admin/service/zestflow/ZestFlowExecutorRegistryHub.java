@@ -1,7 +1,7 @@
 package cn.zest.www.zestllm.admin.service.zestflow;
 
+import cn.zest.www.zestllm.admin.model.vo.PeerExecutorVO;
 import com.zestflow.common.model.dto.HeartbeatDTO;
-import com.zestflow.common.model.dto.PeerExecutorDTO;
 import com.zestflow.common.model.dto.RegisterDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -72,13 +72,13 @@ public class ZestFlowExecutorRegistryHub {
         }
     }
 
-    public List<PeerExecutorDTO> listOnlinePeers(String appCode) {
-        List<PeerExecutorDTO> peers = new ArrayList<>();
+    public List<PeerExecutorVO> listOnlinePeers(String appCode) {
+        List<PeerExecutorVO> peers = new ArrayList<>();
         for (ExecutorRecord record : executors.values()) {
             if (appCode != null && !appCode.isBlank() && !appCode.equals(record.appCode)) {
                 continue;
             }
-            PeerExecutorDTO peer = new PeerExecutorDTO();
+            PeerExecutorVO peer = new PeerExecutorVO();
             peer.setExecutorId(record.executorId);
             peer.setHost(record.host);
             peer.setPort(record.port);

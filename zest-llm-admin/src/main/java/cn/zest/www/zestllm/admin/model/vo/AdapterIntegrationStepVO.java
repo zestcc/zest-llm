@@ -3,6 +3,8 @@ package cn.zest.www.zestllm.admin.model.vo;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @Builder
 public class AdapterIntegrationStepVO {
@@ -16,4 +18,6 @@ public class AdapterIntegrationStepVO {
     private String commandExample;
     private String docUrl;
     private boolean required;
+    private List<String> hints;
+    private String verificationCriteria;
 }

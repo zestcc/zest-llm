@@ -71,10 +71,12 @@
             <el-tag v-else-if="item.loadStatus === 'NOT_INSTALLED'" type="info" size="small">未安装</el-tag>
             <el-tag v-else type="warning" size="small">未激活</el-tag>
           </div>
-          <p class="plugin-desc">{{ item.description }}</p>
+          <p v-if="item.tagline" class="plugin-tagline">{{ item.tagline }}</p>
+          <p v-else class="plugin-desc">{{ item.description }}</p>
           <div class="plugin-meta">
             <el-tag size="small">{{ item.vendor }}</el-tag>
             <el-tag size="small" type="info">v{{ item.version }}</el-tag>
+            <el-tag v-if="item.recommendedTier" size="small" type="info">{{ tierLabel(item.recommendedTier) }}</el-tag>
             <el-tag v-if="item.external" size="small" type="warning">外置</el-tag>
             <el-tag :type="item.healthUp ? 'success' : 'danger'" size="small">
               {{ item.healthUp ? '健康' : '异常' }}
@@ -126,6 +128,17 @@ function statusTag(status: string) {
   if (status === 'failed') return 'danger'
   if (status === 'warning') return 'warning'
   return 'info'
+}
+
+function tierLabel(tier?: string) {
+  if (!tier) return ''
+  const map: Record<string, string> = {
+    small: 'Small',
+    medium: 'Medium',
+    large: 'Large',
+    all: '全 Tier'
+  }
+  return map[tier] || tier
 }
 
 function go(path: string) {
@@ -247,6 +260,17 @@ onMounted(() => {
 .plugin-id {
   font-size: 11px;
   color: var(--text-muted);
+}
+.plugin-tagline {
+  font-size: 13px;
+  color: var(--text-primary);
+  min-height: 40px;
+  margin: 0 0 8px;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .plugin-desc {
   font-size: 13px;

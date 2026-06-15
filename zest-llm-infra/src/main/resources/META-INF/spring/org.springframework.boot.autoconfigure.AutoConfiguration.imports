@@ -1,2 +1,3 @@
 cn.zest.www.zestllm.infra.LlmInfraAutoConfiguration
 cn.zest.www.zestllm.infra.config.LlmRoutingAutoConfiguration
+cn.zest.www.zestllm.infra.config.LlmToolAutoConfiguration

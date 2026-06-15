@@ -7,6 +7,7 @@ import cn.zest.www.zestllm.admin.model.vo.AdminLoginVO;
 import cn.zest.www.zestllm.admin.repo.LlmAdminUserRepo;
 import cn.zest.www.zestllm.spi.adminsso.AdminSsoLoginResult;
 import cn.zest.www.zestllm.spi.adminsso.AdminSsoProviderConfig;
+import cn.zest.www.zestllm.spi.adminsso.AdminSsoSessionRevocation;
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,7 +29,7 @@ public class AdminSsoUserProvisioner {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
-    private final AdminSessionRevocationService sessionRevocationService;
+    private final AdminSsoSessionRevocation sessionRevocation;
 
     public AdminSsoLoginResult provisionFromClaims(String providerId, Claims claims, AdminSsoProviderConfig config) {
         String subject = claims.getSubject();
@@ -43,9 +44,7 @@ public class AdminSsoUserProvisioner {
     }
 
     public AdminLoginVO toLoginVo(AdminSsoLoginResult result) {
-        if (sessionRevocationService != null) {
-            sessionRevocationService.clearRevocation(result.username());
-        }
+        sessionRevocation.clearRevocation(result.username());
         String token = jwtTokenProvider.createToken(result.username(), result.role());
         AdminLoginVO vo = new AdminLoginVO();
         vo.setToken(token);

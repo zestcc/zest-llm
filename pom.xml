@@ -50,6 +50,7 @@
 
         <zest-llm.version>1.0.0</zest-llm.version>
         <zestflow-starter.version>0.2.0</zestflow-starter.version>
+        <zest-sso.version>1.0.0-SNAPSHOT</zest-sso.version>
     </properties>
 
     <dependencyManagement>
@@ -226,6 +227,16 @@
                 <groupId>cn.zest.www</groupId>
                 <artifactId>zest-llm-plugin-tool-mcp-http</artifactId>
                 <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.www</groupId>
+                <artifactId>zest-llm-plugin-identity-zestsso</artifactId>
+                <version>${zest-llm.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>cn.zest.sso</groupId>
+                <artifactId>zest-sso-client-sdk</artifactId>
+                <version>${zest-sso.version}</version>
             </dependency>
             <dependency>
                 <groupId>io.jsonwebtoken</groupId>

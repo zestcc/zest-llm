@@ -12,6 +12,7 @@ import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.spi.knowledge.KnowledgeRetrievalAdapter;
 import cn.zest.www.zestllm.spi.learning.LearningCycleResult;
+import cn.zest.www.zestllm.spi.learning.LearningPipelineAdapter;
 import cn.zest.www.zestllm.spi.model.HealthStatus;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.profile.KnowledgeRefConfig;
@@ -30,7 +31,7 @@ public class AgentProfilePublishPreviewService {
     private final LlmAgentProfileRepo agentProfileRepo;
     private final AgentProfileResolver agentProfileResolver;
     private final ProfileExtensionsValidator profileExtensionsValidator;
-    private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
+    private final LearningPipelineAdapter learningPipelineAdapter;
     private final AgentProfileProbeService agentProfileProbeService;
     private final AdapterHealthService adapterHealthService;
     private final KnowledgeRetrievalAdapter knowledgeRetrievalAdapter;

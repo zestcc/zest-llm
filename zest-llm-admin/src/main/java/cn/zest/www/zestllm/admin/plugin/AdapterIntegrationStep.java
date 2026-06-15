@@ -3,6 +3,8 @@ package cn.zest.www.zestllm.admin.plugin;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * 插件集成引导步骤（参考 Grafana Data Source 向导 / Dify 接入流程）。
  */
@@ -22,4 +24,8 @@ public class AdapterIntegrationStep {
     private String commandExample;
     private String docUrl;
     private boolean required;
+    /** 步骤补充说明（操作细节、注意事项） */
+    private List<String> hints;
+    /** 完成本步的验收标准 */
+    private String verificationCriteria;
 }

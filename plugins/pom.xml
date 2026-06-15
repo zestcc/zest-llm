@@ -34,4 +34,13 @@
         <module>alert-http</module>
         <module>tool-mcp-http</module>
     </modules>
+
+    <profiles>
+        <profile>
+            <id>with-sso</id>
+            <modules>
+                <module>identity-zestsso</module>
+            </modules>
+        </profile>
+    </profiles>
 </project>

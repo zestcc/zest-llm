@@ -76,17 +76,27 @@ public final class AdapterCatalogDefinitions {
                         """,
                 "zest-llm-plugin-gateway-litellm",
                 steps(
-                        step("prep-litellm", 1, "部署 LiteLLM", "启动 LiteLLM Proxy（本地可用 deploy/scripts/start-litellm-local.ps1）",
+                        step("prep-litellm", 1, "部署 LiteLLM", "启动 LiteLLM Proxy；无 Docker 时用 pip + mock config，无需真实 API Key",
                                 "COMMAND", "查看启动脚本", null,
-                                "powershell -File deploy/scripts/start-litellm-local.ps1", null, true),
-                        step("config-gateway", 2, "配置 Admin 网关地址", "设置 zest.llm.litellm.base-url 指向 LiteLLM",
-                                "CONFIG", "zest.llm.litellm.base-url", "zest.llm.litellm.base-url", null, null, true),
-                        step("select-adapter", 3, "选择适配器", "设置 zest.llm.adapters.model-gateway=litellm",
-                                "CONFIG", "zest.llm.adapters.model-gateway", "zest.llm.adapters.model-gateway", null, null, true),
-                        step("register-models", 4, "注册 Gateway 模型", "在集成概览 Import 模型并触发 LiteLLM 同步",
-                                "NAVIGATE", "打开集成概览", "/integration", null, null, true),
-                        step("verify-health", 5, "健康探测", "适配器健康页或本页「探测健康」应显示 UP",
-                                "VERIFY", "探测健康", "/adapters", null, null, true)
+                                "powershell -File deploy/scripts/start-litellm-local.ps1", null, true,
+                                List.of("mock 模式使用 config-local.yaml", "compose 默认端口 4000"),
+                                "curl http://127.0.0.1:4000/health 返回 200"),
+                        step("config-gateway", 2, "配置 Admin 网关地址", "application-local.yml 或环境变量指向 LiteLLM 根 URL（无尾斜杠）",
+                                "CONFIG", "zest.llm.litellm.base-url", "zest.llm.litellm.base-url", null, null, true,
+                                List.of("Docker 内网用 http://litellm:4000", "本地用 http://127.0.0.1:4000"),
+                                "Admin Dashboard Gateway 状态非 DOWN"),
+                        step("select-adapter", 3, "选择 litellm 适配器", "确认 SPI 为 litellm；可在本页「设为默认」写入偏好",
+                                "CONFIG", "zest.llm.adapters.model-gateway", "zest.llm.adapters.model-gateway", null, null, true,
+                                List.of("修改 YAML 后需重启 Admin"),
+                                "GET /api/admin/adapters/health 中 model-gateway.adapterId=litellm"),
+                        step("register-models", 4, "注册 Gateway 模型", "Import Provider 预设或 gateway-models JSON，再触发 LiteLLM Sync",
+                                "NAVIGATE", "打开集成概览", "/integration", null, null, true,
+                                List.of("至少 1 个 ACTIVE 模型", "模型名需与 LiteLLM config 一致"),
+                                "llm_gateway_model 表有 ACTIVE 记录且 Sync 无报错"),
+                        step("verify-health", 5, "端到端验证", "适配器健康 UP + Playground 试跑返回 answer",
+                                "VERIFY", "探测健康", "/adapters", null, null, true,
+                                List.of("失败时先查 LiteLLM 日志"),
+                                "本页健康探测 UP；Playground invoke 成功")
                 ));
     }
 
@@ -439,6 +449,8 @@ public final class AdapterCatalogDefinitions {
                                              List<String> prerequisites, List<String> relatedTemplates,
                                              String configExample, String mavenArtifact,
                                              List<AdapterIntegrationStep> steps) {
+        String catalogKey = catalogKey(spiType, id);
+        AdapterPluginGuide guide = AdapterPluginGuideRegistry.forKey(catalogKey);
         return AdapterCatalogEntry.builder()
                 .pluginId(id)
                 .pluginName(name)
@@ -454,6 +466,7 @@ public final class AdapterCatalogDefinitions {
                 .prerequisites(prerequisites)
                 .relatedTemplates(relatedTemplates)
                 .integrationSteps(steps)
+                .guide(guide)
                 .build();
     }
 
@@ -464,6 +477,14 @@ public final class AdapterCatalogDefinitions {
     private static AdapterIntegrationStep step(String stepId, int order, String title, String description,
                                                  String actionType, String actionLabel, String actionTarget,
                                                  String commandExample, String docUrl, boolean required) {
+        return step(stepId, order, title, description, actionType, actionLabel, actionTarget,
+                commandExample, docUrl, required, List.of(), null);
+    }
+
+    private static AdapterIntegrationStep step(String stepId, int order, String title, String description,
+                                                 String actionType, String actionLabel, String actionTarget,
+                                                 String commandExample, String docUrl, boolean required,
+                                                 List<String> hints, String verificationCriteria) {
         return AdapterIntegrationStep.builder()
                 .stepId(stepId)
                 .order(order)
@@ -475,6 +496,8 @@ public final class AdapterCatalogDefinitions {
                 .commandExample(commandExample)
                 .docUrl(docUrl)
                 .required(required)
+                .hints(hints)
+                .verificationCriteria(verificationCriteria)
                 .build();
     }
 }

@@ -7,8 +7,7 @@ import cn.zest.www.zestllm.admin.model.entity.LlmAdminUserDO;
 import cn.zest.www.zestllm.admin.model.request.AdminLoginRequest;
 import cn.zest.www.zestllm.admin.model.vo.AdminLoginVO;
 import cn.zest.www.zestllm.admin.repo.LlmAdminUserRepo;
-import cn.zest.www.zestllm.admin.service.sso.AdminSessionRevocationService;
-import org.springframework.beans.factory.annotation.Autowired;
+import cn.zest.www.zestllm.spi.adminsso.AdminSsoSessionRevocation;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,18 +18,18 @@ public class AdminAuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final JwtProperties jwtProperties;
-    private final AdminSessionRevocationService sessionRevocationService;
+    private final AdminSsoSessionRevocation sessionRevocation;
 
     public AdminAuthService(LlmAdminUserRepo adminUserRepo,
                             PasswordEncoder passwordEncoder,
                             JwtTokenProvider jwtTokenProvider,
                             JwtProperties jwtProperties,
-                            @Autowired(required = false) AdminSessionRevocationService sessionRevocationService) {
+                            AdminSsoSessionRevocation sessionRevocation) {
         this.adminUserRepo = adminUserRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.jwtProperties = jwtProperties;
-        this.sessionRevocationService = sessionRevocationService;
+        this.sessionRevocation = sessionRevocation;
     }
 
     public AdminLoginVO login(AdminLoginRequest request) {
@@ -42,9 +41,7 @@ public class AdminAuthService {
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw BusinessException.unauthorized("用户名或密码错误");
         }
-        if (sessionRevocationService != null) {
-            sessionRevocationService.clearRevocation(user.getUsername());
-        }
+        sessionRevocation.clearRevocation(user.getUsername());
         String token = jwtTokenProvider.createToken(user.getUsername(), user.getRole());
         AdminLoginVO vo = new AdminLoginVO();
         vo.setToken(token);

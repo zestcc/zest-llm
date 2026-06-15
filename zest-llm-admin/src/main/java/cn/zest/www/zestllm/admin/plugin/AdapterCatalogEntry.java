@@ -27,6 +27,8 @@ public class AdapterCatalogEntry {
     private List<String> prerequisites;
     private List<String> relatedTemplates;
     private List<AdapterIntegrationStep> integrationSteps;
+    /** 差异化指引（卡片副标题、详情页概述等） */
+    private AdapterPluginGuide guide;
 
     public String catalogKey() {
         return spiType + ":" + pluginId;

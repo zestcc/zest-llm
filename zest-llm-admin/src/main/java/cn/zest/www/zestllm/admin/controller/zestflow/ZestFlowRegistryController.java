@@ -1,11 +1,11 @@
 package cn.zest.www.zestllm.admin.controller.zestflow;
 
 import cn.zest.www.zestllm.admin.config.ZestFlowAdminProperties;
+import cn.zest.www.zestllm.admin.model.vo.PeerExecutorVO;
 import cn.zest.www.zestllm.admin.service.zestflow.ZestFlowExecutorRegistryHub;
 import com.zestflow.common.constant.RegistryAuthConstants;
 import com.zestflow.common.model.Result;
 import com.zestflow.common.model.dto.HeartbeatDTO;
-import com.zestflow.common.model.dto.PeerExecutorDTO;
 import com.zestflow.common.model.dto.RegisterDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -70,7 +70,7 @@ public class ZestFlowRegistryController {
     }
 
     @GetMapping("/peers")
-    public Result<List<PeerExecutorDTO>> listPeers(@RequestParam(required = false) String appCode) {
+    public Result<List<PeerExecutorVO>> listPeers(@RequestParam(required = false) String appCode) {
         return Result.success(registryHub.listOnlinePeers(appCode));
     }
 

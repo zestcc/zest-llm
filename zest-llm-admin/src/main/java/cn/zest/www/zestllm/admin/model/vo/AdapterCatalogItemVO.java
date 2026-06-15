@@ -22,4 +22,8 @@ public class AdapterCatalogItemVO {
     private boolean external;
     private boolean healthUp;
     private String healthMessage;
+    /** 卡片副标题 */
+    private String tagline;
+    /** small | medium | large | all */
+    private String recommendedTier;
 }

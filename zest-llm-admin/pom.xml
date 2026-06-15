@@ -189,16 +189,6 @@
         </dependency>
 
         <dependency>
-
-            <groupId>cn.zest.sso</groupId>
-
-            <artifactId>zest-sso-client-sdk</artifactId>
-
-            <version>1.0.1-SNAPSHOT</version>
-
-        </dependency>
-
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
         </dependency>
@@ -248,6 +238,18 @@
     </dependencies>
 
 
+
+    <profiles>
+        <profile>
+            <id>pack-sso</id>
+            <dependencies>
+                <dependency>
+                    <groupId>cn.zest.www</groupId>
+                    <artifactId>zest-llm-plugin-identity-zestsso</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 
     <build>
         <plugins>

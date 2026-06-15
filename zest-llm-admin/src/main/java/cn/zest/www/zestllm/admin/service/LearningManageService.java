@@ -11,6 +11,7 @@ import cn.zest.www.zestllm.admin.repo.LlmLearningCycleRunRepo;
 import cn.zest.www.zestllm.spi.learning.EvalCaseSuggestion;
 import cn.zest.www.zestllm.spi.learning.LearningCycleRequest;
 import cn.zest.www.zestllm.spi.learning.LearningCycleResult;
+import cn.zest.www.zestllm.spi.learning.LearningPipelineAdapter;
 import cn.zest.www.zestllm.spi.learning.TraceSampleQuery;
 import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import cn.zest.www.zestllm.spi.profile.LearningLoopConfig;
@@ -27,7 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class LearningManageService {
 
-    private final ZestEvalLearningPipelineAdapter learningPipelineAdapter;
+    private final LearningPipelineAdapter learningPipelineAdapter;
     private final AgentProfileResolver agentProfileResolver;
     private final LlmLearningCycleRunRepo learningCycleRunRepo;
     private final LlmAiTaskDefRepo taskDefRepo;

@@ -110,6 +110,26 @@ export interface AdapterIntegrationStepVO {
   commandExample?: string
   docUrl?: string
   required: boolean
+  hints?: string[]
+  verificationCriteria?: string
+}
+
+export interface AdapterConfigRefVO {
+  key: string
+  description?: string
+  required: boolean
+  example?: string
+  envVar?: string
+}
+
+export interface AdapterTroubleshootingItemVO {
+  problem: string
+  solution: string
+}
+
+export interface AdapterDocLinkVO {
+  label: string
+  url: string
 }
 
 export interface AdapterCatalogItemVO {
@@ -127,6 +147,8 @@ export interface AdapterCatalogItemVO {
   external?: boolean
   healthUp: boolean
   healthMessage?: string
+  tagline?: string
+  recommendedTier?: string
 }
 
 export interface AdapterCatalogPageVO {
@@ -163,6 +185,16 @@ export interface AdapterCatalogDetailVO {
   relatedTemplates?: string[]
   integrationSteps?: AdapterIntegrationStepVO[]
   runtimeOverrides?: Record<string, string>
+  tagline?: string
+  overview?: string
+  useCases?: string[]
+  whenNotToUse?: string[]
+  recommendedTier?: string
+  architectureFlow?: string
+  configRefs?: AdapterConfigRefVO[]
+  troubleshooting?: AdapterTroubleshootingItemVO[]
+  relatedPlugins?: string[]
+  docLinks?: AdapterDocLinkVO[]
 }
 
 export interface IntegrationSetupStepVO {

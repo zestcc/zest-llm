@@ -67,6 +67,31 @@ class AdapterCatalogServiceTest {
     }
 
     @Test
+    void detailShouldExposeDistinctPluginGuide() {
+        when(enablementChecker.resolveActivePluginId("model-gateway")).thenReturn("litellm");
+        when(enablementChecker.isActive("model-gateway", "litellm")).thenReturn(true);
+        when(enablementChecker.resolveActivePluginId("observability")).thenReturn("noop");
+        when(enablementChecker.isActive("observability", "noop")).thenReturn(true);
+
+        AdapterCatalogDetailVO litellm = adapterCatalogService.detail("model-gateway:litellm");
+        AdapterCatalogDetailVO noopObs = adapterCatalogService.detail("observability:noop");
+
+        assertThat(litellm.getTagline()).isNotBlank();
+        assertThat(litellm.getOverview()).contains("LiteLLM");
+        assertThat(litellm.getConfigRefs()).isNotEmpty();
+        assertThat(noopObs.getTagline()).isNotEqualTo(litellm.getTagline());
+        assertThat(noopObs.getOverview()).contains("noop");
+    }
+
+    @Test
+    void catalogItemShouldIncludeTagline() {
+        when(enablementChecker.resolveActivePluginId("model-gateway")).thenReturn("litellm");
+        when(enablementChecker.isActive("model-gateway", "litellm")).thenReturn(true);
+        AdapterCatalogPageVO page = adapterCatalogService.catalog("model-gateway");
+        assertThat(page.getPlugins()).allMatch(p -> p.getTagline() != null && !p.getTagline().isBlank());
+    }
+
+    @Test
     void definitionsShouldHaveUniqueCatalogKeys() {
         long distinct = AdapterCatalogDefinitions.all().stream().map(e -> e.catalogKey()).distinct().count();
         assertThat(distinct).isEqualTo(AdapterCatalogDefinitions.all().size());

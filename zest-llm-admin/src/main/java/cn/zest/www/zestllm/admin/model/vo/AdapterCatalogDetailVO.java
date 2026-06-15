@@ -32,4 +32,15 @@ public class AdapterCatalogDetailVO {
     private List<String> relatedTemplates;
     private List<AdapterIntegrationStepVO> integrationSteps;
     private Map<String, String> runtimeOverrides;
+    /** 差异化指引 */
+    private String tagline;
+    private String overview;
+    private List<String> useCases;
+    private List<String> whenNotToUse;
+    private String recommendedTier;
+    private String architectureFlow;
+    private List<AdapterConfigRefVO> configRefs;
+    private List<AdapterTroubleshootingItemVO> troubleshooting;
+    private List<String> relatedPlugins;
+    private List<AdapterDocLinkVO> docLinks;
 }
