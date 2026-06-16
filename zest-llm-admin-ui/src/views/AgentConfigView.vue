@@ -9,8 +9,9 @@
     <el-tabs v-model="activeTab" class="config-tabs">
       <el-tab-pane label="智能体 Profile" name="profiles">
         <div class="toolbar">
+          <AppSelect v-model="filterAppKey" placeholder="筛选应用" clearable width="180px" @change="onAppFilterChange" @clear="onAppFilterChange" />
           <el-select v-model="selectedTask" placeholder="选择 AI 作业" filterable style="width: 220px" @change="loadProfiles">
-            <el-option v-for="t in tasks" :key="t.code" :label="`${t.code} · ${t.name}`" :value="t.code" />
+            <el-option v-for="t in filteredTasks" :key="t.code" :label="`${t.code} · ${t.name}`" :value="t.code" />
           </el-select>
           <el-button type="success" :disabled="!selectedTask" :loading="probeLoading" @click="probePublished(false)">
             检测已发布
@@ -127,9 +128,7 @@
 
       <el-tab-pane label="Auth 绑定" name="auth">
         <div class="toolbar">
-          <el-select v-model="authAppKey" placeholder="选择应用" filterable style="width: 220px" @change="loadAuth">
-            <el-option v-for="a in apps" :key="a.appKey" :label="a.appKey" :value="a.appKey" />
-          </el-select>
+          <AppSelect v-model="authAppKey" width="220px" @change="loadAuth" />
         </div>
         <el-form v-if="authForm" label-width="120px" class="auth-form">
           <el-form-item label="入站模式">
@@ -402,12 +401,15 @@ import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
-import { adminApi, normalizePage, type AppVO, type AgentProfileProbeCompare, type AgentProfileProbeResultVO, type AgentProfileProbeTrendPoint, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { adminApi, normalizePage, type AgentProfileProbeCompare, type AgentProfileProbeResultVO, type AgentProfileProbeTrendPoint, type AgentProfileVO, type AuthBindingVO, type McpServerVO, type ProviderPresetVO, type TaskVO } from '../api/admin'
+import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
 
 const route = useRoute()
 const activeTab = ref('profiles')
 const tasks = ref<TaskVO[]>([])
-const apps = ref<AppVO[]>([])
+const filterAppKey = ref(getLastAppKey())
+const filteredTasks = computed(() => filterTasksByApp(tasks.value, filterAppKey.value))
 const selectedTask = ref('')
 const profiles = ref<AgentProfileVO[]>([])
 const profileLoading = ref(false)
@@ -454,7 +456,7 @@ const presetGateway = ref({
   protocol: 'openai' as 'openai' | 'anthropic'
 })
 
-const authAppKey = ref('')
+const authAppKey = ref(getLastAppKey())
 const authForm = ref<AuthBindingVO | null>(null)
 const authSaving = ref(false)
 
@@ -594,15 +596,20 @@ function mergeExtensionsIntoProfileJson() {
 async function loadTasks() {
   const data = await adminApi.listTasks(1, 200)
   tasks.value = normalizePage(data, 1, 200).records
-  if (!selectedTask.value && tasks.value.length) {
-    selectedTask.value = tasks.value[0].code
+  selectedTask.value = syncTaskCode(filteredTasks.value, selectedTask.value)
+  if (!selectedTask.value && filteredTasks.value.length) {
+    selectedTask.value = filteredTasks.value[0].code
     await loadProfiles()
   }
 }
 
-async function loadApps() {
-  const data = await adminApi.listApps(1, 200)
-  apps.value = normalizePage(data, 1, 200).records
+async function onAppFilterChange() {
+  selectedTask.value = syncTaskCode(filteredTasks.value, selectedTask.value)
+  if (selectedTask.value) {
+    await loadProfiles()
+  } else {
+    profiles.value = []
+  }
 }
 
 async function loadPresets() {
@@ -1142,7 +1149,7 @@ async function retryFailedProbe() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadTasks(), loadApps(), loadPresets(), loadMcpServers()])
+  await Promise.all([loadTasks(), loadPresets(), loadMcpServers()])
   const taskFromQuery = route.query.task
   if (typeof taskFromQuery === 'string' && taskFromQuery) {
     selectedTask.value = taskFromQuery

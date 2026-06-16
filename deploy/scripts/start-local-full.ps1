@@ -7,11 +7,14 @@
 #   powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithAlertMock
 # 推荐一键（Demo + LiteLLM + Admin + UI dev）:
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithDemo -WithLiteLLM
+# ZestStory 联调（Invoke + RAG KB mock）:
+#   powershell -File deploy/scripts/start-local-full.ps1 -EmbedUi -WithLiteLLM -WithKbMock
 param(
     [switch]$WithLiteLLM,
     [switch]$WithDemo,
     [switch]$WithMcpMock,
     [switch]$WithAlertMock,
+    [switch]$WithKbMock,
     [switch]$EmbedUi,
     [switch]$SkipBuild,
     [switch]$StopOnly,
@@ -111,6 +114,7 @@ if ($StopOnly) {
     & (Join-Path $PSScriptRoot "start-demo-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-mcp-mock-local.ps1") -StopOnly
     & (Join-Path $PSScriptRoot "start-alert-mock-local.ps1") -StopOnly
+    & (Join-Path $PSScriptRoot "start-kb-mock-local.ps1") -StopOnly
     Write-Host "Stopped local stack (PID files)." -ForegroundColor Green
     exit 0
 }
@@ -144,6 +148,13 @@ if ($WithMcpMock) {
 
 if ($WithAlertMock) {
     & (Join-Path $PSScriptRoot "start-alert-mock-local.ps1")
+}
+
+if ($WithKbMock) {
+    Write-Host "== Starting KB mock (:8092) for zestStoryRag http-knowledge ==" -ForegroundColor Cyan
+    & (Join-Path $PSScriptRoot "start-kb-mock-local.ps1")
+    $env:ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL = "http-knowledge"
+    $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL = "http://127.0.0.1:8092"
 }
 
 # Stop Admin/Demo before rebuild to release JAR lock (mvn package fails if still running)
@@ -241,8 +252,13 @@ else { Write-Host '  LiteLLM:             not started (use -WithLiteLLM for mock
 if ($WithDemo) { Write-Host '  Demo: http://127.0.0.1:8081/demo/order/methodA?orderId=1&question=hi' }
 if ($WithMcpMock) { Write-Host "  MCP mock:            http://127.0.0.1:9090/mcp" }
 if ($WithAlertMock) { Write-Host "  Webhook mock:        http://127.0.0.1:8090/webhook" }
+if ($WithKbMock) { Write-Host "  KB mock (RAG):       http://127.0.0.1:8092/v1/retrieve" }
 Write-Host "  Logs:                $LogDir"
 Write-Host ""
+if ($WithKbMock) {
+    Write-Host "ZestStory: powershell -File deploy/scripts/start-zestory-local.ps1"
+    Write-Host "E2E:       powershell -File deploy/scripts/e2e-zeststory-zestllm.ps1 -SkipStart -WithZestStory"
+}
 Write-Host "Verify embedded UI + webhook: powershell -File deploy/scripts/verify-embedded-ui-and-webhook.ps1"
 Write-Host "Accept: powershell -File deploy/scripts/full-acceptance.ps1"
 Write-Host "Demo:   powershell -File deploy/scripts/demo-walkthrough.ps1"

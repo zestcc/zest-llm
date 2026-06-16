@@ -9,7 +9,14 @@
     <el-tabs v-model="activeTab" class="ops-tabs">
       <el-tab-pane label="成本告警" name="cost">
         <div class="toolbar">
-          <el-input v-model="costAppKey" placeholder="按 appKey 筛选" clearable style="width: 220px" @keyup.enter="reloadCostAlerts" />
+          <AppSelect
+            v-model="costAppKey"
+            placeholder="按应用筛选"
+            clearable
+            width="220px"
+            @change="reloadCostAlerts"
+            @clear="reloadCostAlerts"
+          />
           <el-button type="primary" :icon="Refresh" @click="reloadCostAlerts">刷新</el-button>
         </div>
         <div ref="costChartRef" v-loading="costLoading" class="ops-cost-chart" />
@@ -90,7 +97,25 @@
 
       <el-tab-pane label="智能体告警" name="agent">
         <div class="toolbar">
-          <el-input v-model="agentTaskCode" placeholder="按 taskCode 筛选" clearable style="width: 220px" @keyup.enter="reloadAgentAlerts" />
+          <AppSelect
+            v-model="agentFilterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="180px"
+            @change="onAgentAppFilterChange"
+            @clear="onAgentAppFilterChange"
+          />
+          <el-select
+            v-model="agentTaskCode"
+            placeholder="按作业筛选"
+            clearable
+            filterable
+            style="width: 220px"
+            @change="reloadAgentAlerts"
+            @clear="reloadAgentAlerts"
+          >
+            <el-option v-for="t in agentFilteredTasks" :key="t.code" :label="t.code" :value="t.code" />
+          </el-select>
           <el-button type="primary" :icon="Refresh" @click="reloadAgentAlerts">刷新</el-button>
         </div>
         <div v-loading="agentLoading" class="table-panel">
@@ -144,13 +169,15 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
-import { adminApi, normalizePage, type AgentProbeAlertVO, type CostAlertDailySummary, type CostAlertVO, type ExecutionArchiveRunVO, type ExecutionArchiveStatsVO } from '../api/admin'
+import { adminApi, normalizePage, type AgentProbeAlertVO, type CostAlertDailySummary, type CostAlertVO, type ExecutionArchiveRunVO, type ExecutionArchiveStatsVO, type TaskVO } from '../api/admin'
+import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
+import AppSelect from '../components/AppSelect.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -166,7 +193,7 @@ function syncTabFromRoute() {
 }
 
 const costLoading = ref(false)
-const costAppKey = ref('')
+const costAppKey = ref(getLastAppKey())
 const costAlerts = ref<CostAlertVO[]>([])
 const costPage = ref(1)
 const costSize = ref(20)
@@ -182,6 +209,9 @@ const costSummary = ref<CostAlertDailySummary[]>([])
 let costChart: ECharts | null = null
 
 const agentLoading = ref(false)
+const agentFilterAppKey = ref(getLastAppKey())
+const agentTasks = ref<TaskVO[]>([])
+const agentFilteredTasks = computed(() => filterTasksByApp(agentTasks.value, agentFilterAppKey.value))
 const agentTaskCode = ref('')
 const agentAlerts = ref<AgentProbeAlertVO[]>([])
 const agentPage = ref(1)
@@ -277,6 +307,17 @@ async function runArchive() {
   }
 }
 
+async function loadAgentTasks() {
+  const data = await adminApi.listTasks(1, 500)
+  agentTasks.value = normalizePage(data, 1, 500).records
+  agentTaskCode.value = syncTaskCode(agentFilteredTasks.value, agentTaskCode.value)
+}
+
+function onAgentAppFilterChange() {
+  agentTaskCode.value = syncTaskCode(agentFilteredTasks.value, agentTaskCode.value)
+  reloadAgentAlerts()
+}
+
 async function loadAgentAlerts() {
   agentLoading.value = true
   try {
@@ -306,7 +347,7 @@ function loadActiveTab() {
   } else if (activeTab.value === 'archive') {
     loadArchiveStats()
   } else if (activeTab.value === 'agent') {
-    reloadAgentAlerts()
+    loadAgentTasks().then(() => reloadAgentAlerts())
   }
 }
 

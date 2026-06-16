@@ -8,13 +8,26 @@
           <el-button type="primary" @click="openCreate">新建作业</el-button>
         </div>
       </div>
+      <div class="page-header-row">
+        <div class="page-filters">
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="220px"
+            select-class="page-filter-control"
+            @change="onAppFilterChange"
+            @clear="onAppFilterChange"
+          />
+        </div>
+      </div>
     </div>
 
     <div v-loading="overviewLoading" class="table-panel" style="margin-bottom: 16px">
       <div class="table-panel-header">
         <h3 class="table-panel-title">作业看板（近 7 天）</h3>
       </div>
-      <el-table :data="overview" stripe empty-text="暂无作业">
+      <el-table :data="filteredOverview" stripe empty-text="暂无作业">
         <el-table-column prop="code" label="Code" width="120" />
         <el-table-column prop="name" label="名称" width="140" />
         <el-table-column prop="publishedVersion" label="已发布版本" width="120" />
@@ -57,9 +70,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="createdAt" label="创建时间" min-width="170" />
-        <el-table-column label="操作" width="100" fixed="right">
+        <el-table-column label="操作" width="140" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" class="action-btn" @click="openEdit(row)">编辑</el-button>
+            <el-button link type="danger" class="action-btn" @click="removeTask(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -68,7 +82,7 @@
     <el-dialog v-model="createVisible" title="新建 AI 作业" width="520px" destroy-on-close>
       <el-form ref="createFormRef" :model="createForm" :rules="taskRules" label-width="90px">
         <el-form-item label="所属应用" prop="appKey">
-          <el-input v-model="createForm.appKey" placeholder="如 order-service" />
+          <AppSelect v-model="createForm.appKey" />
         </el-form-item>
         <el-form-item label="Code" prop="code">
           <el-input v-model="createForm.code" placeholder="如 aiChat" />
@@ -115,17 +129,24 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { adminApi, normalizePage, type AiJobOverviewVO, type AiJobWizardResult, type TaskVO } from '../api/admin'
 import AiJobWizardDialog from '../components/AiJobWizardDialog.vue'
+import AppSelect from '../components/AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const loading = ref(false)
 const overviewLoading = ref(false)
 const submitting = ref(false)
 const wizardVisible = ref(false)
 const tasks = ref<TaskVO[]>([])
+const filterAppKey = ref(getLastAppKey())
 const overview = ref<AiJobOverviewVO[]>([])
+
+const filteredOverview = computed(() =>
+  filterAppKey.value ? overview.value.filter((o) => o.appKey === filterAppKey.value) : overview.value
+)
 
 const createVisible = ref(false)
 const editVisible = ref(false)
@@ -133,7 +154,7 @@ const createFormRef = ref<FormInstance>()
 const editFormRef = ref<FormInstance>()
 
 const createForm = reactive({
-  appKey: 'order-service',
+  appKey: getLastAppKey(),
   code: '',
   name: '',
   description: ''
@@ -148,7 +169,7 @@ const editForm = reactive({
 })
 
 const taskRules: FormRules = {
-  appKey: [{ required: true, message: '请输入所属应用', trigger: 'blur' }],
+  appKey: [{ required: true, message: '请选择所属应用', trigger: 'change' }],
   code: [{ required: true, message: '请输入 Code', trigger: 'blur' }],
   name: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 }
@@ -171,7 +192,7 @@ async function loadOverview() {
 async function load() {
   loading.value = true
   try {
-    const data = await adminApi.listTasks()
+    const data = await adminApi.listTasks(1, 500, filterAppKey.value || undefined)
     const pageData = normalizePage(data, 1, 500)
     tasks.value = pageData.records
   } finally {
@@ -179,7 +200,12 @@ async function load() {
   }
 }
 
+function onAppFilterChange() {
+  load()
+}
+
 function openCreate() {
+  createForm.appKey = getLastAppKey()
   createForm.code = ''
   createForm.name = ''
   createForm.description = ''
@@ -225,6 +251,18 @@ async function submitEdit() {
   } finally {
     submitting.value = false
   }
+}
+
+async function removeTask(row: TaskVO) {
+  await ElMessageBox.confirm(
+    `确定删除作业 ${row.code}？仅当未配置 Prompt、模型路由、Agent Profile 且无执行记录时可删除。`,
+    '删除确认',
+    { type: 'warning' }
+  )
+  await adminApi.deleteTask(row.code)
+  ElMessage.success('作业已删除')
+  loadOverview()
+  load()
 }
 
 function onWizardSuccess(_result: AiJobWizardResult) {

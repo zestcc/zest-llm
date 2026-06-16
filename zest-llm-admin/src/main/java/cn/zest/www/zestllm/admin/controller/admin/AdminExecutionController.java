@@ -23,8 +23,9 @@ public class AdminExecutionController {
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) String taskCode,
-            @RequestParam(required = false) String status) {
-        return Result.success(executionQueryService.page(page, size, taskCode, status));
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String appKey) {
+        return Result.success(executionQueryService.page(page, size, taskCode, status, appKey));
     }
 
     @GetMapping("/{traceId}")

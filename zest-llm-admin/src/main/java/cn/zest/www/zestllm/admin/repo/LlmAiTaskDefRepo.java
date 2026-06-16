@@ -23,6 +23,13 @@ public class LlmAiTaskDefRepo {
     }
 
     public Optional<LlmAiTaskDefDO> findByCode(String code) {
+        Optional<LlmAiTaskDefDO> active = Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAiTaskDefDO>()
+                .eq(LlmAiTaskDefDO::getCode, code)
+                .eq(LlmAiTaskDefDO::getStatus, "ACTIVE")
+                .last("LIMIT 1")));
+        if (active.isPresent()) {
+            return active;
+        }
         return Optional.ofNullable(mapper.selectOne(new LambdaQueryWrapper<LlmAiTaskDefDO>()
                 .eq(LlmAiTaskDefDO::getCode, code)
                 .last("LIMIT 1")));
@@ -57,5 +64,9 @@ public class LlmAiTaskDefRepo {
 
     public void update(LlmAiTaskDefDO entity) {
         mapper.updateById(entity);
+    }
+
+    public void deleteById(Long id) {
+        mapper.deleteById(id);
     }
 }

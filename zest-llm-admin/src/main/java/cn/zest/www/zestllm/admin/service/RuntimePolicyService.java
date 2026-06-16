@@ -18,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -41,7 +40,7 @@ public class RuntimePolicyService {
     }
 
     public ResolvedPolicy resolvePolicy(LlmAppDO app, String code, Map<String, Object> inputs, String traceId) {
-        Map<String, Object> variables = inputs != null ? inputs : Collections.emptyMap();
+        Map<String, Object> variables = PromptVariableEnricher.enrich(inputs);
         String cacheKey = CaffeinePolicyCacheAdapter.buildKey(app.getAppKey(), code);
         Optional<CachedPolicy> cached = policyCacheAdapter.getPolicy(cacheKey);
 

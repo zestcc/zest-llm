@@ -21,7 +21,7 @@
         <el-input :model-value="form.templateName" disabled />
       </el-form-item>
       <el-form-item label="所属应用" required>
-        <el-input v-model="form.appKey" placeholder="order-service" />
+        <AppSelect v-model="form.appKey" />
       </el-form-item>
       <el-form-item label="作业 Code" required>
         <el-input v-model="form.taskCode" />
@@ -45,6 +45,8 @@ import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi, type AiJobWizardResult, type ScenarioTemplateVO } from '../api/admin'
+import AppSelect from './AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const props = withDefaults(
   defineProps<{
@@ -73,7 +75,7 @@ const templates = ref<ScenarioTemplateVO[]>([])
 const form = reactive({
   templateId: '',
   templateName: '',
-  appKey: 'order-service',
+  appKey: getLastAppKey(),
   taskCode: '',
   publish: false,
   runProbe: true
@@ -148,7 +150,7 @@ watch(
   () => props.modelValue,
   (open) => {
     if (!open) return
-    form.appKey = 'order-service'
+    form.appKey = getLastAppKey()
     form.publish = false
     form.runProbe = true
     if (props.initialTemplateId) {

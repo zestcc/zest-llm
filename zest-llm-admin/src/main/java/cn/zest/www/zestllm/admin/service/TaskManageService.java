@@ -6,8 +6,14 @@ import cn.zest.www.zestllm.admin.model.entity.LlmAppDO;
 import cn.zest.www.zestllm.admin.model.request.CreateTaskRequest;
 import cn.zest.www.zestllm.admin.model.request.UpdateTaskRequest;
 import cn.zest.www.zestllm.admin.model.vo.TaskVO;
+import cn.zest.www.zestllm.admin.repo.LlmAgentProfileProbeRepo;
+import cn.zest.www.zestllm.admin.repo.LlmAgentProbeAlertRepo;
+import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAppRepo;
+import cn.zest.www.zestllm.admin.repo.LlmExecutionRepo;
+import cn.zest.www.zestllm.admin.repo.LlmModelRouteRepo;
+import cn.zest.www.zestllm.admin.repo.LlmPromptVersionRepo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -23,6 +31,12 @@ public class TaskManageService {
 
     private final LlmAiTaskDefRepo taskDefRepo;
     private final LlmAppRepo appRepo;
+    private final LlmPromptVersionRepo promptVersionRepo;
+    private final LlmModelRouteRepo modelRouteRepo;
+    private final LlmAgentProfileRepo agentProfileRepo;
+    private final LlmAgentProfileProbeRepo agentProfileProbeRepo;
+    private final LlmAgentProbeAlertRepo agentProbeAlertRepo;
+    private final LlmExecutionRepo executionRepo;
     private final AuditService auditService;
 
     public Page<TaskVO> page(int pageNum, int pageSize, String appKey) {
@@ -76,6 +90,75 @@ public class TaskManageService {
         taskDefRepo.update(task);
         auditService.log("UPDATE", "TASK", code, Map.of("name", task.getName(), "status", task.getStatus()));
         return toVO(task);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public void delete(String code) {
+        LlmAiTaskDefDO task = taskDefRepo.findByCode(code)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + code));
+        List<String> blockers = collectDeleteBlockers(task);
+        if (!blockers.isEmpty()) {
+            throw new BusinessException("TASK_NOT_DELETABLE",
+                    "无法删除作业 " + code + "：" + String.join("、", blockers));
+        }
+        taskDefRepo.deleteById(task.getId());
+        auditService.log("DELETE", "TASK", code, Map.of("name", task.getName()));
+    }
+
+    /**
+     * 按 taskId 强制删除（级联 Prompt / Route / Profile / Probe，不校验执行记录）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void forceDeleteById(Long taskId) {
+        LlmAiTaskDefDO task = taskDefRepo.findById(taskId)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: id=" + taskId));
+        cascadeDeleteTaskArtifacts(task.getId());
+        taskDefRepo.deleteById(task.getId());
+        auditService.log("FORCE_DELETE", "TASK", task.getCode(),
+                Map.of("taskId", taskId, "name", task.getName()));
+    }
+
+    /**
+     * 按 appKey + taskCode 强制删除（用于清理 order-service 等重复作业）。
+     */
+    @Transactional(rollbackFor = Exception.class)
+    public void forceDeleteByAppAndCode(String appKey, String code) {
+        LlmAppDO app = appRepo.findByAppKey(appKey)
+                .orElseThrow(() -> new BusinessException("APP_NOT_FOUND", "应用不存在: " + appKey));
+        LlmAiTaskDefDO task = taskDefRepo.findByAppIdAndCode(app.getId(), code)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND",
+                        "AI 作业不存在: " + appKey + "/" + code));
+        cascadeDeleteTaskArtifacts(task.getId());
+        taskDefRepo.deleteById(task.getId());
+        auditService.log("FORCE_DELETE", "TASK", code,
+                Map.of("appKey", appKey, "taskId", task.getId(), "name", task.getName()));
+    }
+
+    private void cascadeDeleteTaskArtifacts(Long taskId) {
+        agentProfileProbeRepo.deleteByTaskId(taskId);
+        agentProbeAlertRepo.deleteByTaskId(taskId);
+        agentProfileRepo.deleteByTaskId(taskId);
+        promptVersionRepo.deleteByTaskId(taskId);
+        modelRouteRepo.deleteByTaskId(taskId);
+    }
+
+    private List<String> collectDeleteBlockers(LlmAiTaskDefDO task) {
+        List<String> blockers = new ArrayList<>();
+        Long taskId = task.getId();
+        if (!promptVersionRepo.findByTaskId(taskId).isEmpty()) {
+            blockers.add("已配置 Prompt 版本");
+        }
+        if (modelRouteRepo.countByTaskId(taskId) > 0) {
+            blockers.add("已配置模型路由");
+        }
+        if (!agentProfileRepo.findByTaskId(taskId).isEmpty()) {
+            blockers.add("已配置 Agent Profile");
+        }
+        if (executionRepo.countByTaskCode(task.getCode()) > 0
+                || executionRepo.countArchivedByTaskCode(task.getCode()) > 0) {
+            blockers.add("存在执行记录");
+        }
+        return blockers;
     }
 
     private TaskVO toVO(LlmAiTaskDefDO task) {

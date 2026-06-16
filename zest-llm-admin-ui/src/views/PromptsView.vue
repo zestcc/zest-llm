@@ -3,16 +3,25 @@
     <div class="page-header">
       <div class="page-header-row">
         <div class="page-filters">
-          <el-input
-            v-model="code"
-            placeholder="作业 code，如 aiChat"
-            class="page-filter-control"
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
             clearable
-            @keyup.enter="load"
+            width="220px"
+            select-class="page-filter-control"
+            @change="onAppFilterChange"
+            @clear="onAppFilterChange"
+          />
+          <el-select
+            v-model="code"
+            filterable
+            clearable
+            placeholder="选择 AI 作业"
+            class="page-filter-control page-filter-control--wide"
+            @change="load"
           >
-            <template #prefix><el-icon><Search /></el-icon></template>
-          </el-input>
-          <el-button type="primary" @click="load">查询</el-button>
+            <el-option v-for="task in filteredTasks" :key="task.code" :label="`${task.code} · ${task.name}`" :value="task.code" />
+          </el-select>
           <el-button @click="openCreate">新建版本</el-button>
         </div>
       </div>
@@ -22,7 +31,7 @@
       <div class="table-panel-header">
         <div>
           <h3 class="table-panel-title">Prompt 版本</h3>
-          <p class="table-panel-subtitle">作业 code: {{ code }}</p>
+          <p class="table-panel-subtitle">作业 code: {{ code || '未选择' }}</p>
         </div>
       </div>
       <el-table :data="versions" stripe empty-text="暂无版本">
@@ -111,12 +120,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Search } from '@element-plus/icons-vue'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
-import { adminApi, type PromptVersionVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { adminApi, normalizePage, type PromptVersionVO, type TaskVO } from '../api/admin'
+import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
 
+const tasks = ref<TaskVO[]>([])
+const filterAppKey = ref(getLastAppKey())
+const filteredTasks = computed(() => filterTasksByApp(tasks.value, filterAppKey.value))
 const code = ref('aiChat')
 const loading = ref(false)
 const submitting = ref(false)
@@ -137,8 +150,25 @@ const createRules: FormRules = {
   templateBody: [{ required: true, message: '请输入模板内容', trigger: 'blur' }]
 }
 
+async function loadTasks() {
+  const data = await adminApi.listTasks(1, 500)
+  tasks.value = normalizePage(data, 1, 500).records
+  code.value = syncTaskCode(filteredTasks.value, code.value)
+  if (!code.value && filteredTasks.value.length) {
+    code.value = filteredTasks.value[0].code
+  }
+}
+
+function onAppFilterChange() {
+  code.value = syncTaskCode(filteredTasks.value, code.value)
+  load()
+}
+
 async function load() {
-  if (!code.value) return
+  if (!code.value) {
+    versions.value = []
+    return
+  }
   loading.value = true
   try {
     versions.value = await adminApi.listPromptVersions(code.value)
@@ -149,7 +179,7 @@ async function load() {
 
 function openCreate() {
   if (!code.value) {
-    ElMessage.warning('请先输入作业 code')
+    ElMessage.warning('请先选择 AI 作业')
     return
   }
   createForm.value = { version: '', templateBody: '', outputSchema: '' }
@@ -201,7 +231,10 @@ function compareWithPublished(version: string) {
   })
 }
 
-load()
+onMounted(async () => {
+  await loadTasks()
+  await load()
+})
 </script>
 
 <style scoped>
@@ -214,6 +247,10 @@ load()
 
 .page-filter-control {
   width: 220px;
+}
+
+.page-filter-control--wide {
+  width: 280px;
 }
 
 .prompt-editor :deep(textarea) {

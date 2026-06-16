@@ -1,8 +1,19 @@
 <template>
   <div class="page-shell">
     <div class="page-header">
-      <div class="page-header-row page-header-row--actions-end">
-        <el-button type="primary" :icon="Refresh" @click="load">刷新</el-button>
+      <div class="page-header-row">
+        <div class="page-filters">
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="220px"
+            select-class="page-filter-control"
+            @change="load"
+            @clear="load"
+          />
+          <el-button type="primary" :icon="Refresh" @click="load">刷新</el-button>
+        </div>
       </div>
     </div>
 
@@ -35,14 +46,17 @@
 import { onMounted, ref } from 'vue'
 import { Refresh } from '@element-plus/icons-vue'
 import { adminApi, type RegistryMethodVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const loading = ref(false)
+const filterAppKey = ref(getLastAppKey())
 const methods = ref<RegistryMethodVO[]>([])
 
 async function load() {
   loading.value = true
   try {
-    methods.value = await adminApi.listRegistryMethods()
+    methods.value = await adminApi.listRegistryMethods(1, 500, filterAppKey.value || undefined)
   } finally {
     loading.value = false
   }

@@ -783,8 +783,10 @@ export const adminApi = {
     return http.post<RotateTokenResult>(`/api/admin/apps/${appKey}/rotate-token`)
   },
 
-  listTasks(page = 1, size = 50) {
-    return http.get<PageResult<TaskVO> | TaskVO[]>('/api/admin/tasks', { params: { page, size } })
+  listTasks(page = 1, size = 50, appKey?: string) {
+    return http.get<PageResult<TaskVO> | TaskVO[]>('/api/admin/tasks', {
+      params: { page, size, appKey: appKey || undefined }
+    })
   },
 
   createTask(body: TaskForm) {
@@ -793,6 +795,10 @@ export const adminApi = {
 
   updateTask(code: string, body: Partial<TaskForm>) {
     return http.put<TaskVO>(`/api/admin/tasks/${code}`, body)
+  },
+
+  deleteTask(code: string) {
+    return http.delete<void>(`/api/admin/tasks/${code}`)
   },
 
   listPromptVersions(code: string) {
@@ -815,9 +821,15 @@ export const adminApi = {
     return http.get<VersionDiffVO>(`/api/admin/prompts/${code}/diff`, { params: { from, to } })
   },
 
-  listExecutions(page = 1, size = 20, taskCode?: string, status?: string) {
+  listExecutions(page = 1, size = 20, taskCode?: string, status?: string, appKey?: string) {
     return http.get<PageResult<ExecutionVO>>('/api/admin/executions', {
-      params: { page, size, taskCode: taskCode || undefined, status: status || undefined }
+      params: {
+        page,
+        size,
+        taskCode: taskCode || undefined,
+        status: status || undefined,
+        appKey: appKey || undefined
+      }
     })
   },
 
@@ -851,9 +863,9 @@ export const adminApi = {
     })
   },
 
-  async listRegistryMethods(page = 1, size = 100) {
+  async listRegistryMethods(page = 1, size = 100, appKey?: string) {
     const data = await http.get<PageResult<RegistryMethodVO>>('/api/admin/registry/methods', {
-      params: { page, size }
+      params: { page, size, appKey: appKey || undefined }
     })
     return normalizePage(data, page, size).records
   },

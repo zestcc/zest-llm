@@ -3,7 +3,7 @@
     <div class="page-header">
       <div class="page-header-row">
         <div class="page-filters">
-          <el-input v-model="form.appKey" placeholder="appKey" class="page-filter-control" />
+          <AppSelect v-model="form.appKey" select-class="page-filter-control" width="160px" />
           <el-input v-model="form.code" placeholder="作业 code" class="page-filter-control" />
           <el-select v-model="selectedTemplate" placeholder="输入模板" clearable class="page-filter-control" @change="applyTemplate">
             <el-option v-for="t in templates" :key="t.name" :label="t.name" :value="t.name" />
@@ -50,6 +50,8 @@
 import { nextTick, onMounted, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi, type PlaygroundRunVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const TEMPLATE_KEY = 'zest-llm-playground-templates'
 
@@ -83,7 +85,7 @@ interface StreamErrorPayload {
   errorMessage?: string
 }
 
-const form = ref({ appKey: 'order-service', code: 'aiChat' })
+const form = ref({ appKey: getLastAppKey(), code: 'aiChat' })
 const inputsJson = ref('{\n  "question": "hello playground"\n}')
 const outputText = ref('')
 const streamText = ref('')

@@ -200,7 +200,7 @@ public final class AdapterCatalogDefinitions {
                             adapters:
                               knowledge-retrieval: http-knowledge
                             http-knowledge:
-                              base-url: http://127.0.0.1:8091
+                              base-url: http://127.0.0.1:8092
                         """,
                 "zest-llm-plugin-knowledge-http",
                 steps(

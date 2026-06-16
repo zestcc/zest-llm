@@ -52,4 +52,9 @@ public class LlmAgentProbeAlertRepo {
         mapper.selectPage(pager, query);
         return pager;
     }
+
+    public void deleteByTaskId(Long taskId) {
+        mapper.delete(new LambdaQueryWrapper<LlmAgentProbeAlertDO>()
+                .eq(LlmAgentProbeAlertDO::getTaskId, taskId));
+    }
 }

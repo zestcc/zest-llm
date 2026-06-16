@@ -62,4 +62,9 @@ public class LlmPromptVersionRepo {
     public void insert(LlmPromptVersionDO entity) {
         mapper.insert(entity);
     }
+
+    public void deleteByTaskId(Long taskId) {
+        mapper.delete(new LambdaQueryWrapper<LlmPromptVersionDO>()
+                .eq(LlmPromptVersionDO::getTaskId, taskId));
+    }
 }

@@ -77,4 +77,9 @@ public class LlmAgentProfileRepo {
         return mapper.selectCount(new LambdaQueryWrapper<LlmAgentProfileDO>()
                 .eq(LlmAgentProfileDO::getStatus, STATUS_PUBLISHED));
     }
+
+    public void deleteByTaskId(Long taskId) {
+        mapper.delete(new LambdaQueryWrapper<LlmAgentProfileDO>()
+                .eq(LlmAgentProfileDO::getTaskId, taskId));
+    }
 }

@@ -224,7 +224,7 @@ public final class AdapterPluginGuideRegistry {
                 .architectureFlow("prepare → KnowledgeRetrievalAdapter.retrieve → HTTP POST → 片段注入 Prompt")
                 .configRefs(List.of(
                         cfg("zest.llm.adapters.knowledge-retrieval", "SPI 选择", true, "http-knowledge", "ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL"),
-                        cfg("zest.llm.http-knowledge.base-url", "检索 API 根地址", true, "http://127.0.0.1:8091", null),
+                        cfg("zest.llm.http-knowledge.base-url", "检索 API 根地址", true, "http://127.0.0.1:8092", null),
                         cfg("Profile.knowledgeConfig.collection", "集合/租户标识", true, "default", null)))
                 .troubleshooting(List.of(
                         ts("检索为空", "确认 KB Mock 已启动；collection 与 mock 数据一致"),

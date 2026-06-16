@@ -1,6 +1,7 @@
 package cn.zest.www.zestllm.admin.repo;
 
 import cn.zest.www.zestllm.admin.mapper.LlmExecutionMapper;
+import cn.zest.www.zestllm.admin.mapper.LlmExecutionArchiveMapper;
 import cn.zest.www.zestllm.admin.model.entity.LlmExecutionDO;
 import cn.zest.www.zestllm.admin.model.vo.DailyCostVO;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -17,6 +18,7 @@ import java.util.Optional;
 public class LlmExecutionRepo {
 
     private final LlmExecutionMapper mapper;
+    private final LlmExecutionArchiveMapper archiveMapper;
 
     public void insert(LlmExecutionDO entity) {
         mapper.insert(entity);
@@ -32,11 +34,14 @@ public class LlmExecutionRepo {
                 .eq(LlmExecutionDO::getTraceId, traceId)));
     }
 
-    public Page<LlmExecutionDO> page(int pageNum, int pageSize, String taskCode, String status) {
+    public Page<LlmExecutionDO> page(int pageNum, int pageSize, String taskCode, String status,
+                                     java.util.Collection<String> appTaskCodes) {
         LambdaQueryWrapper<LlmExecutionDO> wrapper = new LambdaQueryWrapper<LlmExecutionDO>()
                 .orderByDesc(LlmExecutionDO::getCreatedAt);
         if (taskCode != null && !taskCode.isBlank()) {
             wrapper.eq(LlmExecutionDO::getTaskCode, taskCode);
+        } else if (appTaskCodes != null && !appTaskCodes.isEmpty()) {
+            wrapper.in(LlmExecutionDO::getTaskCode, appTaskCodes);
         }
         if (status != null && !status.isBlank()) {
             wrapper.eq(LlmExecutionDO::getStatus, status);
@@ -59,6 +64,21 @@ public class LlmExecutionRepo {
             wrapper.ge(LlmExecutionDO::getCreatedAt, since);
         }
         return mapper.selectList(wrapper);
+    }
+
+    public long countByTaskCode(String taskCode) {
+        if (taskCode == null || taskCode.isBlank()) {
+            return 0;
+        }
+        return mapper.selectCount(new LambdaQueryWrapper<LlmExecutionDO>()
+                .eq(LlmExecutionDO::getTaskCode, taskCode));
+    }
+
+    public long countArchivedByTaskCode(String taskCode) {
+        if (taskCode == null || taskCode.isBlank()) {
+            return 0;
+        }
+        return archiveMapper.countByTaskCode(taskCode);
     }
 
     public long countAll() {

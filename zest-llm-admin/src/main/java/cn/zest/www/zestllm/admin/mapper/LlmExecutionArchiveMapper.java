@@ -4,6 +4,7 @@ import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 import java.time.LocalDateTime;
 
@@ -26,4 +27,7 @@ public interface LlmExecutionArchiveMapper {
 
     @Delete("DELETE FROM llm_execution WHERE created_at < #{cutoff}")
     int deleteBefore(@Param("cutoff") LocalDateTime cutoff);
+
+    @Select("SELECT COUNT(*) FROM llm_execution_archive WHERE task_code = #{taskCode}")
+    long countByTaskCode(@Param("taskCode") String taskCode);
 }

@@ -3,6 +3,13 @@
     <div class="page-header">
       <div class="page-header-row">
         <div class="page-filters">
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="220px"
+            select-class="page-filter-control"
+          />
           <el-button type="primary" :loading="loading" @click="loadDatasets">刷新数据集</el-button>
           <el-button @click="createDemoDataset">新建数据集</el-button>
         </div>
@@ -13,7 +20,7 @@
       <div class="table-panel-header">
         <h3 class="table-panel-title">Eval 数据集</h3>
       </div>
-      <el-table :data="datasets" stripe empty-text="暂无数据集">
+      <el-table :data="filteredDatasets" stripe empty-text="暂无数据集">
         <el-table-column prop="datasetCode" label="Code" width="160" />
         <el-table-column prop="datasetName" label="名称" min-width="180" />
         <el-table-column prop="appKey" label="App" width="140" />
@@ -145,10 +152,16 @@
 import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { adminApi, type EvalCaseVO, type EvalDatasetVO, type EvalRunVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const loading = ref(false)
+const filterAppKey = ref(getLastAppKey())
 const runningCode = ref('')
 const datasets = ref<EvalDatasetVO[]>([])
+const filteredDatasets = computed(() =>
+  filterAppKey.value ? datasets.value.filter((d) => d.appKey === filterAppKey.value) : datasets.value
+)
 const runs = ref<EvalRunVO[]>([])
 const lastRun = ref<EvalRunVO | null>(null)
 const selectedDataset = ref('')
@@ -327,7 +340,7 @@ async function createDemoDataset() {
   await adminApi.createEvalDataset({
     datasetCode: code,
     datasetName: `Quick ${code}`,
-    appKey: 'order-service',
+    appKey: getLastAppKey() || 'order-service',
     taskCode: 'aiChat'
   })
   ElMessage.success(`已创建数据集 ${code}`)

@@ -3,6 +3,15 @@
     <div class="page-header">
       <div class="page-header-row">
         <div class="page-filters">
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="220px"
+            select-class="page-filter-control"
+            @change="onAppFilterChange"
+            @clear="onAppFilterChange"
+          />
           <el-select
             v-model="taskCode"
             filterable
@@ -10,7 +19,7 @@
             class="page-filter-control page-filter-control--wide"
             @change="loadRoute"
           >
-            <el-option v-for="task in tasks" :key="task.code" :label="`${task.code} · ${task.name}`" :value="task.code" />
+            <el-option v-for="task in filteredTasks" :key="task.code" :label="`${task.code} · ${task.name}`" :value="task.code" />
           </el-select>
           <el-button type="primary" :loading="loading" @click="loadRoute">加载</el-button>
         </div>
@@ -47,13 +56,17 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import AppSelect from '../components/AppSelect.vue'
 import { adminApi, normalizePage, type ModelRouteVO, type TaskVO } from '../api/admin'
+import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
 
 const loading = ref(false)
 const saving = ref(false)
 const tasks = ref<TaskVO[]>([])
+const filterAppKey = ref(getLastAppKey())
+const filteredTasks = computed(() => filterTasksByApp(tasks.value, filterAppKey.value))
 const taskCode = ref('aiChat')
 
 const form = reactive<ModelRouteVO>({
@@ -67,9 +80,15 @@ const form = reactive<ModelRouteVO>({
 async function loadTasks() {
   const data = await adminApi.listTasks(1, 500)
   tasks.value = normalizePage(data, 1, 500).records
-  if (!taskCode.value && tasks.value.length) {
-    taskCode.value = tasks.value[0].code
+  taskCode.value = syncTaskCode(filteredTasks.value, taskCode.value)
+  if (!taskCode.value && filteredTasks.value.length) {
+    taskCode.value = filteredTasks.value[0].code
   }
+}
+
+async function onAppFilterChange() {
+  taskCode.value = syncTaskCode(filteredTasks.value, taskCode.value)
+  await loadRoute()
 }
 
 async function loadRoute() {

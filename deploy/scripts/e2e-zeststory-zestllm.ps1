@@ -5,7 +5,7 @@
 # 前置（ZestLLM 侧，-SkipStart 时须已运行）：
 #   powershell -File deploy/scripts/start-kb-mock-local.ps1
 #   $env:ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL='http-knowledge'
-#   $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL='http://127.0.0.1:8091'
+#   $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL='http://127.0.0.1:8092'
 #   powershell -File deploy/scripts/start-local-full.ps1 -WithLiteLLM -SkipBuild
 #
 # 前置（ZestStory 侧，E2E-02/WH-01 需要 :8080）：
@@ -48,7 +48,7 @@ if (-not $SkipStart) {
     & (Join-Path $PSScriptRoot "start-local-full.ps1") -StopOnly | Out-Null
     & (Join-Path $PSScriptRoot "start-kb-mock-local.ps1")
     $env:ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL = "http-knowledge"
-    $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL = "http://127.0.0.1:8091"
+    $env:ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL = "http://127.0.0.1:8092"
     & (Join-Path $PSScriptRoot "start-local-full.ps1") -WithLiteLLM -SkipBuild
     Start-Sleep -Seconds 10
 }

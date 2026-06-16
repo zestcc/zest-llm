@@ -41,7 +41,7 @@ zest:
       # medium tier RAG（ZestStory zestStoryRag）
       knowledge-retrieval: ${ZEST_LLM_ADAPTERS_KNOWLEDGE_RETRIEVAL:http-knowledge}
     http-knowledge:
-      base-url: ${ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL:http://127.0.0.1:8091}
+      base-url: ${ZEST_LLM_HTTP_KNOWLEDGE_BASE_URL:http://127.0.0.1:8092}
       retrieve-path: /v1/retrieve
       health-path: /health
     learning:

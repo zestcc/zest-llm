@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zestflow.common.model.Result;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -41,5 +42,23 @@ public class AdminTaskController {
     public Result<TaskVO> updateTask(@PathVariable String code,
                                      @Valid @RequestBody UpdateTaskRequest request) {
         return Result.success(taskManageService.update(code, request));
+    }
+
+    @DeleteMapping("/force")
+    public Result<Void> forceDeleteTaskByApp(@RequestParam String appKey, @RequestParam String code) {
+        taskManageService.forceDeleteByAppAndCode(appKey, code);
+        return Result.success(null);
+    }
+
+    @DeleteMapping("/by-id/{taskId}/force")
+    public Result<Void> forceDeleteTaskById(@PathVariable Long taskId) {
+        taskManageService.forceDeleteById(taskId);
+        return Result.success(null);
+    }
+
+    @DeleteMapping("/{code}")
+    public Result<Void> deleteTask(@PathVariable String code) {
+        taskManageService.delete(code);
+        return Result.success(null);
     }
 }

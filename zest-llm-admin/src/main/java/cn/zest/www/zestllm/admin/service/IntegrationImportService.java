@@ -8,12 +8,14 @@ import cn.zest.www.zestllm.admin.model.request.ImportAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportAgentProfilesRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportGatewayModelsRequest;
 import cn.zest.www.zestllm.admin.model.request.IntegrationImportProviderPresetsRequest;
+import cn.zest.www.zestllm.admin.model.request.UpdateAgentProfileRequest;
 import cn.zest.www.zestllm.admin.model.request.UpdateProviderPresetRequest;
 import cn.zest.www.zestllm.admin.model.vo.IntegrationImportResultVO;
 import cn.zest.www.zestllm.admin.repo.LlmAgentProfileRepo;
 import cn.zest.www.zestllm.admin.repo.LlmAiTaskDefRepo;
 import cn.zest.www.zestllm.admin.repo.LlmGatewayModelRepo;
 import cn.zest.www.zestllm.admin.repo.LlmProviderPresetRepo;
+import cn.zest.www.zestllm.spi.profile.AgentProfileDocument;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -77,7 +79,6 @@ public class IntegrationImportService {
                 .created(created).updated(updated).skipped(skipped).errors(errors).build();
     }
 
-    @Transactional(rollbackFor = Exception.class)
     public IntegrationImportResultVO importAgentProfiles(IntegrationImportAgentProfilesRequest request) {
         int created = 0;
         int updated = 0;
@@ -94,17 +95,14 @@ public class IntegrationImportService {
                     } else {
                         created++;
                     }
+                } else if (upsertAgentProfile(item)) {
+                    updated++;
                 } else {
-                    agentProfileManageService.importProfile(item);
                     created++;
                 }
             } catch (BusinessException ex) {
-                if ("PROFILE_EXISTS".equals(ex.getErrorCode())) {
-                    skipped++;
-                } else {
-                    errors.add(item.getTaskCode() + ": " + ex.getMessage());
-                    skipped++;
-                }
+                errors.add(item.getTaskCode() + ": " + ex.getMessage());
+                skipped++;
             } catch (Exception ex) {
                 errors.add(item.getTaskCode() + ": " + ex.getMessage());
                 skipped++;
@@ -113,6 +111,26 @@ public class IntegrationImportService {
         return IntegrationImportResultVO.builder()
                 .dryRun(request.isDryRun())
                 .created(created).updated(updated).skipped(skipped).errors(errors).build();
+    }
+
+    /** @return true when an existing draft/profile version was updated */
+    private boolean upsertAgentProfile(ImportAgentProfileRequest item) {
+        try {
+            agentProfileManageService.importProfile(item);
+            return false;
+        } catch (BusinessException ex) {
+            if (!"PROFILE_EXISTS".equals(ex.getErrorCode())) {
+                throw ex;
+            }
+            String version = StringUtils.hasText(item.getVersion()) ? item.getVersion() : "v1";
+            UpdateAgentProfileRequest update = new UpdateAgentProfileRequest();
+            update.setProfileJson(item.getProfileJson());
+            AgentProfileDocument doc = agentProfileResolver.parseProfile(item.getProfileJson(), null);
+            update.setProviderPresetCode(doc.getProviderRef());
+            update.setRuntimeMode(doc.getRuntimeMode());
+            agentProfileManageService.updateVersion(item.getTaskCode(), version, update);
+            return true;
+        }
     }
 
     @Transactional(rollbackFor = Exception.class)

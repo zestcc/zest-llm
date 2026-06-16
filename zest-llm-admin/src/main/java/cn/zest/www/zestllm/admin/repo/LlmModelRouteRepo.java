@@ -36,11 +36,21 @@ public class LlmModelRouteRepo {
                 .in(LlmModelRouteDO::getTaskId, taskIds));
     }
 
+    public long countByTaskId(Long taskId) {
+        return mapper.selectCount(new LambdaQueryWrapper<LlmModelRouteDO>()
+                .eq(LlmModelRouteDO::getTaskId, taskId));
+    }
+
     public void insert(LlmModelRouteDO entity) {
         mapper.insert(entity);
     }
 
     public void update(LlmModelRouteDO entity) {
         mapper.updateById(entity);
+    }
+
+    public void deleteByTaskId(Long taskId) {
+        mapper.delete(new LambdaQueryWrapper<LlmModelRouteDO>()
+                .eq(LlmModelRouteDO::getTaskId, taskId));
     }
 }

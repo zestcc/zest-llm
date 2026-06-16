@@ -67,7 +67,7 @@
     <el-dialog v-model="createVisible" title="新建应用" width="480px" destroy-on-close>
       <el-form ref="createFormRef" :model="createForm" :rules="appRules" label-width="90px">
         <el-form-item label="App Key" prop="appKey">
-          <el-input v-model="createForm.appKey" placeholder="如 order-service" />
+          <AppSelect v-model="createForm.appKey" allow-create :remember="false" placeholder="输入或选择 App Key" />
         </el-form-item>
         <el-form-item label="名称" prop="appName">
           <el-input v-model="createForm.appName" placeholder="应用显示名称" />
@@ -148,6 +148,7 @@
 import { onMounted, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import { adminApi, normalizePage, type AppOverviewVO, type AppVO, type QuotaVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
 
 const loading = ref(false)
 const overviewLoading = ref(false)
@@ -182,7 +183,7 @@ const quotaForm = reactive<QuotaVO>({
 })
 
 const appRules: FormRules = {
-  appKey: [{ required: true, message: '请输入 App Key', trigger: 'blur' }],
+  appKey: [{ required: true, message: '请选择或输入 App Key', trigger: 'change' }],
   appName: [{ required: true, message: '请输入名称', trigger: 'blur' }]
 }
 

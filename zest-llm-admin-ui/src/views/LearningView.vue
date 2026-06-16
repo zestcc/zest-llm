@@ -4,8 +4,9 @@
       <template #header>
         <div class="card-header">
           <span>自我改进闭环</span>
+          <AppSelect v-model="filterAppKey" placeholder="筛选应用" clearable width="180px" @change="onAppFilterChange" @clear="onAppFilterChange" />
           <el-select v-model="taskCode" filterable placeholder="选择作业" style="width: 220px" @change="loadAll">
-            <el-option v-for="t in tasks" :key="t.code" :label="t.code" :value="t.code" />
+            <el-option v-for="t in filteredTasks" :key="t.code" :label="t.code" :value="t.code" />
           </el-select>
         </div>
       </template>
@@ -46,11 +47,15 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { ElMessage } from 'element-plus'
+import AppSelect from '../components/AppSelect.vue'
 import { adminApi, normalizePage, type EvalCaseSuggestion, type LearningCycleResult, type LearningCycleRunVO, type TaskVO } from '../api/admin'
+import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
 
 const tasks = ref<TaskVO[]>([])
+const filterAppKey = ref(getLastAppKey())
+const filteredTasks = computed(() => filterTasksByApp(tasks.value, filterAppKey.value))
 const taskCode = ref('aiChat')
 const profileVersion = ref('v1')
 const suggestions = ref<EvalCaseSuggestion[]>([])
@@ -64,9 +69,15 @@ const sources = ref(['execution', 'langfuse'])
 async function loadTasks() {
   const data = await adminApi.listTasks(1, 200)
   tasks.value = normalizePage(data, 1, 200).records
-  if (tasks.value.length && !taskCode.value) {
-    taskCode.value = tasks.value[0].code
+  taskCode.value = syncTaskCode(filteredTasks.value, taskCode.value)
+  if (!taskCode.value && filteredTasks.value.length) {
+    taskCode.value = filteredTasks.value[0].code
   }
+}
+
+function onAppFilterChange() {
+  taskCode.value = syncTaskCode(filteredTasks.value, taskCode.value)
+  loadAll()
 }
 
 async function loadSuggestions() {

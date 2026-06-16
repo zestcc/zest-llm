@@ -3,6 +3,15 @@
     <div class="page-header">
       <div class="page-header-row">
         <div class="page-filters">
+          <AppSelect
+            v-model="filterAppKey"
+            placeholder="筛选应用"
+            clearable
+            width="160px"
+            select-class="page-filter-control"
+            @change="reloadList"
+            @clear="reloadList"
+          />
           <el-input
             v-model="traceId"
             placeholder="traceId 精确查询"
@@ -131,11 +140,14 @@ import { onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { Refresh, Search } from '@element-plus/icons-vue'
 import { adminApi, type ExecutionVO, type ObservabilityConfigVO } from '../api/admin'
+import AppSelect from '../components/AppSelect.vue'
+import { getLastAppKey } from '../utils/lastAppKey'
 
 const route = useRoute()
 const loading = ref(false)
 const rows = ref<ExecutionVO[]>([])
 const traceId = ref('')
+const filterAppKey = ref(getLastAppKey())
 const filterTaskCode = ref('')
 const filterStatus = ref('')
 const page = ref(1)
@@ -161,7 +173,8 @@ async function loadList() {
       page.value,
       pageSize.value,
       filterTaskCode.value || undefined,
-      filterStatus.value || undefined
+      filterStatus.value || undefined,
+      filterAppKey.value || undefined
     )
     rows.value = pageData?.records || []
     total.value = pageData?.total ?? rows.value.length
@@ -181,6 +194,7 @@ function onSizeChange() {
 }
 
 function resetFilters() {
+  filterAppKey.value = ''
   filterTaskCode.value = ''
   filterStatus.value = ''
   traceId.value = ''
