@@ -1,8 +1,10 @@
 package cn.zest.www.zestllm.admin.controller.admin;
 
 import cn.zest.www.zestllm.admin.model.request.CreatePromptVersionRequest;
+import cn.zest.www.zestllm.admin.model.request.ForkPromptVersionRequest;
 import cn.zest.www.zestllm.admin.model.request.PublishPromptRequest;
 import cn.zest.www.zestllm.admin.model.request.RollbackPromptRequest;
+import cn.zest.www.zestllm.admin.model.vo.PromptForkResultVO;
 import cn.zest.www.zestllm.admin.model.vo.PromptPublishResultVO;
 import cn.zest.www.zestllm.admin.model.vo.PromptVersionVO;
 import cn.zest.www.zestllm.admin.model.vo.VersionDiffVO;
@@ -37,6 +39,16 @@ public class AdminPromptController {
         return Result.success(adminQueryService.listPromptVersions(code));
     }
 
+    @GetMapping("/{code}/versions/next")
+    public Result<String> suggestNextVersion(@PathVariable String code) {
+        return Result.success(promptVersionService.suggestNextVersion(code));
+    }
+
+    @GetMapping("/{code}/versions/{version}")
+    public Result<PromptVersionVO> getVersion(@PathVariable String code, @PathVariable String version) {
+        return Result.success(adminQueryService.getPromptVersion(code, version));
+    }
+
     @GetMapping("/{code}/diff")
     public Result<VersionDiffVO> diff(@PathVariable String code,
                                         @org.springframework.web.bind.annotation.RequestParam String from,
@@ -48,6 +60,12 @@ public class AdminPromptController {
     public Result<PromptVersionVO> createVersion(@PathVariable String code,
                                                  @Valid @RequestBody CreatePromptVersionRequest request) {
         return Result.success(promptVersionService.createVersion(code, request));
+    }
+
+    @PostMapping("/{code}/versions/fork")
+    public Result<PromptForkResultVO> forkVersion(@PathVariable String code,
+                                                  @Valid @RequestBody ForkPromptVersionRequest request) {
+        return Result.success(promptVersionService.forkVersion(code, request));
     }
 
     @PostMapping("/{code}/publish")

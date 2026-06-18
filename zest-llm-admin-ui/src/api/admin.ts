@@ -71,6 +71,21 @@ export interface PromptVersionForm {
   outputSchema?: string
 }
 
+export interface ForkPromptVersionForm {
+  baseVersion: string
+  version?: string
+  templateBody: string
+  outputSchema?: string
+  publish?: boolean
+}
+
+export interface PromptForkResult {
+  version: string
+  published: boolean
+  publishedAt?: string
+  versionDetail?: PromptVersionVO
+}
+
 export interface ExecutionVO {
   traceId: string
   taskCode?: string
@@ -805,8 +820,20 @@ export const adminApi = {
     return http.get<PromptVersionVO[]>(`/api/admin/prompts/${code}/versions`)
   },
 
+  getPromptVersion(code: string, version: string) {
+    return http.get<PromptVersionVO>(`/api/admin/prompts/${code}/versions/${encodeURIComponent(version)}`)
+  },
+
+  suggestNextPromptVersion(code: string) {
+    return http.get<string>(`/api/admin/prompts/${code}/versions/next`)
+  },
+
   createPromptVersion(code: string, body: PromptVersionForm) {
     return http.post<PromptVersionVO>(`/api/admin/prompts/${code}/versions`, body)
+  },
+
+  forkPromptVersion(code: string, body: ForkPromptVersionForm) {
+    return http.post<PromptForkResult>(`/api/admin/prompts/${code}/versions/fork`, body)
   },
 
   publishPrompt(code: string, version: string, operator?: string) {

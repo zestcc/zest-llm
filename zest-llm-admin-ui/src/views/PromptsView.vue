@@ -22,7 +22,7 @@
           >
             <el-option v-for="task in filteredTasks" :key="task.code" :label="`${task.code} · ${task.name}`" :value="task.code" />
           </el-select>
-          <el-button @click="openCreate">新建版本</el-button>
+          <el-button type="primary" @click="openCreate">新建版本</el-button>
         </div>
       </div>
     </div>
@@ -31,7 +31,7 @@
       <div class="table-panel-header">
         <div>
           <h3 class="table-panel-title">Prompt 版本</h3>
-          <p class="table-panel-subtitle">作业 code: {{ code || '未选择' }}</p>
+          <p class="table-panel-subtitle">作业 code: {{ code || '未选择' }} · 不可变版本，编辑将 fork 新版本</p>
         </div>
       </div>
       <el-table :data="versions" stripe empty-text="暂无版本">
@@ -46,21 +46,30 @@
               :type="row.status === 'PUBLISHED' ? 'success' : row.status === 'DRAFT' ? 'warning' : 'info'"
               size="small"
             >
-              {{ row.status }}
+              {{ row.status === 'PUBLISHED' ? '已发布' : row.status === 'DRAFT' ? '草稿' : row.status }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="模板摘要" min-width="240" show-overflow-tooltip>
-          <template #default="{ row }">{{ (row.templateBody || '').slice(0, 120) }}</template>
+        <el-table-column label="模板摘要" min-width="280">
+          <template #default="{ row }">
+            <div class="template-summary">
+              <div v-for="(line, idx) in summaryLines(row.templateBody)" :key="idx" class="summary-line" :title="line">
+                {{ line }}
+              </div>
+              <span v-if="!summaryLines(row.templateBody).length" class="summary-empty">—</span>
+            </div>
+          </template>
         </el-table-column>
         <el-table-column prop="publishedAt" label="发布时间" width="170" />
-        <el-table-column label="操作" width="260" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" class="action-btn" @click="openDetail(row)">详情</el-button>
+            <el-button link type="primary" class="action-btn" @click="openFork(row)">编辑</el-button>
             <template v-if="row.status === 'PUBLISHED'">
               <el-tag size="small" type="success" effect="plain">当前</el-tag>
             </template>
             <template v-else>
-              <el-button link type="primary" class="action-btn" @click="publish(row.version)">发布</el-button>
+              <el-button link type="success" class="action-btn" @click="publish(row.version)">发布</el-button>
               <el-button
                 v-if="row.publishedAt"
                 link
@@ -70,84 +79,52 @@
               >
                 回滚
               </el-button>
-              <el-button
-                v-if="publishedVersion && publishedVersion !== row.version"
-                link
-                type="info"
-                class="action-btn"
-                @click="compareWithPublished(row.version)"
-              >
-                对比
-              </el-button>
             </template>
+            <el-button
+              v-if="publishedVersion && publishedVersion !== row.version"
+              link
+              type="info"
+              class="action-btn"
+              @click="compareWithPublished(row.version)"
+            >
+              对比
+            </el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
 
-    <el-dialog v-model="createVisible" title="新建 Prompt 版本" width="720px" destroy-on-close>
-      <el-form ref="createFormRef" :model="createForm" :rules="createRules" label-width="100px">
-        <el-form-item label="版本号" prop="version">
-          <el-input v-model="createForm.version" placeholder="如 v2" style="max-width: 200px" />
-        </el-form-item>
-        <el-form-item label="模板内容" prop="templateBody">
-          <el-input
-            v-model="createForm.templateBody"
-            type="textarea"
-            :rows="12"
-            class="prompt-editor"
-            placeholder="Handlebars 模板，如 {{question}}"
-          />
-        </el-form-item>
-        <el-form-item label="输出 Schema">
-          <el-input
-            v-model="createForm.outputSchema"
-            type="textarea"
-            :rows="4"
-            class="prompt-editor"
-            placeholder='{"type":"object","properties":{...}}'
-          />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
-        <el-button type="primary" :loading="submitting" @click="submitCreate">创建草稿</el-button>
-      </template>
-    </el-dialog>
-
+    <PromptVersionDetailDialog ref="detailDialogRef" />
+    <PromptVersionEditorDialog ref="editorDialogRef" @saved="load" />
     <VersionDiffDialog ref="diffDialogRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import VersionDiffDialog from '../components/VersionDiffDialog.vue'
+import PromptVersionDetailDialog from '../components/PromptVersionDetailDialog.vue'
+import PromptVersionEditorDialog from '../components/PromptVersionEditorDialog.vue'
 import AppSelect from '../components/AppSelect.vue'
 import { adminApi, normalizePage, type PromptVersionVO, type TaskVO } from '../api/admin'
 import { filterTasksByApp, getLastAppKey, syncTaskCode } from '../utils/lastAppKey'
+import { templateSummaryLines } from '../utils/promptVersion'
 
 const tasks = ref<TaskVO[]>([])
 const filterAppKey = ref(getLastAppKey())
 const filteredTasks = computed(() => filterTasksByApp(tasks.value, filterAppKey.value))
 const code = ref('aiChat')
 const loading = ref(false)
-const submitting = ref(false)
 const versions = ref<PromptVersionVO[]>([])
+const detailDialogRef = ref<InstanceType<typeof PromptVersionDetailDialog> | null>(null)
+const editorDialogRef = ref<InstanceType<typeof PromptVersionEditorDialog> | null>(null)
 const diffDialogRef = ref<InstanceType<typeof VersionDiffDialog> | null>(null)
 const publishedVersion = computed(() => versions.value.find((v) => v.status === 'PUBLISHED')?.version)
+const versionCodes = computed(() => versions.value.map((v) => v.version))
 
-const createVisible = ref(false)
-const createFormRef = ref<FormInstance>()
-const createForm = ref({
-  version: '',
-  templateBody: '',
-  outputSchema: ''
-})
-
-const createRules: FormRules = {
-  version: [{ required: true, message: '请输入版本号', trigger: 'blur' }],
-  templateBody: [{ required: true, message: '请输入模板内容', trigger: 'blur' }]
+function summaryLines(body?: string) {
+  return templateSummaryLines(body, 5)
 }
 
 async function loadTasks() {
@@ -182,22 +159,21 @@ function openCreate() {
     ElMessage.warning('请先选择 AI 作业')
     return
   }
-  createForm.value = { version: '', templateBody: '', outputSchema: '' }
-  createVisible.value = true
+  editorDialogRef.value?.openCreate({ taskCode: code.value, existingVersions: versionCodes.value })
 }
 
-async function submitCreate() {
-  const valid = await createFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-  submitting.value = true
-  try {
-    await adminApi.createPromptVersion(code.value, { ...createForm.value })
-    ElMessage.success('版本已创建')
-    createVisible.value = false
-    load()
-  } finally {
-    submitting.value = false
-  }
+function openDetail(row: PromptVersionVO) {
+  if (!code.value) return
+  detailDialogRef.value?.open({ taskCode: code.value, version: row })
+}
+
+function openFork(row: PromptVersionVO) {
+  if (!code.value) return
+  editorDialogRef.value?.openFork({
+    taskCode: code.value,
+    base: row,
+    existingVersions: versionCodes.value
+  })
 }
 
 async function publish(version: string) {
@@ -253,9 +229,23 @@ onMounted(async () => {
   width: 280px;
 }
 
-.prompt-editor :deep(textarea) {
-  font-family: ui-monospace, 'Cascadia Code', 'Consolas', monospace;
-  font-size: 13px;
-  line-height: 1.6;
+.template-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.summary-line {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--el-text-color-regular);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.summary-empty {
+  color: var(--el-text-color-placeholder);
 }
 </style>

@@ -43,6 +43,15 @@ public class AdminQueryService {
                 .toList();
     }
 
+    public PromptVersionVO getPromptVersion(String taskCode, String version) {
+        LlmAiTaskDefDO task = taskDefRepo.findByCode(taskCode)
+                .orElseThrow(() -> new BusinessException("TASK_NOT_FOUND", "AI 作业不存在: " + taskCode));
+        LlmPromptVersionDO prompt = promptVersionRepo.findByTaskIdAndVersion(task.getId(), version)
+                .orElseThrow(() -> new BusinessException("PROMPT_NOT_FOUND",
+                        "Prompt 版本不存在: " + taskCode + "@" + version));
+        return toPromptVO(prompt);
+    }
+
     private AppVO toAppVO(LlmAppDO app) {
         return AppVO.builder()
                 .id(app.getId())
